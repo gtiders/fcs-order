@@ -1,0 +1,35 @@
+[project]
+name = "fcs-order"
+version = "0.1.1"
+description = "Third-order force constants calculation tool for VASP"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "ase>=3.22.1",
+    "click>=8.1.8",
+    "cython>=3.0.12",
+    "numpy>=1.21.6",
+    "scipy>=1.7.3",
+    "spglib>=2.2.0",
+]
+
+[project.optional-dependencies]
+deepmd = [
+    "deepmd-kit", # deepmd-kit is required for force constant potential 
+    "hiphive", # hiphive is required for force constant potential
+    "pypolymlp", # pypolymlp is required for force constant potential
+    "calorine", # calorine is required for force constant potential
+]
+
+[project.scripts]
+thirdorder = "thirdorder.thirdorder_wrapper:thirdorder"
+fourthorder = "fourthorder.fourthorder_wrapper:fourthorder"
+secondorder = "secondorder.second_with_calc:get_fc"
+
+[build-system]
+requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]
+build-backend = "setuptools.build_meta"
+
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true

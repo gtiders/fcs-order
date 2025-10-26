@@ -1,0 +1,21 @@
+# Include Cython source files
+include src/thirdorder/thirdorder_core.pyx
+include src/fourthorder/Fourthorder_core.pyx
+include src/thirdorder/cthirdorder_core.pxd
+include src/fourthorder/cfourthorder_core.pxd
+
+# Include C source files
+include src/thirdorder/thirdorder_core.c
+include src/fourthorder/Fourthorder_core.c
+
+# Include header files
+include src/thirdorder/cthirdorder_core.pxd
+include src/fourthorder/cfourthorder_core.pxd
+
+# Include all Python files
+recursive-include src *.py
+
+# Include README and other documentation
+include README.md
+include pyproject.toml
+include setup.py
