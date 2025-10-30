@@ -1,6 +1,6 @@
 import click
 from .effective_harmonic import main as effective_harmonic_main
-from .generate2alm.dftset import gen_dftset
+from .generate2alm.generate_dftsets import gen_dftset
 from .thirdorder.thirdorder_wrapper import thirdorder
 from .fourthorder.fourthorder_wrapper import fourthorder
 
