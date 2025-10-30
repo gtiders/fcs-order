@@ -1,9 +1,9 @@
 [project]
 name = "fcs-order"
-version = "0.1.1"
+version = "1.1.1"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
     "ase>=3.22.1",
     "click>=8.1.8",
@@ -15,16 +15,55 @@ dependencies = [
 
 [project.optional-dependencies]
 deepmd = [
-    "deepmd-kit", # deepmd-kit is required for force constant potential 
-    "hiphive", # hiphive is required for force constant potential
-    "pypolymlp", # pypolymlp is required for force constant potential
-    "calorine", # calorine is required for force constant potential
+    "deepmd-kit>=2.2.0", # DeepMD potential support
 ]
 
+hiphive = [
+    "hiphive>=0.6", # Force constant potential with hiphive
+]
+
+mlp = [
+    "pypolymlp>=0.15", # MLP potential (requires Eigen3 system library)
+]
+
+calorine = [
+    "calorine>=1.0", # Calorine potential support
+]
+
+all = [
+    "deepmd-kit>=2.2.0",
+    "hiphive>=0.6", 
+    "calorine>=1.0",
+    "pypolymlp>=0.15",
+]
+
+# 构建和发布说明
+# ==============
+# 
+# 1. 构建源码包：
+#    uv build --sdist
+#
+# 2. 上传到 PyPI（需要 API Token）：
+#    twine upload dist/fcs_order-X.Y.Z.tar.gz
+#
+# 3. 安装测试：
+#    pip install fcs-order
+#
+# 4. 安装可选依赖：
+#    pip install "fcs-order[deepmd]"      # DeepMD 支持
+#    pip install "fcs-order[hiphive]"     # hiphive 支持  
+#    pip install "fcs-order[calorine]"    # calorine 支持
+#    pip install "fcs-order[all]"         # 所有可选依赖
+#
+# 注意事项：
+# - 每次发布前更新 version 字段
+# - 只上传源码包（sdist），避免平台特定的 wheel
+# - 可选依赖中的 pypolymlp 需要系统 Eigen3 库，已移至单独分组
+#
+# 发布地址：https://pypi.org/project/fcs-order/
+
 [project.scripts]
-thirdorder = "thirdorder.thirdorder_wrapper:thirdorder"
-fourthorder = "fourthorder.fourthorder_wrapper:fourthorder"
-secondorder = "secondorder.second_with_calc:get_fc"
+fcsorder = "fcs_order.__init__:cli"
 
 [build-system]
 requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]

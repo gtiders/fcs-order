@@ -17,7 +17,14 @@ from . import thirdorder_core  # type: ignore
 )
 @click.argument("vaspruns", type=click.Path(exists=True), nargs=-1, required=True)
 def reap(na, nb, nc, cutoff, vaspruns):
-    """Collect forces and write 3RD force constants (reap phase)."""
+    """
+    Extract 3-phonon force constants from VASP calculation results.
+
+    Parameters:
+        na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
+        cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+        vaspruns: paths to vasprun.xml files from VASP calculations, in order
+    """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation(
         na, nb, nc, cutoff
     )

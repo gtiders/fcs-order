@@ -2,13 +2,13 @@ import click
 import sys
 import numpy as np
 from ase import Atoms
-from .thirdorder_vasp import (
+from .fourthorder_vasp import (
     _prepare_calculation,
     normalize_SPOSCAR,
     build_unpermutation,
 )
-from .thirdorder_common import H, move_two_atoms, write_ifcs
-from . import thirdorder_core  # type: ignore
+from .fourthorder_common import H, move_three_atoms, write_ifcs
+from . import fourthorder_core  # type: ignore
 
 
 def get_atoms(poscar, calc=None):
@@ -16,13 +16,10 @@ def get_atoms(poscar, calc=None):
     atoms = Atoms(
         symbols=symbols,
         scaled_positions=poscar["positions"].T,
-        cell=poscar["lattvec"].T,
+        cell=poscar["lattvec"].T * 10,
     )
     if calc is not None:
         atoms.calc = calc
-        atoms.info["energy"] = atoms.get_potential_energy()
-        atoms.arrays["forces"] = atoms.get_forces()
-
     return atoms
 
 
@@ -51,26 +48,37 @@ def get_atoms(poscar, calc=None):
 @click.option(
     "--if_write",
     type=bool,
+    is_flag=True,
     default=False,
     help="Whether to save intermediate files during the calculation process",
 )
 def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
+    """
+    Directly calculate 4-phonon force constants using machine learning potential functions based on fourthorder.
+    Accuracy depends on potential function precision and supercell size; it is recommended to use a larger supercell.
+
+    Parameters:
+        na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
+        cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+        calc: calculator type, optional values are nep, dp, hiphive, ploymp
+        potential: potential file path, corresponding to different file formats based on calc type
+        if_write: whether to save intermediate files, default is not to save
+    """
     # Validate that calc and potential must be provided together
     if (calc is not None and potential is None) or (
         calc is None and potential is not None
     ):
         raise click.BadParameter("--calc and --potential must be provided together")
-
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation(
         na, nb, nc, cutoff
     )
+    wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
+    print(f"- {wedge.nlist} quartet equivalence classes found")
+    list6 = wedge.build_list4()
     natoms = len(poscar["types"])
     ntot = natoms * na * nb * nc
-    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
-    print(f"- {wedge.nlist} triplet equivalence classes found")
-    list4 = wedge.build_list4()
-    nirred = len(list4)
-    nruns = 4 * nirred
+    nirred = len(list6)
+    nruns = 8 * nirred
     # If calculator type and potential file are specified, set up the calculator
     if calc is not None and potential is not None:
         if calc.lower() == "nep":
@@ -79,7 +87,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             try:
                 from calorine.calculators import CPUNEP
 
-                calc = CPUNEP(potential)
+                calculation = CPUNEP(potential)
             except ImportError:
                 print("calorine not found, please install it first")
                 sys.exit(1)
@@ -89,7 +97,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             try:
                 from deepmd.calculator import DP
 
-                calc = DP(model=potential)
+                calculation = DP(model=potential)
             except ImportError:
                 print("deepmd not found, please install it first")
                 sys.exit(1)
@@ -106,11 +114,11 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                         hi_poscar["elements"], hi_poscar["numbers"]
                     ).tolist(),
                     scaled_positions=hi_poscar["positions"].T,
-                    cell=hi_poscar["lattvec"].T,
+                    cell=hi_poscar["lattvec"].T * 10,
                 )
                 fcp = ForceConstantPotential.read(potential)
                 fcs = fcp.get_force_constants(hi_atoms)
-                calc = ForceConstantCalculator(fcs)
+                calculation = ForceConstantCalculator(fcs)
 
             except ImportError:
                 print("hiphive not found, please install it first")
@@ -123,47 +131,60 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                     PolymlpASECalculator,
                 )
 
-                calc = PolymlpASECalculator(pot=potential)
+                calculation = PolymlpASECalculator(pot=potential)
             except ImportError:
                 print("pypolymlp not found, please install it first")
                 sys.exit(1)
     else:
         print("No calculator provided")
         sys.exit(1)
-
     print(f"- {nruns} force calculations are runing!")
-    # Write sposcar positions and forces to 3RD.SPOSCAR.extxyz file
-    atoms = get_atoms(normalize_SPOSCAR(sposcar), calc)
-    atoms.write("3RD.SPOSCAR.xyz", format="extxyz")
-    width = len(str(4 * (len(list4) + 1)))
-    namepattern = f"3RD.POSCAR.{{:0{width}d}}.xyz"
+    # Write sposcar positions and forces to 4TH.SPOSCAR.extxyz file
+    atoms = get_atoms(normalize_SPOSCAR(sposcar), calculation)
+    atoms.get_forces()
+    atoms.write("4TH.SPOSCAR.xyz", format="extxyz")
+    width = len(str(8 * (len(list6) + 1)))
+    namepattern = "4TH.POSCAR.{{0:0{0}d}}.xyz".format(width)
     p = build_unpermutation(sposcar)
     forces = []
-    for i, e in enumerate(list4):
-        for n in range(4):
-            isign = (-1) ** (n // 2)
-            jsign = -((-1) ** (n % 2))
+    for i, e in enumerate(list6):
+        for n in range(8):
+            isign = (-1) ** (n // 4)
+            jsign = (-1) ** (n % 4 // 2)
+            ksign = (-1) ** (n % 2)
             number = nirred * n + i + 1
             dsposcar = normalize_SPOSCAR(
-                move_two_atoms(sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H)
+                move_three_atoms(
+                    sposcar,
+                    e[2],
+                    e[5],
+                    isign * H,
+                    e[1],
+                    e[4],
+                    jsign * H,
+                    e[0],
+                    e[3],
+                    ksign * H,
+                )
             )
-            atoms = get_atoms(dsposcar, calc)
-            forces.append(atoms.arrays["forces"][p, :])
+            atoms = get_atoms(dsposcar, calculation)
+            forces.append(atoms.get_forces()[p, :])
             filename = namepattern.format(number)
             if if_write:
                 atoms.write(filename, format="extxyz")
     print("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
-    for i, e in enumerate(list4):
-        for n in range(4):
-            isign = (-1) ** (n // 2)
-            jsign = -((-1) ** (n % 2))
+    for i, e in enumerate(list6):
+        for n in range(8):
+            isign = (-1) ** (n // 4)
+            jsign = (-1) ** (n % 4 // 2)
+            ksign = (-1) ** (n % 2)
             number = nirred * n + i
-            phipart[:, i, :] -= isign * jsign * forces[number].T
-    phipart /= 400.0 * H * H
+            phipart[:, i, :] -= isign * jsign * ksign * forces[number].T
+    phipart /= 8000.0 * H * H * H
     print("Reconstructing the full array")
-    phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar)
-    print("Writing the constants to FORCE_CONSTANTS_3RD")
+    phifull = fourthorder_core.reconstruct_ifcs(phipart, wedge, list6, poscar, sposcar)
+    print("Writing the constants to FORCE_CONSTANTS_4TH")
     write_ifcs(
-        phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
+        phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_4TH"
     )

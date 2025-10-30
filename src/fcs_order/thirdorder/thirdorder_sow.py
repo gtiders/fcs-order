@@ -3,9 +3,8 @@ from .thirdorder_vasp import (
     _prepare_calculation,
     write_POSCAR,
     normalize_SPOSCAR,
-    move_two_atoms,
 )
-from .thirdorder_common import H
+from .thirdorder_common import H, move_two_atoms
 from . import thirdorder_core  # type: ignore
 
 
@@ -20,6 +19,13 @@ from . import thirdorder_core  # type: ignore
     help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
 )
 def sow(na, nb, nc, cutoff):
+    """
+    Generate 3RD.POSCAR.* files for 3-phonon calculations.
+
+    Parameters:
+        na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
+        cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+    """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation(
         na, nb, nc, cutoff
     )

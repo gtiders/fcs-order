@@ -1,16 +1,12 @@
 # Include Cython source files
-include src/thirdorder/thirdorder_core.pyx
-include src/fourthorder/Fourthorder_core.pyx
-include src/thirdorder/cthirdorder_core.pxd
-include src/fourthorder/cfourthorder_core.pxd
-
-# Include C source files
-include src/thirdorder/thirdorder_core.c
-include src/fourthorder/Fourthorder_core.c
+include src/fcs_order/thirdorder/thirdorder_core.pyx
+include src/fcs_order/fourthorder/fourthorder_core.pyx
+include src/fcs_order/thirdorder/cthirdorder_core.pxd
+include src/fcs_order/fourthorder/cfourthorder_core.pxd
 
 # Include header files
-include src/thirdorder/cthirdorder_core.pxd
-include src/fourthorder/cfourthorder_core.pxd
+include src/fcs_order/thirdorder/cthirdorder_core.pxd
+include src/fcs_order/fourthorder/cfourthorder_core.pxd
 
 # Include all Python files
 recursive-include src *.py
