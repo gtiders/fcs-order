@@ -1,7 +1,7 @@
 import click
 from . import fourthorder_core  # type: ignore
-from .fourthorder_common import H, write_POSCAR, normalize_SPOSCAR, move_three_atoms
-from .fourthorder_vasp import _prepare_calculation
+from .fourthorder_common import H, move_three_atoms
+from .fourthorder_vasp import _prepare_calculation, write_POSCAR, normalize_SPOSCAR
 
 
 @click.command()
@@ -15,6 +15,13 @@ from .fourthorder_vasp import _prepare_calculation
     help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
 )
 def sow(na, nb, nc, cutoff):
+    """
+    Generate 4TH.POSCAR.* files for 4-phonon calculations.
+
+    Parameters:
+        na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
+        cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+    """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation(
         na, nb, nc, cutoff
     )

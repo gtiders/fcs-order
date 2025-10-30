@@ -2,13 +2,13 @@ import click
 import sys
 import numpy as np
 from ase import Atoms
-from .fourthorder_vasp import (
+from .thirdorder_vasp import (
     _prepare_calculation,
     normalize_SPOSCAR,
     build_unpermutation,
 )
-from .fourthorder_common import H, move_three_atoms, write_ifcs
-from . import fourthorder_core  # type: ignore
+from .thirdorder_common import H, move_two_atoms, write_ifcs
+from . import thirdorder_core  # type: ignore
 
 
 def get_atoms(poscar, calc=None):
@@ -16,12 +16,11 @@ def get_atoms(poscar, calc=None):
     atoms = Atoms(
         symbols=symbols,
         scaled_positions=poscar["positions"].T,
-        cell=poscar["lattvec"].T,
+        cell=poscar["lattvec"].T * 10,
+        pbc=True,
     )
     if calc is not None:
         atoms.calc = calc
-        atoms.info["energy"] = atoms.get_potential_energy()
-        atoms.arrays["forces"] = atoms.get_forces()
 
     return atoms
 
@@ -51,25 +50,38 @@ def get_atoms(poscar, calc=None):
 @click.option(
     "--if_write",
     type=bool,
+    is_flag=True,
     default=False,
     help="Whether to save intermediate files during the calculation process",
 )
 def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
+    """
+    Directly calculate 3-phonon force constants using machine learning potential functions based on thirdorder.
+    Accuracy depends on potential function precision and supercell size; it is recommended to use a larger supercell.
+
+    Parameters:
+        na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
+        cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+        calc: calculator type, optional values are nep, dp, hiphive, ploymp
+        potential: potential file path, corresponding to different file formats based on calc type
+        if_write: whether to save intermediate files, default is not to save
+    """
     # Validate that calc and potential must be provided together
     if (calc is not None and potential is None) or (
         calc is None and potential is not None
     ):
         raise click.BadParameter("--calc and --potential must be provided together")
+
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation(
         na, nb, nc, cutoff
     )
-    wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
-    print(f"- {wedge.nlist} quartet equivalence classes found")
-    list6 = wedge.build_list4()
     natoms = len(poscar["types"])
     ntot = natoms * na * nb * nc
-    nirred = len(list6)
-    nruns = 8 * nirred
+    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
+    print(f"- {wedge.nlist} triplet equivalence classes found")
+    list4 = wedge.build_list4()
+    nirred = len(list4)
+    nruns = 4 * nirred
     # If calculator type and potential file are specified, set up the calculator
     if calc is not None and potential is not None:
         if calc.lower() == "nep":
@@ -105,7 +117,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                         hi_poscar["elements"], hi_poscar["numbers"]
                     ).tolist(),
                     scaled_positions=hi_poscar["positions"].T,
-                    cell=hi_poscar["lattvec"].T,
+                    cell=hi_poscar["lattvec"].T * 10,
                 )
                 fcp = ForceConstantPotential.read(potential)
                 fcs = fcp.get_force_constants(hi_atoms)
@@ -129,52 +141,41 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
     else:
         print("No calculator provided")
         sys.exit(1)
+
     print(f"- {nruns} force calculations are runing!")
-    # Write sposcar positions and forces to 4TH.SPOSCAR.extxyz file
+    # Write sposcar positions and forces to 3RD.SPOSCAR.extxyz file
     atoms = get_atoms(normalize_SPOSCAR(sposcar), calc)
-    atoms.write("4TH.SPOSCAR.xyz", format="extxyz")
-    width = len(str(8 * (len(list6) + 1)))
-    namepattern = "4TH.POSCAR.{{0:0{0}d}}.xyz".format(width)
+    atoms.get_forces()
+    atoms.write("3RD.SPOSCAR.xyz", format="extxyz")
+    width = len(str(4 * (len(list4) + 1)))
+    namepattern = f"3RD.POSCAR.{{:0{width}d}}.xyz"
     p = build_unpermutation(sposcar)
     forces = []
-    for i, e in enumerate(list6):
-        for n in range(8):
-            isign = (-1) ** (n // 4)
-            jsign = (-1) ** (n % 4 // 2)
-            ksign = (-1) ** (n % 2)
+    for i, e in enumerate(list4):
+        for n in range(4):
+            isign = (-1) ** (n // 2)
+            jsign = -((-1) ** (n % 2))
             number = nirred * n + i + 1
             dsposcar = normalize_SPOSCAR(
-                move_three_atoms(
-                    sposcar,
-                    e[2],
-                    e[5],
-                    isign * H,
-                    e[1],
-                    e[4],
-                    jsign * H,
-                    e[0],
-                    e[3],
-                    ksign * H,
-                )
+                move_two_atoms(sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H)
             )
             atoms = get_atoms(dsposcar, calc)
-            forces.append(atoms.arrays["forces"][p, :])
+            forces.append(atoms.get_forces()[p, :])
             filename = namepattern.format(number)
             if if_write:
                 atoms.write(filename, format="extxyz")
     print("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
-    for i, e in enumerate(list6):
-        for n in range(8):
-            isign = (-1) ** (n // 4)
-            jsign = (-1) ** (n % 4 // 2)
-            ksign = (-1) ** (n % 2)
+    for i, e in enumerate(list4):
+        for n in range(4):
+            isign = (-1) ** (n // 2)
+            jsign = -((-1) ** (n % 2))
             number = nirred * n + i
-            phipart[:, i, :] -= isign * jsign * ksign * forces[number].T
-    phipart /= 8000.0 * H * H * H
+            phipart[:, i, :] -= isign * jsign * forces[number].T
+    phipart /= 400.0 * H * H
     print("Reconstructing the full array")
-    phifull = fourthorder_core.reconstruct_ifcs(phipart, wedge, list6, poscar, sposcar)
-    print("Writing the constants to FORCE_CONSTANTS_4TH")
+    phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar)
+    print("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs(
-        phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_4TH"
+        phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
     )

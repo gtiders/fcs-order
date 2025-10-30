@@ -9,13 +9,19 @@ import copy
 from itertools import groupby
 
 
-from . import thirdorder_core  # type: ignore
-from .thirdorder_common import (
+from . import fourthorder_core  # type: ignore
+from .fourthorder_common import (
     SYMPREC,
     gen_SPOSCAR,
     calc_dists,
     calc_frange,
 )
+
+
+@click.group()
+def fourthorder():
+    """Fourth-order force-constants for VASP."""
+    pass
 
 
 def read_POSCAR():
@@ -41,7 +47,6 @@ def read_POSCAR():
 
     positions = atoms.get_scaled_positions()
     nruter["positions"] = positions.T
-
     nruter["types"] = []
     nruter["types"] = np.repeat(
         range(len(nruter["numbers"])), nruter["numbers"]
@@ -56,7 +61,7 @@ def write_POSCAR(poscar, filename):
     atoms = Atoms(
         symbols=symbols,
         scaled_positions=poscar["positions"].T,
-        cell=poscar["lattvec"].T,
+        cell=poscar["lattvec"].T * 10,
     )
 
     atoms.write(filename, format="vasp", direct=True)
@@ -120,13 +125,15 @@ def _parse_cutoff(cutoff):
 
 
 def _prepare_calculation(na, nb, nc, cutoff):
+    """
+    Validate the input parameters and prepare the calculation.
+    """
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)
-
     print("Reading POSCAR")
     poscar = read_POSCAR()
     print("Analyzing the symmetries")
-    symops = thirdorder_core.SymmetryOperations(
+    symops = fourthorder_core.SymmetryOperations(
         poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC
     )
     print(f"- Symmetry group {symops.symbol} detected")
@@ -140,6 +147,6 @@ def _prepare_calculation(na, nb, nc, cutoff):
         print(f"- Automatic cutoff: {frange} nm")
     else:
         print(f"- User-defined cutoff: {frange} nm")
-    print("Looking for an irreducible set of third-order IFCs")
+    print("Looking for an irreducible set of fourth-order IFCs")
 
     return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh

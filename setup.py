@@ -20,16 +20,16 @@ ext = ".pyx" if USE_CYTHON else ".c"
 
 extensions = [
     Extension(
-        "thirdorder.thirdorder_core",
-        ["src/thirdorder/thirdorder_core" + ext],
-        include_dirs=[numpy.get_include(), "src/thirdorder"] + INCLUDE_DIRS,
+        "fcs_order.thirdorder.thirdorder_core",
+        ["src/fcs_order/thirdorder/thirdorder_core" + ext],
+        include_dirs=[numpy.get_include(), "src/fcs_order/thirdorder"] + INCLUDE_DIRS,
         library_dirs=LIBRARY_DIRS,
         libraries=["symspg"],
     ),
     Extension(
-        "fourthorder.Fourthorder_core",
-        ["src/fourthorder/Fourthorder_core" + ext],
-        include_dirs=[numpy.get_include(), "src/fourthorder"] + INCLUDE_DIRS,
+        "fcs_order.fourthorder.fourthorder_core",
+        ["src/fcs_order/fourthorder/fourthorder_core" + ext],
+        include_dirs=[numpy.get_include(), "src/fcs_order/fourthorder"] + INCLUDE_DIRS,
         library_dirs=LIBRARY_DIRS,
         libraries=["symspg"],
     ),
