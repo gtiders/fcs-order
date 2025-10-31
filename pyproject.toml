@@ -75,45 +75,6 @@ build-backend = "setuptools.build_meta"
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
-[tool.uv.workspace]
-members = [
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-]
-
 [tool.uv.sources]
 fcs-order = { workspace = true }
 
-[dependency-groups]
-dev = [
-    "fcs-order",
-]
