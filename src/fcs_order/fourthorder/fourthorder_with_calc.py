@@ -170,7 +170,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                     ksign * H,
                 )
             )
-            
+
             atoms = get_atoms(dsposcar, calculation)
             forces.append(atoms.get_forces()[p, :])
             filename = namepattern.format(number)

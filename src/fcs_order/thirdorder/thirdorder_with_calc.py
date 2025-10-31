@@ -166,7 +166,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             indexs.append(number)
             if if_write:
                 atoms.write(filename, format="extxyz")
-    
+
     # sorted indexs and forces
     sorted_indices = np.argsort(indexs)
     indexs = [indexs[i] for i in sorted_indices]

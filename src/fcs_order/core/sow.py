@@ -33,8 +33,8 @@ def sow3(na, nb, nc, cutoff):
         na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
         cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
     """
-    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation3(
-        na, nb, nc, cutoff
+    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+        _prepare_calculation3(na, nb, nc, cutoff)
     )
     wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"- {wedge.nlist} triplet equivalence classes found")
@@ -78,8 +78,8 @@ def sow4(na, nb, nc, cutoff):
         na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
         cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
     """
-    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation4(
-        na, nb, nc, cutoff
+    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+        _prepare_calculation4(na, nb, nc, cutoff)
     )
     wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"- {wedge.nlist} quartet equivalence classes found")

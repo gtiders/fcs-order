@@ -2,7 +2,16 @@
 # -*- coding: utf-8 -*-
 
 from .bin import thirdorder_core, fourthorder_core  # type: ignore
-from ..utils.vasp_order_common import SYMPREC,_validate_cutoff, _parse_cutoff, read_POSCAR, gen_SPOSCAR, calc_dists, calc_frange
+from ..utils.vasp_order_common import (
+    SYMPREC,
+    _validate_cutoff,
+    _parse_cutoff,
+    read_POSCAR,
+    gen_SPOSCAR,
+    calc_dists,
+    calc_frange,
+)
+
 
 def _prepare_calculation3(na, nb, nc, cutoff):
     _validate_cutoff(na, nb, nc)

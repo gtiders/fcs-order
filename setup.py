@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-import numpy
 import os
+import numpy
 import spglib
+
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+
 from Cython.Build import cythonize
 from Cython.Compiler import Options
 
@@ -20,16 +22,16 @@ LIBRARY_DIRS = [os.path.join(spglib_dir, "lib64")]
 
 extensions = [
     Extension(
-        "fcs_order.thirdorder.thirdorder_core",
-        ["src/fcs_order/thirdorder/thirdorder_core" + ".pyx"],
-        include_dirs=[numpy.get_include(), "src/fcs_order/thirdorder"] + INCLUDE_DIRS,
+        "fcs_order.core.bin.thirdorder_core",
+        ["src/fcs_order/core/bin/thirdorder_core" + ".pyx"],
+        include_dirs=[numpy.get_include(), "src/fcs_order/core/bin"] + INCLUDE_DIRS,
         library_dirs=LIBRARY_DIRS,
         libraries=["symspg"],
     ),
     Extension(
-        "fcs_order.fourthorder.fourthorder_core",
-        ["src/fcs_order/fourthorder/fourthorder_core" + ".pyx"],
-        include_dirs=[numpy.get_include(), "src/fcs_order/fourthorder"] + INCLUDE_DIRS,
+        "fcs_order.core.bin.fourthorder_core",
+        ["src/fcs_order/core/bin/fourthorder_core" + ".pyx"],
+        include_dirs=[numpy.get_include(), "src/fcs_order/core/bin"] + INCLUDE_DIRS,
         library_dirs=LIBRARY_DIRS,
         libraries=["symspg"],
     ),

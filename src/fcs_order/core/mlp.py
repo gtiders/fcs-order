@@ -176,8 +176,8 @@ def mlp4(na, nb, nc, cutoff, calc, potential, if_write):
         calc is None and potential is not None
     ):
         raise click.BadParameter("--calc and --potential must be provided together")
-    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = _prepare_calculation4(
-        na, nb, nc, cutoff
+    poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+        _prepare_calculation4(na, nb, nc, cutoff)
     )
     wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"- {wedge.nlist} quartet equivalence classes found")

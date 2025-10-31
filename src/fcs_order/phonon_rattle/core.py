@@ -2,6 +2,7 @@ import numpy as np
 from ase import Atoms
 import ase.units as aunits
 
+
 def generate_phonon_rattled_structures(
     atoms: Atoms,
     fc2: np.ndarray,
@@ -193,9 +194,7 @@ class _PhononRattler:
         argsort = np.argsort(np.abs(w2_s))
         w2_gamma = w2_s[argsort][:3]
         if np.any(np.abs(w2_gamma) > frequency_tol):
-            print(
-                f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}"
-            )
+            print(f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}")
 
         # warning if any imaginary modes
         if np.any(w2_s < -frequency_tol):
