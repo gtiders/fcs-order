@@ -90,7 +90,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             try:
                 from calorine.calculators import CPUNEP
 
-                calc = CPUNEP(potential)
+                calculation = CPUNEP(potential)
             except ImportError:
                 print("calorine not found, please install it first")
                 sys.exit(1)
@@ -100,7 +100,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             try:
                 from deepmd.calculator import DP
 
-                calc = DP(model=potential)
+                calculation = DP(model=potential)
             except ImportError:
                 print("deepmd not found, please install it first")
                 sys.exit(1)
@@ -121,7 +121,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                 )
                 fcp = ForceConstantPotential.read(potential)
                 fcs = fcp.get_force_constants(hi_atoms)
-                calc = ForceConstantCalculator(fcs)
+                calculation = ForceConstantCalculator(fcs)
 
             except ImportError:
                 print("hiphive not found, please install it first")
@@ -134,7 +134,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                     PolymlpASECalculator,
                 )
 
-                calc = PolymlpASECalculator(pot=potential)
+                calculation = PolymlpASECalculator(pot=potential)
             except ImportError:
                 print("pypolymlp not found, please install it first")
                 sys.exit(1)
@@ -144,13 +144,14 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
 
     print(f"- {nruns} force calculations are runing!")
     # Write sposcar positions and forces to 3RD.SPOSCAR.extxyz file
-    atoms = get_atoms(normalize_SPOSCAR(sposcar), calc)
+    atoms = get_atoms(normalize_SPOSCAR(sposcar), calculation)
     atoms.get_forces()
     atoms.write("3RD.SPOSCAR.xyz", format="extxyz")
     width = len(str(4 * (len(list4) + 1)))
     namepattern = f"3RD.POSCAR.{{:0{width}d}}.xyz"
     p = build_unpermutation(sposcar)
     forces = []
+    indexs = []
     for i, e in enumerate(list4):
         for n in range(4):
             isign = (-1) ** (n // 2)
@@ -159,11 +160,17 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
             dsposcar = normalize_SPOSCAR(
                 move_two_atoms(sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H)
             )
-            atoms = get_atoms(dsposcar, calc)
+            atoms = get_atoms(dsposcar, calculation)
             forces.append(atoms.get_forces()[p, :])
             filename = namepattern.format(number)
+            indexs.append(number)
             if if_write:
                 atoms.write(filename, format="extxyz")
+    
+    # sorted indexs and forces
+    sorted_indices = np.argsort(indexs)
+    indexs = [indexs[i] for i in sorted_indices]
+    forces = [forces[i] for i in sorted_indices]
     print("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
     for i, e in enumerate(list4):

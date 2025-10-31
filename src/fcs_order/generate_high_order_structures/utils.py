@@ -182,3 +182,104 @@ for ax, key in zip([ax1, ax2, ax3], units.keys()):
 ax1.set_ylabel("Distribution", fontsize=fs)
 plt.tight_layout()
 plt.savefig("structure_generation_distributions.svg")
+
+
+import click
+
+from ase.io import read,write
+from hiphive import ClusterSpace, StructureContainer, ForceConstantPotential
+from trainstation import Optimizer
+from hiphive.utilities import prepare_structures
+from hiphive.structure_generation import generate_phonon_rattled_structures
+
+
+@click.command()
+@click.argument("dft_structures", nargs=-1, type=click.Path(exists=True))
+@click.option(
+    "--prim",
+    default="POSCAR",
+    type=click.Path(exists=True),
+    help="Path to primitive POSCAR.",
+)
+@click.option(
+    "--supercell",
+    default="SPOSCAR",
+    type=click.Path(exists=True),
+    help="Path to supercell POSCAR.",
+)
+@click.option(
+    "--cluster-radius",
+    default="7.0:5.0:4.0",
+    help="Cluster radius in Angstrom.such as '7.0:5.0:4.0'",
+)
+@click.option(
+    "--fit_method",
+    default="least-squares",
+    help="Method to fit force constants. possible choice are 'ardr', 'bayesian-ridge', 'elasticnet', 'lasso', 'least-squares', 'omp', 'rfe', 'ridge', 'split-bregman'",
+)
+@click.option(
+    "--out",
+    default="output.fcp",
+    help="Path to output force constant potential.",
+)
+def train(dft_structures, prim, supercell, cluster_radius, fit_method, out):
+    cluster_radius = [float(x) for x in cluster_radius.split(":")]
+    prim = read(prim)
+    supercell = read(supercell)
+    dft_structures_ans = []
+    for dft_structure in dft_structures:
+        dft_structures_ans.extend(read(dft_structure, index=":"))
+    dft_structures_ans=dft_structures_ans[::50]
+    # initial model
+    cs = ClusterSpace(supercell, cluster_radius)
+    sc = StructureContainer(cs)
+
+    structures = prepare_structures(dft_structures_ans, supercell)
+    for structure in structures:
+        sc.add_structure(structure)
+    opt = Optimizer(sc.get_fit_data(), train_size=1.0, fit_method=fit_method)
+    opt.train()
+    fcp = ForceConstantPotential(cs, opt.parameters)
+    print(fcp)
+    fc = fcp.get_force_constants(supercell)
+    fc.write_to_phonopy(
+        "FORCE_CONSTANTS_" + "_".join([str(x) for x in cluster_radius]), format="text"
+    )
+    fcp.write(out)
+    return fcp
+
+@click.command()
+@click.argument("fcp_file", type=click.Path(exists=True))
+@click.option(
+    "--supercell",
+    "-s",
+    default="SPOSCAR",
+    type=click.Path(exists=True),
+    help="Path to supercell POSCAR.",
+)
+@click.option(
+    "--num-structures",
+    "-n",
+    default=100,
+    help="Number of phonon rattled structures to generate.",
+)
+@click.option(
+    "--tempatures",
+    "-t",
+    default="300:600:900",
+    help="Temperature in Kelvin. such as '300:600:900'",
+)
+def generate_phonon_rattle_structures(fcp_file, supercell, num_structures, tempatures):
+    supercell = read(supercell)
+    fcp = ForceConstantPotential.read(fcp_file)
+    fc2 = fcp.get_force_constants(supercell).get_fc_array(order=2, format='ase')
+    tempatures = [float(x) for x in tempatures.split(":")]
+    for T in tempatures:
+        rattled_structures = generate_phonon_rattled_structures(
+            supercell, fc2, num_structures, T
+        )
+        write('structures_phonon_rattle_T{}.extxyz'.format(T), rattled_structures)
+
+if __name__ == "__main__":
+
+    generate_phonon_rattle_structures()

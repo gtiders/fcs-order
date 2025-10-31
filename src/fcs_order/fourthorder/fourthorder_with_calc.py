@@ -6,6 +6,7 @@ from .fourthorder_vasp import (
     _prepare_calculation,
     normalize_SPOSCAR,
     build_unpermutation,
+    write_POSCAR,
 )
 from .fourthorder_common import H, move_three_atoms, write_ifcs
 from . import fourthorder_core  # type: ignore
@@ -17,6 +18,7 @@ def get_atoms(poscar, calc=None):
         symbols=symbols,
         scaled_positions=poscar["positions"].T,
         cell=poscar["lattvec"].T * 10,
+        pbc=True,
     )
     if calc is not None:
         atoms.calc = calc
@@ -147,6 +149,7 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
     namepattern = "4TH.POSCAR.{{0:0{0}d}}.xyz".format(width)
     p = build_unpermutation(sposcar)
     forces = []
+    indexs = []
     for i, e in enumerate(list6):
         for n in range(8):
             isign = (-1) ** (n // 4)
@@ -167,11 +170,17 @@ def get_fc(na, nb, nc, cutoff, calc, potential, if_write):
                     ksign * H,
                 )
             )
+            
             atoms = get_atoms(dsposcar, calculation)
             forces.append(atoms.get_forces()[p, :])
             filename = namepattern.format(number)
+            indexs.append(number)
             if if_write:
                 atoms.write(filename, format="extxyz")
+    # sorted indexs and forces
+    sorted_indices = np.argsort(indexs)
+    indexs = [indexs[i] for i in sorted_indices]
+    forces = [forces[i] for i in sorted_indices]
     print("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
     for i, e in enumerate(list6):
