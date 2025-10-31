@@ -3,17 +3,14 @@ Calculator initialization and management for effective harmonic calculations.
 """
 
 import sys
-from typing import TYPE_CHECKING
+import numpy as np
 
-if TYPE_CHECKING:
-    from ase import Atoms
-    from ase.calculators.calculator import Calculator
+from ase import Atoms
+from ase.calculators.calculator import Calculator
 
 
 def initialize_calculator(
-    calc_type: str, 
-    potential_file: str, 
-    atoms: "Atoms"
+    calc_type: str, potential_file: str, atoms: Atoms
 ) -> "Calculator":
     """
     Initialize ASE calculator based on calculator type and potential file.
@@ -38,13 +35,14 @@ def initialize_calculator(
         If required package is not installed or unknown calculator type
     """
     from .utils import check_hiphive_imports
-    
+
     calc_type = calc_type.lower()
 
     if calc_type == "nep":
         print(f"Using NEP calculator with potential: {potential_file}")
         try:
             from calorine.calculators import CPUNEP
+
             return CPUNEP(potential_file)
         except ImportError:
             print("calorine not found, please install it first")
@@ -54,6 +52,7 @@ def initialize_calculator(
         print(f"Using DP calculator with potential: {potential_file}")
         try:
             from deepmd.calculator import DP
+
             return DP(model=potential_file)
         except ImportError:
             print("deepmd not found, please install it first")
@@ -61,14 +60,9 @@ def initialize_calculator(
 
     elif calc_type == "hiphive":
         print(f"Using hiphive calculator with potential: {potential_file}")
-        (
-            ForceConstantPotential,
-            ClusterSpace,
-            StructureContainer,
-            ForceConstantCalculator,
-            Optimizer,
-            _,
-        ) = check_hiphive_imports()
+        from hiphive import ForceConstantPotential
+        from hiphive.calculators import ForceConstantCalculator
+
         try:
             fcp = ForceConstantPotential.read(potential_file)
             force_constants = fcp.get_force_constants(atoms)
@@ -81,6 +75,7 @@ def initialize_calculator(
         print(f"Using ploymp calculator with potential: {potential_file}")
         try:
             from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
+
             return PolymlpASECalculator(pot=potential_file)
         except ImportError:
             print("pypolymlp not found, please install it first")
@@ -88,3 +83,16 @@ def initialize_calculator(
     else:
         print(f"Unknown calculator type: {calc_type}")
         sys.exit(1)
+
+
+def get_atoms(poscar, calc: Calculator = None) -> Atoms:
+    symbols = np.repeat(poscar["elements"], poscar["numbers"]).tolist()
+    atoms = Atoms(
+        symbols=symbols,
+        scaled_positions=poscar["positions"].T,
+        cell=poscar["lattvec"].T * 10,
+        pbc=True,
+    )
+    if calc is not None:
+        atoms.calc = calc
+    return atoms
