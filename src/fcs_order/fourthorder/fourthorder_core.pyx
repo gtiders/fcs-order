@@ -1,3 +1,23 @@
+#  Fourthorder, help compute anharmonic IFCs from minimal sets of displacements
+#  Copyright (C) 2021 Zherui Han <zrhan@purdue.edu>
+#  Copyright (C) 2021 Xiaolong Yang <xiaolongyang1990@gmail.com>
+#  Copyright (C) 2021 Wu Li <wu.li.phys2011@gmail.com>
+#  Copyright (C) 2021 Tianli Feng <Tianli.Feng2011@gmail.com>
+#  Copyright (C) 2021 Xiulin Ruan <ruan@purdue.edu>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys
 
 # This file contains Cython wrappers allowing the relevant functions
@@ -218,7 +238,7 @@ cdef class SymmetryOperations:
       self.__refresh_c_arrays()
       if data is NULL:
           raise MemoryError()
-      self.symbol=data.international_symbol.decode("ASCII").strip()
+      self.symbol=unicode(data.international_symbol).strip()
       self.__shift=np.empty((3,),dtype=np.double)
       self.__transform=np.empty((3,3),dtype=np.double)
       self.nsyms=data.n_operations
@@ -364,7 +384,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
     cdef double[:] aphilist
     cdef double[:,:] vaa
     cdef double[:,:,:] vphipart
-    cdef np.ndarray vnruter 
+    cdef double[:,:,:,:,:,:,:,:] vnruter 
 
     nlist=wedge.nlist
     natoms=len(poscar["types"])

@@ -3,7 +3,6 @@ Force constants calculation and extraction for effective harmonic calculations.
 """
 
 import os
-import sys
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -11,7 +10,6 @@ if TYPE_CHECKING:
 
 
 def extract_force_constants(
-    calculator_type: str,
     temperatures: List[int],
     cutoff_distances: List[float],
     primitive_atoms: "Atoms",
@@ -24,8 +22,6 @@ def extract_force_constants(
 
     Parameters
     ----------
-    calculator_type : str
-        Type of calculator used for MD simulation
     temperatures : list[int]
         List of temperatures in Kelvin
     cutoff_distances : list[float]
@@ -41,13 +37,6 @@ def extract_force_constants(
     """
     if snapshots_directory is None:
         snapshots_directory = output_directory
-        
-    if calculator_type.lower() != "hiphive":
-        print(
-            f"Force constant extraction is currently only supported for hiphive calculator, "
-            f"not for {calculator_type}"
-        )
-        sys.exit(1)
 
     from .utils import check_hiphive_imports
     
@@ -88,7 +77,7 @@ def extract_force_constants(
             structure_container.add_structure(structure)
 
         # Optimize and create force constant potential
-        optimizer = Optimizer(structure_container.get_fit_data(), train_size=1.0)
+        optimizer = Optimizer(structure_container.get_fit_data(), train_size=1.0, fit_method='elasticnet')
         optimizer.train()
         print(optimizer)
         

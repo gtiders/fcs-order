@@ -3,7 +3,6 @@ Command-line interface commands for effective harmonic calculations.
 """
 
 import os
-import sys
 from typing import List
 import click
 import numpy as np
@@ -152,7 +151,6 @@ def extract_force_constants_from_md(
 
     # Extract force constants
     extract_force_constants(
-        calculator_type=calc,
         temperatures=temperature_list,
         cutoff_distances=[cutoff],
         primitive_atoms=primitive_atoms,
