@@ -1,6 +1,6 @@
 [project]
 name = "fcs-order"
-version = "3.0.2"
+version = "3.0.3"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
