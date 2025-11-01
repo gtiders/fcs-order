@@ -1,30 +1,4 @@
-#  Fourthorder, help compute anharmonic IFCs from minimal sets of displacements
-#  Copyright (C) 2021 Zherui Han <zrhan@purdue.edu>
-#  Copyright (C) 2021 Xiaolong Yang <xiaolongyang1990@gmail.com>
-#  Copyright (C) 2021 Wu Li <wu.li.phys2011@gmail.com>
-#  Copyright (C) 2021 Tianli Feng <Tianli.Feng2011@gmail.com>
-#  Copyright (C) 2021 Xiulin Ruan <ruan@purdue.edu>
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import sys
-
-# This file contains Cython wrappers allowing the relevant functions
-# in spglib need to be used from Python.
-# The algorithms for finding minimal sets of interatomic force constants
-# and for reconstructing the full set from such a minimal subset are
-# also implemented in this file in the interest of efficiency.
 
 from libc.stdlib cimport malloc,free
 from libc.math cimport floor,fabs

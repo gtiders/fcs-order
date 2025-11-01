@@ -1,17 +1,14 @@
 [project]
 name = "fcs-order"
-version = "1.1.1"
+version = "2.0"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "ase>=3.22.1",
-    "calorine>=3.2",
     "click>=8.1.8",
-    "hiphive>=1.5",
     "numpy>=1.21.6",
     "scipy>=1.7.3",
-    "sparse>=0.15.5",
     "spglib>=2.2.0",
 ]
 
@@ -39,30 +36,30 @@ all = [
     "pypolymlp>=0.15",
 ]
 
-# 构建和发布说明
-# ==============
+# Build and Release Instructions
+# ==============================
 # 
-# 1. 构建源码包：
+# 1. Build source package:
 #    uv build --sdist
 #
-# 2. 上传到 PyPI（需要 API Token）：
+# 2. Upload to PyPI (requires API Token):
 #    twine upload dist/fcs_order-X.Y.Z.tar.gz
 #
-# 3. 安装测试：
+# 3. Install for testing:
 #    pip install fcs-order
 #
-# 4. 安装可选依赖：
-#    pip install "fcs-order[deepmd]"      # DeepMD 支持
-#    pip install "fcs-order[hiphive]"     # hiphive 支持  
-#    pip install "fcs-order[calorine]"    # calorine 支持
-#    pip install "fcs-order[all]"         # 所有可选依赖
+# 4. Install optional dependencies:
+#    pip install "fcs-order[deepmd]"      # DeepMD support
+#    pip install "fcs-order[hiphive]"     # hiphive support  
+#    pip install "fcs-order[calorine]"    # calorine support
+#    pip install "fcs-order[all]"         # All optional dependencies
 #
-# 注意事项：
-# - 每次发布前更新 version 字段
-# - 只上传源码包（sdist），避免平台特定的 wheel
-# - 可选依赖中的 pypolymlp 需要系统 Eigen3 库，已移至单独分组
+# Notes:
+# - Update version field before each release
+# - Only upload source package (sdist), avoid platform-specific wheels
+# - pypolymlp in optional dependencies requires system Eigen3 library, moved to separate group
 #
-# 发布地址：https://pypi.org/project/fcs-order/
+# Release URL: https://pypi.org/project/fcs-order/
 
 [project.scripts]
 fcsorder = "fcs_order.__init__:cli"
@@ -74,7 +71,4 @@ build-backend = "setuptools.build_meta"
 [[tool.uv.index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
-
-[tool.uv.sources]
-fcs-order = { workspace = true }
 
