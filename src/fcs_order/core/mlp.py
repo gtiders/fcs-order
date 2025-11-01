@@ -49,7 +49,14 @@ from .bin import thirdorder_core, fourthorder_core  # type: ignore
     default=False,
     help="Whether to save intermediate files during the calculation process",
 )
-def mlp3(na, nb, nc, cutoff, calc, potential, if_write):
+@click.option(
+    "--is_sparse",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use sparse tensor method for memory efficiency",
+)
+def mlp3(na, nb, nc, cutoff, calc, potential, if_write, is_sparse):
     """
     Directly calculate 3-phonon force constants using machine learning potential functions based on thirdorder.
     Accuracy depends on potential function precision and supercell size; it is recommended to use a larger supercell.
@@ -60,6 +67,7 @@ def mlp3(na, nb, nc, cutoff, calc, potential, if_write):
         calc: calculator type, optional values are nep, dp, hiphive, ploymp
         potential: potential file path, corresponding to different file formats based on calc type
         if_write: whether to save intermediate files, default is not to save
+        is_sparse: use sparse tensor method for memory efficiency, default is False
     """
     # Validate that calc and potential must be provided together
     if (calc is not None and potential is None) or (
@@ -123,7 +131,9 @@ def mlp3(na, nb, nc, cutoff, calc, potential, if_write):
             phipart[:, i, :] -= isign * jsign * forces[number].T
     phipart /= 400.0 * H * H
     print("Reconstructing the full array")
-    phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar)
+    phifull = thirdorder_core.reconstruct_ifcs(
+        phipart, wedge, list4, poscar, sposcar, is_sparse
+    )
     print("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs3(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
@@ -159,7 +169,14 @@ def mlp3(na, nb, nc, cutoff, calc, potential, if_write):
     default=False,
     help="Whether to save intermediate files during the calculation process",
 )
-def mlp4(na, nb, nc, cutoff, calc, potential, if_write):
+@click.option(
+    "--is_sparse",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use sparse tensor method for memory efficiency",
+)
+def mlp4(na, nb, nc, cutoff, calc, potential, if_write, is_sparse):
     """
     Directly calculate 4-phonon force constants using machine learning potential functions based on fourthorder.
     Accuracy depends on potential function precision and supercell size; it is recommended to use a larger supercell.
@@ -170,6 +187,7 @@ def mlp4(na, nb, nc, cutoff, calc, potential, if_write):
         calc: calculator type, optional values are nep, dp, hiphive, ploymp
         potential: potential file path, corresponding to different file formats based on calc type
         if_write: whether to save intermediate files, default is not to save
+        is_sparse: use sparse tensor method for memory efficiency, default is False
     """
     # Validate that calc and potential must be provided together
     if (calc is not None and potential is None) or (
@@ -244,7 +262,9 @@ def mlp4(na, nb, nc, cutoff, calc, potential, if_write):
             phipart[:, i, :] -= isign * jsign * ksign * forces[number].T
     phipart /= 8000.0 * H * H * H
     print("Reconstructing the full array")
-    phifull = fourthorder_core.reconstruct_ifcs(phipart, wedge, list6, poscar, sposcar)
+    phifull = fourthorder_core.reconstruct_ifcs(
+        phipart, wedge, list6, poscar, sposcar, is_sparse
+    )
     print("Writing the constants to FORCE_CONSTANTS_4TH")
     write_ifcs4(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_4TH"

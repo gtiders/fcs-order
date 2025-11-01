@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "ase>=3.22.1",
+    "calorine>=3.2",
     "click>=8.1.8",
+    "jax>=0.4.30",
     "numpy>=1.21.6",
     "scipy>=1.7.3",
     "spglib>=2.2.0",
@@ -64,11 +66,32 @@ all = [
 [project.scripts]
 fcsorder = "fcs_order.__init__:cli"
 
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true
+
+[tool.uv.workspace]
+members = [
+    ".",
+    ".",
+    ".",
+    ".",
+    ".",
+    ".",
+    ".",
+    ".",
+    ".",
+]
+
+[tool.uv.sources]
+fcs-order = { workspace = true }
+
 [build-system]
 requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]
 build-backend = "setuptools.build_meta"
 
-[[tool.uv.index]]
-url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
-default = true
+[dependency-groups]
+dev = [
+    "fcs-order",
+]
 

@@ -23,6 +23,7 @@ cimport cython
 cimport numpy as np
 np.import_array()
 from . cimport cthirdorder_core
+from ..sparse.sparse_tensor6d import SparseTensor6D
 
 # NOTE: all indices used in this module are zero-based.
 
@@ -331,7 +332,7 @@ cdef class SymmetryOperations:
 
 
 @cython.boundscheck(False)
-def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
+def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     """
     Recover the full anharmonic IFC set from the irreducible set of
     force constants and the information contained in a wedge object.
@@ -346,12 +347,15 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
     cdef double[:] aphilist
     cdef double[:,:] vaa
     cdef double[:,:,:] vphipart
-    cdef double[:,:,:,:,:,:] vnruter
-
+    
     nlist=wedge.nlist
     natoms=len(poscar["types"])
     ntot=len(sposcar["types"])
-    vnruter=np.zeros((3,3,3,natoms,ntot,ntot),dtype=np.double)
+    if is_sparse:
+        print("using sparse method!")
+        vnruter = SparseTensor6D((3, 3, 3, natoms, ntot, ntot))
+    else:
+        vnruter = np.zeros((3, 3, 3, natoms, ntot, ntot))
     naccumindependent=np.insert(np.cumsum(
         wedge.nindependentbasis[:nlist],dtype=np.intc),0,
         np.zeros(1,dtype=np.intc))
