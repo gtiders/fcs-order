@@ -1,6 +1,6 @@
 [project]
 name = "fcs-order"
-version = "2.0"
+version = "2.0.1"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
 requires-python = ">=3.9"
