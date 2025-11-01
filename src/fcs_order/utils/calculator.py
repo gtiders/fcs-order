@@ -11,7 +11,7 @@ from ase.calculators.calculator import Calculator
 
 def initialize_calculator(
     calc_type: str, potential_file: str, atoms: Atoms
-) -> "Calculator":
+) -> Calculator:
     """
     Initialize ASE calculator based on calculator type and potential file.
 
