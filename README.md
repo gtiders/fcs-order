@@ -163,14 +163,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 If you use FCS-Order in your research, please cite:
 
-```bibtex
-@software{fcsorder,
-  title={FCS-Order: Force Constants Calculator},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/your-repo/fcs-order}
-}
-```
 
 ## Support
 
