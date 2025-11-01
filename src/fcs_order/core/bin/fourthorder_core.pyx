@@ -16,7 +16,7 @@ cimport cython
 cimport numpy as np
 np.import_array()
 from . cimport cfourthorder_core
-
+from ..sparse.sparse_tensor8d import SparseTensor8D
 
 
 # NOTE: all indices used in this module are zero-based.
@@ -343,7 +343,7 @@ cdef class SymmetryOperations:
 
 
 @cython.boundscheck(False)
-def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
+def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     """
     Recover the full fourth-order IFC set from the irreducible set of
     force constants and the information contained in a wedge object.
@@ -358,13 +358,15 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
     cdef double[:] aphilist
     cdef double[:,:] vaa
     cdef double[:,:,:] vphipart
-    cdef double[:,:,:,:,:,:,:,:] vnruter 
 
     nlist=wedge.nlist
     natoms=len(poscar["types"])
     ntot=len(sposcar["types"])
-    vnruter=np.zeros((3,3,3,3,natoms,ntot,ntot,ntot),dtype=np.double)
-  #  vnruter=sp.sparse.coo_matrix((3,3,3,3,natoms,ntot,ntot,ntot),dtype=np.double)
+    if is_sparse:
+        print("using sparse method!")
+        vnruter = SparseTensor8D((3,3,3,3,natoms,ntot,ntot,ntot))
+    else:
+        vnruter=np.zeros((3,3,3,3,natoms,ntot,ntot,ntot),dtype=np.double)
     naccumindependent=np.insert(np.cumsum(
         wedge.nindependentbasis[:nlist],dtype=np.intc),0,
         np.zeros(1,dtype=np.intc))

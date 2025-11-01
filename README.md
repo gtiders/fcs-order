@@ -86,6 +86,22 @@ Supported ML Potentials:
 - **HiPhive**: HiPhive potential (file: `potential.fcp`)
 - **Polymlp**: Polynomial ML potential (file: `polymlp.yaml`)
 
+#### Sparse Tensor Optimization (Memory Efficient)
+
+For large systems, the `reap3` and `mlp3` commands support sparse tensor methods to significantly reduce memory usage:
+
+```bash
+fcsorder reap3 <na> <nb> <nc> --cutoff <cutoff> --is_sparse vasprun.0001.xml vasprun.0002.xml ...
+fcsorder mlp3 <na> <nb> <nc> --cutoff <cutoff> --calc <calculator> --potential <potential_file> --is_sparse
+```
+
+The `--is_sparse` flag enables sparse tensor storage, which is particularly beneficial for:
+- Large supercells (e.g., 4×4×4 or larger)
+- Systems with many atoms
+- Limited memory environments
+
+**Note**: Sparse tensor optimization is currently only available for `reap3` and `mlp3` commands (third-order force constants). The `reap4` and `mlp4` commands use dense storage by default.
+
 ### Phonon Rattling Command
 
 #### 5. Generate Thermally Disordered Structures (`phonon-rattle`)
@@ -129,6 +145,20 @@ fcsorder reap3 2 2 2 --cutoff -8 vasprun.*.xml
 
 ```bash
 fcsorder mlp3 4 4 4 --cutoff 0.8 --calc nep --potential nep.txt
+```
+
+### Memory-Efficient Calculation with Sparse Tensors
+
+For large systems, use sparse tensor storage to reduce memory usage:
+
+```bash
+# Third-order with sparse tensors (recommended for large systems)
+fcsorder reap3 4 4 4 --cutoff -8 --is_sparse vasprun.*.xml
+fcsorder mlp3 4 4 4 --cutoff 0.8 --calc nep --potential nep.txt --is_sparse
+
+# Fourth-order (dense storage only)
+fcsorder reap4 3 3 3 --cutoff -8 vasprun.*.xml
+fcsorder mlp4 3 3 3 --cutoff 0.8 --calc nep --potential nep.txt
 ```
 
 ### Phonon Rattling at High Temperature

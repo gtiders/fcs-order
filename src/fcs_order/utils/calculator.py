@@ -34,7 +34,7 @@ def initialize_calculator(
     SystemExit
         If required package is not installed or unknown calculator type
     """
-    
+
     calc_type = calc_type.lower()
 
     if calc_type == "nep":

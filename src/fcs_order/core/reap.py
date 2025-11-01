@@ -25,14 +25,22 @@ from .tools import _prepare_calculation3, _prepare_calculation4
     required=True,
     help="Cutoff value (negative for nearest neighbors such as -8, positive for distance in nm such as 0.5)",
 )
+@click.option(
+    "--is_sparse",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use sparse tensor method for memory efficiency",
+)
 @click.argument("vaspruns", type=click.Path(exists=True), nargs=-1, required=True)
-def reap3(na, nb, nc, cutoff, vaspruns):
+def reap3(na, nb, nc, cutoff, vaspruns, is_sparse):
     """
     Extract 3-phonon force constants from VASP calculation results.
 
     Parameters:
         na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
         cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+        is_sparse: use sparse tensor method for memory efficiency, default is False
         vaspruns: paths to vasprun.xml files from VASP calculations, in order,such as vasprun.0001.xml,vasprun.0002.xml,...
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
@@ -71,7 +79,9 @@ def reap3(na, nb, nc, cutoff, vaspruns):
             phipart[:, i, :] -= isign * jsign * forces[number].T
     phipart /= 400.0 * H * H
     print("Reconstructing the full array")
-    phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar)
+    phifull = thirdorder_core.reconstruct_ifcs(
+        phipart, wedge, list4, poscar, sposcar, is_sparse
+    )
     print("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs3(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
@@ -88,14 +98,22 @@ def reap3(na, nb, nc, cutoff, vaspruns):
     required=True,
     help="Cutoff value (negative for nearest neighbors such as -8, positive for distance in nm such as 0.5)",
 )
+@click.option(
+    "--is_sparse",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use sparse tensor method for memory efficiency",
+)
 @click.argument("vaspruns", type=click.Path(exists=True), nargs=-1, required=True)
-def reap4(na, nb, nc, cutoff, vaspruns):
+def reap4(na, nb, nc, cutoff, vaspruns, is_sparse):
     """
     Extract 4-phonon force constants from VASP calculation results.
 
     Parameters:
         na, nb, nc: supercell size, corresponding to expansion times in a, b, c directions
         cutoff: cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
+        is_sparse: use sparse tensor method for memory efficiency, default is False
         vaspruns: paths to vasprun.xml files from VASP calculations, in order,such as vasprun.0001.xml,vasprun.0002.xml,...
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
@@ -132,7 +150,9 @@ def reap4(na, nb, nc, cutoff, vaspruns):
             phipart[:, i, :] -= isign * jsign * ksign * forces[number].T
     phipart /= 8000.0 * H * H * H
     print("Reconstructing the full array")
-    phifull = fourthorder_core.reconstruct_ifcs(phipart, wedge, list6, poscar, sposcar)
+    phifull = fourthorder_core.reconstruct_ifcs(
+        phipart, wedge, list6, poscar, sposcar, is_sparse
+    )
     print("Writing the constants to FORCE_CONSTANTS_4TH")
     write_ifcs4(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_4TH"
