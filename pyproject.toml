@@ -1,6 +1,6 @@
 [project]
 name = "fcs-order"
-version = "3.0.1"
+version = "3.0.2"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -69,28 +69,8 @@ fcsorder = "fcs_order.__init__:cli"
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
-[tool.uv.workspace]
-members = [
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-    ".",
-]
-
-[tool.uv.sources]
-fcs-order = { workspace = true }
-
 [build-system]
 requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]
 build-backend = "setuptools.build_meta"
 
-[dependency-groups]
-dev = [
-    "fcs-order",
-]
 
