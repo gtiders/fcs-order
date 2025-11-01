@@ -34,8 +34,7 @@ def initialize_calculator(
     SystemExit
         If required package is not installed or unknown calculator type
     """
-    from .utils import check_hiphive_imports
-
+    
     calc_type = calc_type.lower()
 
     if calc_type == "nep":
