@@ -1,31 +1,20 @@
 import sys
 
-# This file contains Cython wrappers allowing the relevant functions
-# in spglib need to be used from Python.
-# The algorithms for finding minimal sets of interatomic force constants
-# and for reconstructing the full set from such a minimal subset are
-# also implemented in this file in the interest of efficiency.
-
 from libc.stdlib cimport malloc,free
-from libc.math cimport floor,fabs
+from libc.math cimport fabs
 from cpython.version cimport PY_MAJOR_VERSION
 
-import sys
-import copy
 
 import numpy as np
 import scipy as sp
-import scipy.linalg
-import scipy.sparse
-import scipy.sparse.linalg
+
 
 cimport cython
 cimport numpy as np
 np.import_array()
 from . cimport cthirdorder_core
 from ..sparse.sparse_tensor6d import SparseTensor6D
-
-# NOTE: all indices used in this module are zero-based.
+from . import thirdorder_spg
 
 # Maximum matrix size (rows*cols) for the dense method.
 DEF MAXDENSE=33554432
@@ -134,7 +123,7 @@ cdef class SymmetryOperations:
           return np.asarray(self.__lattvec)
   property types:
       def __get__(self):
-          return np.asarray(self.__lattvec)
+          return np.asarray(self.__types)
   property positions:
       def __get__(self):
           return np.asarray(self.__positions)
@@ -190,15 +179,28 @@ cdef class SymmetryOperations:
       cdef int i,j,k
       cdef double[:] tmp1d
       cdef double[:,:] tmp2d
-      cdef cthirdorder_core.SpglibDataset *data
-      data=cthirdorder_core.spg_get_dataset(self.c_lattvec,
-                                            self.c_positions,
-                                            self.c_types,
-                                            self.natoms,
-                                            self.symprec)
+      
+      # 将C数组转换为numpy数组
+      cdef np.ndarray lattvec_np = np.empty((3, 3), dtype=np.double)
+      cdef np.ndarray positions_np = np.empty((self.natoms, 3), dtype=np.double)
+      cdef np.ndarray types_np = np.empty(self.natoms, dtype=np.intc)
+      
+      # 复制数据到numpy数组
+      for i in range(3):
+          for j in range(3):
+              lattvec_np[i, j] = self.c_lattvec[i][j]
+      
+      for i in range(self.natoms):
+          types_np[i] = self.c_types[i]
+          for j in range(3):
+              positions_np[i, j] = self.c_positions[i][j]
+      
+      # 调用Python版本的spglib
+      data = thirdorder_spg.spg_get_dataset(lattvec_np, positions_np, types_np, self.natoms, self.symprec)
+      
       # The C arrays can get corrupted by this function call.
       self.__refresh_c_arrays()
-      if data is NULL:
+      if data is None:
           raise MemoryError()
       if PY_MAJOR_VERSION < 3:
         self.symbol=data.international_symbol.encode("ASCII").strip()
@@ -229,7 +231,7 @@ cdef class SymmetryOperations:
           self.__crotations[i,:,:]=tmp2d
           tmp1d=np.dot(self.__lattvec,self.__translations[i,:])
           self.__ctranslations[i,:]=tmp1d
-      cthirdorder_core.spg_free_dataset(data)
+      thirdorder_spg.spg_free_dataset(data)
 
   def __cinit__(self,lattvec,types,positions,symprec=1e-5):
       self.__lattvec=np.array(lattvec,dtype=np.double)
@@ -499,7 +501,6 @@ cdef class Wedge:
         self.nequis=nequis
         self.shifts=shifts
         self.frange=frange
-
         self.allocsize=0
         self.allallocsize=0
         self._expandlist()

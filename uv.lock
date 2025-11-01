@@ -491,6 +491,11 @@ mlp = [
     { name = "pypolymlp" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fcs-order" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.22.1" },
@@ -509,6 +514,9 @@ requires-dist = [
     { name = "spglib", specifier = ">=2.2.0" },
 ]
 provides-extras = ["deepmd", "hiphive", "mlp", "calorine", "all"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fcs-order", editable = "." }]
 
 [[package]]
 name = "fonttools"
