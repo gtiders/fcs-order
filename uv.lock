@@ -454,7 +454,7 @@ wheels = [
 
 [[package]]
 name = "fcs-order"
-version = "3.0.3"
+version = "3.0.5"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
