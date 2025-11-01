@@ -117,7 +117,7 @@ def phononrattle(
             else:
                 selected_structures = valid_structures
 
-            write(output_filename, selected_structures, format="xyz")
+            write(output_filename, selected_structures, format="extxyz")
             plot_distributions(selected_structures, ref_pos, T=t)
             print(f"  Saved {len(selected_structures)} structures to {output_filename}")
 
