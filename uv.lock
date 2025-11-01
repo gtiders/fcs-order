@@ -454,11 +454,10 @@ wheels = [
 
 [[package]]
 name = "fcs-order"
-version = "2.0.1"
+version = "3.0"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
-    { name = "calorine" },
     { name = "click", version = "8.1.8", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
     { name = "click", version = "8.3.0", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "jax", version = "0.4.30", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
@@ -501,7 +500,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.22.1" },
-    { name = "calorine", specifier = ">=3.2" },
     { name = "calorine", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "calorine", marker = "extra == 'calorine'", specifier = ">=1.0" },
     { name = "click", specifier = ">=8.1.8" },
