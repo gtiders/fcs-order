@@ -1,31 +1,16 @@
 import sys
 
-# This file contains Cython wrappers allowing the relevant functions
-# in spglib need to be used from Python.
-# The algorithms for finding minimal sets of interatomic force constants
-# and for reconstructing the full set from such a minimal subset are
-# also implemented in this file in the interest of efficiency.
-
 from libc.stdlib cimport malloc,free
-from libc.math cimport floor,fabs
-from cpython.version cimport PY_MAJOR_VERSION
-
-import sys
-import copy
+from libc.math cimport fabs
 
 import numpy as np
 import scipy as sp
-import scipy.linalg
-import scipy.sparse
-import scipy.sparse.linalg
 
 cimport cython
 cimport numpy as np
 np.import_array()
-from . cimport cthirdorder_core
+from . cimport spglibdataset
 from ..sparse.sparse_tensor6d import SparseTensor6D
-
-# NOTE: all indices used in this module are zero-based.
 
 # Maximum matrix size (rows*cols) for the dense method.
 DEF MAXDENSE=33554432
@@ -134,7 +119,7 @@ cdef class SymmetryOperations:
           return np.asarray(self.__lattvec)
   property types:
       def __get__(self):
-          return np.asarray(self.__lattvec)
+          return np.asarray(self.__types)
   property positions:
       def __get__(self):
           return np.asarray(self.__positions)
@@ -190,8 +175,8 @@ cdef class SymmetryOperations:
       cdef int i,j,k
       cdef double[:] tmp1d
       cdef double[:,:] tmp2d
-      cdef cthirdorder_core.SpglibDataset *data
-      data=cthirdorder_core.spg_get_dataset(self.c_lattvec,
+      cdef spglibdataset.SpglibDataset *data
+      data=spglibdataset.spg_get_dataset(self.c_lattvec,
                                             self.c_positions,
                                             self.c_types,
                                             self.natoms,
@@ -200,10 +185,8 @@ cdef class SymmetryOperations:
       self.__refresh_c_arrays()
       if data is NULL:
           raise MemoryError()
-      if PY_MAJOR_VERSION < 3:
-        self.symbol=data.international_symbol.encode("ASCII").strip()
-      else:
-        self.symbol=unicode(data.international_symbol).strip()
+
+      self.symbol=unicode(data.international_symbol).strip()
       self.__shift=np.empty((3,),dtype=np.double)
       self.__transform=np.empty((3,3),dtype=np.double)
       self.nsyms=data.n_operations
@@ -229,7 +212,7 @@ cdef class SymmetryOperations:
           self.__crotations[i,:,:]=tmp2d
           tmp1d=np.dot(self.__lattvec,self.__translations[i,:])
           self.__ctranslations[i,:]=tmp1d
-      cthirdorder_core.spg_free_dataset(data)
+      spglibdataset.spg_free_dataset(data)
 
   def __cinit__(self,lattvec,types,positions,symprec=1e-5):
       self.__lattvec=np.array(lattvec,dtype=np.double)

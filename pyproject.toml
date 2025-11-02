@@ -8,9 +8,11 @@ requires-python = ">=3.9"
 dependencies = [
     "ase>=3.22.1",
     "click>=8.1.8",
+    "cython>=3.1.6",
     "matplotlib>=3.9.4",
     "numpy>=1.21.6",
     "scipy>=1.7.3",
+    "setuptools>=80.9.0",
     "spglib>=2.2.0",
 ]
 
@@ -38,40 +40,10 @@ all = [
     "pypolymlp>=0.15",
 ]
 
-# Build and Release Instructions
-# ==============================
-# 
-# 1. Build source package:
-#    uv build --sdist
-#
-# 2. Upload to PyPI (requires API Token):
-#    twine upload dist/fcs_order-X.Y.Z.tar.gz
-#
-# 3. Install for testing:
-#    pip install fcs-order
-#
-# 4. Install optional dependencies:
-#    pip install "fcs-order[deepmd]"      # DeepMD support
-#    pip install "fcs-order[hiphive]"     # hiphive support  
-#    pip install "fcs-order[calorine]"    # calorine support
-#    pip install "fcs-order[all]"         # All optional dependencies
-#
-# Notes:
-# - Update version field before each release
-# - Only upload source package (sdist), avoid platform-specific wheels
-# - pypolymlp in optional dependencies requires system Eigen3 library, moved to separate group
-#
-# Release URL: https://pypi.org/project/fcs-order/
-
-[project.scripts]
-fcsorder = "fcs_order.__init__:cli"
-
-[[tool.uv.index]]
-url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
-default = true
 
 [build-system]
 requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]
 build-backend = "setuptools.build_meta"
+
 
 
