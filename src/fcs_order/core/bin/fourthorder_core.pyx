@@ -1,25 +1,16 @@
 import sys
 
 from libc.stdlib cimport malloc,free
-from libc.math cimport floor,fabs
-
-import sys
-import copy
+from libc.math cimport fabs
 
 import numpy as np
 import scipy as sp
-import scipy.linalg
-import scipy.sparse
-import scipy.sparse.linalg
 
 cimport cython
 cimport numpy as np
 np.import_array()
-from . cimport cfourthorder_core
+from . cimport spglibdataset
 from ..sparse.sparse_tensor8d import SparseTensor8D
-
-
-# NOTE: all indices used in this module are zero-based.
 
 # Maximum matrix size (rows*cols) for the dense method.
 DEF MAXDENSE=33554432
@@ -146,7 +137,7 @@ cdef class SymmetryOperations:
           return np.asarray(self.__lattvec)
   property types:
       def __get__(self):
-          return np.asarray(self.__lattvec)
+          return np.asarray(self.__types)
   property positions:
       def __get__(self):
           return np.asarray(self.__positions)
@@ -202,8 +193,8 @@ cdef class SymmetryOperations:
       cdef int i,j,k,l
       cdef double[:] tmp1d
       cdef double[:,:] tmp2d
-      cdef cfourthorder_core.SpglibDataset *data
-      data=cfourthorder_core.spg_get_dataset(self.c_lattvec,
+      cdef spglibdataset.SpglibDataset *data
+      data=spglibdataset.spg_get_dataset(self.c_lattvec,
                                             self.c_positions,
                                             self.c_types,
                                             self.natoms,
@@ -212,6 +203,7 @@ cdef class SymmetryOperations:
       self.__refresh_c_arrays()
       if data is NULL:
           raise MemoryError()
+
       self.symbol=unicode(data.international_symbol).strip()
       self.__shift=np.empty((3,),dtype=np.double)
       self.__transform=np.empty((3,3),dtype=np.double)
@@ -228,7 +220,6 @@ cdef class SymmetryOperations:
           for j in range(3):
               self.__translations[i,j]=data.translations[i][j]
               for k in range(3):
-                 # for l in range(3):
                   self.__rotations[i,j,k]=data.rotations[i][j][k]
       self.__crotations=np.empty_like(self.__rotations)
       self.__ctranslations=np.empty_like(self.__translations)
@@ -239,7 +230,7 @@ cdef class SymmetryOperations:
           self.__crotations[i,:,:]=tmp2d
           tmp1d=np.dot(self.__lattvec,self.__translations[i,:])
           self.__ctranslations[i,:]=tmp1d
-      cfourthorder_core.spg_free_dataset(data)
+      spglibdataset.spg_free_dataset(data)
 
   def __cinit__(self,lattvec,types,positions,symprec=1e-5):
       self.__lattvec=np.array(lattvec,dtype=np.double)
