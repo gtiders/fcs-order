@@ -181,22 +181,6 @@ cdef class SymmetryOperations:
                                             self.c_types,
                                             self.natoms,
                                             self.symprec)
-      # 打印SpglibDataset结构体的每个成员
-      if data is not NULL:
-          print("SpglibDataset information:")
-          print(f"  spacegroup_number: {data.spacegroup_number}")
-          print(f"  hall_number: {data.hall_number}")
-          print(f"  international_symbol: {data.international_symbol}")
-          print(f"  hall_symbol: {data.hall_symbol}")
-          print(f"  n_operations: {data.n_operations}")
-          print(f"  n_atoms: {data.n_atoms}")
-          print("  transformation_matrix:")
-          for i in range(3):
-              print(f"    {data.transformation_matrix[i][0]:.6f} {data.transformation_matrix[i][1]:.6f} {data.transformation_matrix[i][2]:.6f}")
-          print(f"  origin_shift: {data.origin_shift[0]:.6f} {data.origin_shift[1]:.6f} {data.origin_shift[2]:.6f}")
-      else:
-          print("SpglibDataset is NULL")
-      
       # The C arrays can get corrupted by this function call.
       self.__refresh_c_arrays()
       if data is NULL:
