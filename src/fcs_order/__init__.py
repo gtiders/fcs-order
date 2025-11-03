@@ -10,6 +10,7 @@ from .core.reap import reap3, reap4
 from .core.mlp import mlp3, mlp4
 
 from .tools.phonon_rattle.main import phononrattle
+from .tools.write2fcsets import write2fcsets
 
 spglib_dir = os.path.dirname(spglib.__file__)
 
@@ -29,3 +30,4 @@ cli.add_command(reap4, name="reap4")
 cli.add_command(mlp3, name="mlp3")
 cli.add_command(mlp4, name="mlp4")
 cli.add_command(phononrattle, name="phonon-rattle")
+cli.add_command(write2fcsets, name="write2fcsets")
