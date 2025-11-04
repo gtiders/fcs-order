@@ -536,6 +536,7 @@ dependencies = [
     { name = "numpy", version = "1.24.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "phonopy" },
     { name = "scipy", version = "1.13.1", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
     { name = "scipy", version = "1.16.2", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
@@ -582,6 +583,7 @@ requires-dist = [
     { name = "hiphive", marker = "extra == 'hiphive'", specifier = ">=0.6" },
     { name = "matplotlib", specifier = ">=3.9.4" },
     { name = "numpy", specifier = ">=1.21.6" },
+    { name = "phonopy", specifier = ">=2.43.6" },
     { name = "pypolymlp", marker = "extra == 'all'", specifier = ">=0.15" },
     { name = "pypolymlp", marker = "extra == 'mlp'", specifier = ">=0.15" },
     { name = "scipy", specifier = ">=1.7.3" },
@@ -1773,6 +1775,46 @@ wheels = [
 ]
 
 [[package]]
+name = "phonopy"
+version = "2.43.6"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
+dependencies = [
+    { name = "h5py", version = "3.14.0", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "h5py", version = "3.15.1", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "matplotlib", version = "3.9.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "matplotlib", version = "3.10.7", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "numpy", version = "1.24.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyyaml" },
+    { name = "spglib" },
+    { name = "symfc" },
+]
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/eb/39/67315de5320b598fd55bea262f3b9907598d3b1a202c38d07fabca77530f/phonopy-2.43.6.tar.gz", hash = "sha256:3c8f3cc2366e72d88ba806c709875974f88fe938cac2a6b3a4f02353443111b4", size = 4757375, upload-time = "2025-10-29T10:53:50.357Z" }
+wheels = [
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/dd/5f/8142c183655ba5a09ec722b2f31690d55a610898722e2aa9e1c750359d94/phonopy-2.43.6-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:0a651907d042bca7251697343db8030b77c3802ddc0c3c8f30d60caba4851d45", size = 509749, upload-time = "2025-10-29T11:05:33.513Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/04/77/2026d4e23a974a1f4009e98cffc5a8d0fe4592962709f865c595769e2ac6/phonopy-2.43.6-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7c48f1da48e43adbffed724de5fff7f759ec854d5e6511c9018a275999a1f7d8", size = 600512, upload-time = "2025-10-29T11:05:36.216Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/0a/53/ff4f80995f87fcb17ae4ee22b31c00e0b807811d895fa8b17b3a92f0c5a6/phonopy-2.43.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:55098d2c738bd9373192a3defb4525b35b96bca288f0529e74bd9f47dc9c435d", size = 606250, upload-time = "2025-10-29T11:05:37.807Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/3f/6d/4a22efe12e0f4a324d41b12d8346ca1a7544f61935525e008505fddbb0b9/phonopy-2.43.6-cp310-cp310-win32.whl", hash = "sha256:4cb5628390b986876d802378ef58589cfdbf1d87c0f96e989c33bfc4cfd62b46", size = 506937, upload-time = "2025-10-29T11:05:39.497Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/10/63/744ae29878de71f933145d3eb79fdeab12a0e37b3949e0e7beb103842606/phonopy-2.43.6-cp310-cp310-win_amd64.whl", hash = "sha256:24bc9b498b5e42d7e2f70b7519bf7c02bd50df16f6e357410ec3af17c3ed675d", size = 520582, upload-time = "2025-10-29T11:05:41.337Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/f5/30/191fc9b29696ea3b3c5e430537684af366232bcccf286e3725b953b0d941/phonopy-2.43.6-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:1db22dc5f11d3bb6b4fad7cb5133dd6fe97e6aa70f6601a9be26868da146e7bd", size = 509586, upload-time = "2025-10-29T11:05:43.22Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/08/f9/275fdd41d819058cf1dedc626b3e3cc65c16a4e49a0862b5c0f7b1b91c41/phonopy-2.43.6-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4f41ef171fdf55e9aa8ead75957c78df39bb943960cc16240ccb3599981cd3d1", size = 600356, upload-time = "2025-10-29T11:05:44.401Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/6a/31/ec96448a390be38d199d62981dcae4f976929ca142bdd683d422ff804e70/phonopy-2.43.6-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e63c9a7582b5680008329bbae68092aa0bf5ada840fa666914c889d667ff9782", size = 606119, upload-time = "2025-10-29T11:05:45.602Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/c5/26/84c4263cafbdc56b776aaa6a21b7e17d5f20dab5cc4946951057d0afa79e/phonopy-2.43.6-cp311-cp311-win32.whl", hash = "sha256:c6ab2bc94000f18a3410c604bdd726f9f1f538fb65fc20cb716c3cbd656ddb58", size = 506855, upload-time = "2025-10-29T11:05:47.284Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/c9/5c/94eaa0a19d03a2a79ab64eafc86b69772aa501eb41cac5a98033192082d2/phonopy-2.43.6-cp311-cp311-win_amd64.whl", hash = "sha256:cdfe28db342b0e60cfbb1e313db9727ceeb7b302fd98608b997280379bebf6b8", size = 520448, upload-time = "2025-10-29T11:05:49.138Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/4e/5c/d636b16cb39d8ffde001432eedbf55c330388701bb3190e66941fd9d5057/phonopy-2.43.6-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:c0709b32cea5cafaf5c943f17fa6aa2496a7afc30122df3787e5d8c392c94153", size = 508145, upload-time = "2025-10-29T11:05:50.879Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/58/17/521b5b7339ff8397d2ade6100cb988507eafa9b8eaa63aebeb48b86bce09/phonopy-2.43.6-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d7a142002766c34e59b64bad1981c1604696988465e22929283ea30aa37649f3", size = 597559, upload-time = "2025-10-29T11:05:52.428Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/da/6e/9d10c0965ebdd07b16b8ca95bafbe1651213cdd53941b96a11fd25e70895/phonopy-2.43.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8e283e5351108e39b57b19da49d858bb330ed750b052dbdc8d3bc9234718d3e4", size = 602983, upload-time = "2025-10-29T11:05:53.815Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/36/ca/fc9f7f71f5c67b0c67f47ba384daac6fb68e67eefac3c056afde57943454/phonopy-2.43.6-cp312-cp312-win32.whl", hash = "sha256:83b205c767fd4ebb657842eb370b97907552f840fa2ee53758d7974a04a89433", size = 505237, upload-time = "2025-10-29T11:05:54.899Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/3d/6a/cc9c50e1fd96c893c14ee2ba8f16113b6935603e37e216040acaf334e90a/phonopy-2.43.6-cp312-cp312-win_amd64.whl", hash = "sha256:5931a78073649f057bb51e39a704e48e32f78c89de826b6f6372434aca81d7f2", size = 518840, upload-time = "2025-10-29T11:05:56.101Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/e3/56/01ec0c97974a5fb2634f2f573ace0767389733e1f2975d85b56668f876aa/phonopy-2.43.6-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:9129c13f843fb86f3c2c2c3f07f2a6229ae6a3f044b1a3a28775b848a68359dc", size = 508148, upload-time = "2025-10-29T11:05:57.267Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/fa/a0/1a241bec2c730047a2dd1ba87da3e7db53abeffe018cbe871099c28796a7/phonopy-2.43.6-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:67502de4c87640f50d62f7205cd1b40f28c4db07776c1f6ea1e71f3fce540526", size = 597559, upload-time = "2025-10-29T11:05:58.471Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/ac/d7/281e6905f6d04ff461d18c1b073e6e8d229a1fac378d56db4a22cd530000/phonopy-2.43.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:49a0e2a8c12407bbed9ae7599175d0a7eb7837cc5053e34c4bb7852358f79d80", size = 602983, upload-time = "2025-10-29T11:05:59.833Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/e1/b3/fe5ea9ef9faa24830d34bd0fc09dbba995df39fb9af1409eff0be395f4ac/phonopy-2.43.6-cp313-cp313-win32.whl", hash = "sha256:3ad62787527d120127f4f4753958e7932c617bc7188c8ef3224743eac143ae30", size = 505216, upload-time = "2025-10-29T11:06:01.248Z" },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/27/2f/d2136de4991ef3d1c3a5518c32b7e3a14164ce5d7d718770355f074af4ee/phonopy-2.43.6-cp313-cp313-win_amd64.whl", hash = "sha256:65e5c5e4f957318dff1e3cfd1472380e3cf654a60f25e7362117a8942c4b9a4f", size = 518824, upload-time = "2025-10-29T11:06:02.489Z" },
+]
+
+[[package]]
 name = "pillow"
 version = "11.3.0"
 source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
@@ -2665,6 +2707,24 @@ wheels = [
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/ae/43/71a22aa66a1ef974f4e34982ce55d5f38d4770d2f0091eb210374e860b8e/sqlalchemy-2.0.44-cp39-cp39-win32.whl", hash = "sha256:9e9018544ab07614d591a26c1bd4293ddf40752cc435caf69196740516af7100", size = 2106888, upload-time = "2025-10-10T15:45:58.079Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/08/fb/cc98eb1ab3c5ad92b51c0db17ee86d1c33379a7490da376567b902222dcf/sqlalchemy-2.0.44-cp39-cp39-win_amd64.whl", hash = "sha256:8e0e4e66fd80f277a8c3de016a81a554e76ccf6b8d881ee0b53200305a8433f6", size = 2130728, upload-time = "2025-10-10T15:45:59.7Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/9c/5e/6a29fa884d9fb7ddadf6b69490a9d45fded3b38541713010dad16b77d015/sqlalchemy-2.0.44-py3-none-any.whl", hash = "sha256:19de7ca1246fbef9f9d1bff8f1ab25641569df226364a0e40457dc5457c54b05", size = 1928718, upload-time = "2025-10-10T15:29:45.32Z" },
+]
+
+[[package]]
+name = "symfc"
+version = "1.5.4"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
+dependencies = [
+    { name = "numpy", version = "1.24.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "scipy", version = "1.13.1", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "scipy", version = "1.16.2", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "spglib" },
+]
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/36/a7/b030b7e36d5658182581d493cdd8e06546e4ff45b3c491e4983db4f09c64/symfc-1.5.4.tar.gz", hash = "sha256:7877ba2e7bfaf54d1da0184b45714e873f5e61297270478d49c28c6b0ae063a1", size = 844817, upload-time = "2025-07-21T02:01:41.934Z" }
+wheels = [
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/f9/9c/29e80dbfbcee2b980f3bf23693b8ee0a67f587d114eb398f7f58ceebea8b/symfc-1.5.4-py3-none-any.whl", hash = "sha256:9369d670b8c4db690661d8fd2832c4b647e75da5d904dc5227279055a6abfda6", size = 87493, upload-time = "2025-07-21T02:01:40.963Z" },
 ]
 
 [[package]]

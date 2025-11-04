@@ -7,7 +7,7 @@ import spglib
 
 from .core.sow import sow3, sow4
 from .core.reap import reap3, reap4
-from .core.mlp import mlp3, mlp4
+from .core.mlp import mlp2, mlp3, mlp4
 
 from .tools.phonon_rattle.main import phononrattle
 from .tools.write2fcsets import write2fcsets
@@ -27,6 +27,7 @@ cli.add_command(sow3, name="sow3")
 cli.add_command(sow4, name="sow4")
 cli.add_command(reap3, name="reap3")
 cli.add_command(reap4, name="reap4")
+cli.add_command(mlp2, name="mlp2")
 cli.add_command(mlp3, name="mlp3")
 cli.add_command(mlp4, name="mlp4")
 cli.add_command(phononrattle, name="phonon-rattle")
