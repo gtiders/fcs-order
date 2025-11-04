@@ -4,6 +4,9 @@
 import click
 import sys
 import numpy as np
+from ase.io import read
+from ase.build import make_supercell
+from ..utils.phonon import get_force_constants
 
 from ..utils.vasp_order_common import (
     H,
@@ -19,6 +22,72 @@ from ..utils.calculator import get_atoms, initialize_calculator
 from .tools import _prepare_calculation3, _prepare_calculation4
 from .bin import thirdorder_core, fourthorder_core  # type: ignore
 
+@click.command()
+@click.argument("supercell_matrix",nargs=-1,type=int)
+@click.option(
+    "--calc",
+    type=click.Choice(["nep", "dp", "hiphive", "ploymp"], case_sensitive=False),
+    default=None,
+    help="Calculator type, optional values are nep, dp, hiphive, ploymp",
+)
+@click.option(
+    "--potential",
+    type=str,
+    default=None,
+    help="Potential file path, corresponding to different file formats based on calc type",
+)
+@click.option(
+    "--outfile",
+    type=str,
+    default="FORCECONSTANTS_2ND",
+    help="Output file path, default is 'FORCECONSTANTS_2ND'",
+)
+def mlp2(supercell_matrix, calc, potential,outfile):
+    """
+    Directly calculate 2-phonon force constants using machine learning potential functions based on secondorder.
+    Accuracy depends on potential function precision and supercell size; it is recommended to use a larger supercell.
+
+    Parameters:
+        supercell_matrix: supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)
+        calc: calculator type, optional values are nep, dp, hiphive, ploymp
+        potential: potential file path, corresponding to different file formats based on calc type
+        outfile: output file path, default is 'FORCECONSTANTS_2ND'
+    """
+
+    # Validate supercell matrix dimensions
+    if len(supercell_matrix) not in [3, 9]:
+        raise click.BadParameter("Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)")
+    
+    # Convert supercell matrix to 3x3 format
+    if len(supercell_matrix) == 3:
+        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
+        na, nb, nc = supercell_matrix
+        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
+    else:
+        # Full 3x3 matrix: reshape 9 numbers into 3x3
+        supercell_array = np.array(supercell_matrix).reshape(3, 3)
+
+    # Validate that calc and potential must be provided together
+    if (calc is not None and potential is None) or (
+        calc is None and potential is not None
+    ):
+        raise click.BadParameter("--calc and --potential must be provided together")
+    atoms=read("POSCAR")
+    supercell=make_supercell(atoms, supercell_array)
+    if calc is not None and potential is not None:
+        calculation = initialize_calculator(calc, potential, supercell)
+    else:
+        print("No calculator provided")
+        sys.exit(1)
+    try:
+        from phonopy import Phonopy
+        from phonopy.file_IO import write_FORCE_CONSTANTS
+    except Exception as e:
+        print(f"Error importing Phonopy module from phonopy: {e}")
+        sys.exit(1)
+    phonon: Phonopy = get_force_constants(atoms,calculation,supercell_array)
+    fcs2=phonon.force_constants
+    write_FORCE_CONSTANTS(fcs2,filename=outfile)
 
 @click.command()
 @click.argument("na", type=int)

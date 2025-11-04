@@ -12,6 +12,7 @@ dependencies = [
     "cython>=3.1.6",
     "matplotlib>=3.9.4",
     "numpy>=1.21.6",
+    "phonopy>=2.43.6",
     "scipy>=1.7.3",
     "setuptools>=80.9.0",
     "spglib>=2.2.0",
@@ -55,6 +56,8 @@ default = true
 
 [tool.uv.workspace]
 members = [
+    ".",
+    ".",
     ".",
 ]
 
