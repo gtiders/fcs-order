@@ -43,7 +43,7 @@ def dft_extxyz(
     for atom in all_atoms:
         atom.get_forces()
         atom.get_stress()
-        atom.get_energy()
+        atom.get_potential_energy()
     from ase.io import write
     write(output_file, all_atoms, format="extxyz")
 
