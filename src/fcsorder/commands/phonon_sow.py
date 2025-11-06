@@ -1,63 +1,75 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import click
-import numpy as np
 
+# Third-party imports
+import numpy as np
+import typer
 from ase.io import read, write
 
-from .core import generate_phonon_rattled_structures
-from .utils import parse_FORCE_CONSTANTS, plot_distributions
+# Local imports
+from ..core import (
+    generate_phonon_rattled_structures,
+    parse_FORCE_CONSTANTS,
+    plot_distributions,
+)
 
 
-@click.command()
-@click.argument("sposcar", type=click.Path(exists=True))
-@click.argument("fc2", type=click.Path(exists=True))
-@click.option(
-    "--number",
-    "-n",
-    type=int,
-    default=100,
-    help="Number of rattled structures to generate per temperature",
-)
-@click.option(
-    "--temperatures",
-    "-t",
-    type=str,
-    default="300",
-    help='Temperature in K,such as "300,400,500"',
-)
-@click.option(
-    "--min_distance",
-    type=float,
-    default=1.5,
-    help="Minimum distance between atoms in A",
-)
-@click.option(
-    "--if_qm",
-    type=bool,
-    default=True,
-    is_flag=True,
-    help="Whether to consider quantum effects",
-)
-@click.option(
-    "--imag_freq_factor", type=float, default=1.0, help="Imaginary frequency factor"
-)
-@click.option(
-    "--output",
-    "-o",
-    type=str,
-    default="structures_phonon_rattle",
-    help="Output filename prefix",
-)
 def phononrattle(
-    sposcar, fc2, number, temperatures, min_distance, if_qm, imag_freq_factor, output
+    sposcar: str = typer.Argument(..., exists=True, help="Path to SPOSCAR file"),
+    fc2: str = typer.Argument(
+        ..., exists=True, help="Path to second-order force constants file"
+    ),
+    number: int = typer.Option(
+        100,
+        "--number",
+        "-n",
+        help="Number of rattled structures to generate per temperature",
+    ),
+    temperatures: str = typer.Option(
+        "300",
+        "--temperatures",
+        "-t",
+        help='Temperature in K, such as "300,400,500"',
+    ),
+    min_distance: float = typer.Option(
+        1.5,
+        "--min-distance",
+        help="Minimum distance between atoms in A",
+    ),
+    if_qm: bool = typer.Option(
+        True,
+        "--if-qm",
+        help="Whether to consider quantum effects",
+    ),
+    imag_freq_factor: float = typer.Option(
+        1.0,
+        "--imag-freq-factor",
+        help="Imaginary frequency factor",
+    ),
+    output: str = typer.Option(
+        "structures_phonon_rattle",
+        "--output",
+        "-o",
+        help="Output filename prefix",
+    ),
 ):
     """
     Generate phonon rattled structures with filtering based on displacement and distance criteria.
+
     For each temperature, generate structures until reaching the required number,
     filtering out structures with:
     - any displacement > max_disp
     - any interatomic distance < min_distance
+
+    Args:
+        sposcar: Path to SPOSCAR file\n
+        fc2: Path to second-order force constants file\n
+        number: Number of rattled structures to generate per temperature\n
+        temperatures: Temperature in K, such as "300,400,500"\n
+        min_distance: Minimum distance between atoms in A\n
+        if_qm: Whether to consider quantum effects\n
+        imag_freq_factor: Imaginary frequency factor\n
+        output: Output filename prefix\n
     """
     sposcar = read(sposcar)
     ref_pos = sposcar.positions.copy()

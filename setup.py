@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-import os
 import numpy
-import spglib
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
@@ -15,32 +13,23 @@ from Cython.Compiler import Options
 Options.buffer_max_dims = 10
 
 # Auto-detect spglib paths for pip installation
-spglib_dir = os.path.dirname(spglib.__file__)
-print(f"spglib_dir: {spglib_dir}")
-INCLUDE_DIRS = [spglib_dir]
-LIBRARY_DIRS = [os.path.join(spglib_dir, "lib64")]
-
 extensions = [
     Extension(
-        "fcs_order.core.bin.thirdorder_core",
-        ["src/fcs_order/core/bin/thirdorder_core" + ".pyx"],
-        include_dirs=[numpy.get_include(), "src/fcs_order/core/bin"] + INCLUDE_DIRS,
-        library_dirs=LIBRARY_DIRS,
-        libraries=["symspg"],
+        "fcsorder.core.thirdorder_core",
+        ["src/fcsorder/core/thirdorder_core" + ".pyx"],
+        include_dirs=[numpy.get_include(), "src/fcsorder/core/bin"],
     ),
     Extension(
-        "fcs_order.core.bin.fourthorder_core",
-        ["src/fcs_order/core/bin/fourthorder_core" + ".pyx"],
-        include_dirs=[numpy.get_include(), "src/fcs_order/core/bin"] + INCLUDE_DIRS,
-        library_dirs=LIBRARY_DIRS,
-        libraries=["symspg"],
+        "fcsorder.core.fourthorder_core",
+        ["src/fcsorder/core/fourthorder_core" + ".pyx"],
+        include_dirs=[numpy.get_include(), "src/fcsorder/core/bin"],
     ),
 ]
 
 extensions = cythonize(extensions)
 
 setup(
-    name="fcs-order",
+    name="fcsorder",
     ext_modules=extensions,
     packages=find_packages(where="src"),
     package_dir={"": "src"},

@@ -1,19 +1,17 @@
 import sys
 
-from libc.stdlib cimport malloc,free
 from libc.math cimport fabs
 
 import numpy as np
 import scipy as sp
+import spglib
+import sparse
+from rich.progress import track
 
 cimport cython
 cimport numpy as np
 np.import_array()
-from . cimport spglibdataset
-from ..sparse.sparse_tensor8d import SparseTensor8D
 
-# Maximum matrix size (rows*cols) for the dense method.
-DEF MAXDENSE=33554432
 
 # Permutations of 4 elements listed in the same order as in the old
 # Fortran code.
@@ -126,9 +124,6 @@ cdef class SymmetryOperations:
   cdef double[:,:,:] __crotations
   cdef double[:,:] __translations
   cdef double[:,:] __ctranslations
-  cdef double c_lattvec[3][3]
-  cdef int *c_types
-  cdef double (*c_positions)[3]
   cdef readonly int natoms,nsyms
   cdef readonly double symprec
 
@@ -160,77 +155,43 @@ cdef class SymmetryOperations:
       def __get__(self):
           return np.asarray(self.__ctranslations)
 
-  cdef void __build_c_arrays(self):
-      """
-      Build the internal low-level representations of the input
-      parameters, ready to be passed to C functions.
-      """
-      self.c_types=<int*>malloc(self.natoms*sizeof(int))
-      self.c_positions=<double(*)[3]>malloc(self.natoms*sizeof(double[3]))
-      if self.c_types is NULL or self.c_positions is NULL:
-          raise MemoryError()
-
-  cdef void __refresh_c_arrays(self):
-      """
-      Copy the values of __types, __positions and __lattvec to
-      their C counterparts.
-      """
-      cdef int i,j
-      for i in range(3):
-          for j in range(3):
-              self.c_lattvec[i][j]=self.__lattvec[i,j]
-      for i in range(self.natoms):
-          self.c_types[i]=self.__types[i]
-          for j in range(3):
-              self.c_positions[i][j]=self.__positions[i,j]
-
   cdef void __spg_get_dataset(self) except *:
       """
-      Thin, slightly selective wrapper around spg_get_dataset(). The
+      Thin, slightly selective wrapper around spglib.get_symmetry_dataset(). The
       interesting information is copied out to Python objects and the
       rest discarded.
       """
       cdef int i,j,k,l
       cdef double[:] tmp1d
       cdef double[:,:] tmp2d
-      cdef spglibdataset.SpglibDataset *data
-      data=spglibdataset.spg_get_dataset(self.c_lattvec,
-                                            self.c_positions,
-                                            self.c_types,
-                                            self.natoms,
-                                            self.symprec)
-      # The C arrays can get corrupted by this function call.
-      self.__refresh_c_arrays()
-      if data is NULL:
+      
+      # Convert C arrays to numpy arrays for spglib Python API
+      lattice = np.asarray(self.__lattvec).T  # Transpose to match spglib format
+      positions = np.asarray(self.__positions)  # positions is already in natoms x 3 format
+      types = np.asarray(self.__types)
+      
+      # Use Python spglib API instead of C API
+      dataset = spglib.get_symmetry_dataset((lattice, positions, types), symprec=self.symprec)
+      
+      if dataset is None:
           raise MemoryError()
 
-      self.symbol=unicode(data.international_symbol).strip()
-      self.__shift=np.empty((3,),dtype=np.double)
-      self.__transform=np.empty((3,3),dtype=np.double)
-      self.nsyms=data.n_operations
-      self.__rotations=np.empty((self.nsyms,3,3),
-                                   dtype=np.double)
-      self.__translations=np.empty((self.nsyms,3),
-                                      dtype=np.double)
-      for i in range(3):
-          self.__shift[i]=data.origin_shift[i]
-          for j in range(3):
-              self.__transform[i,j]=data.transformation_matrix[i][j]
+      self.symbol = dataset['international']
+      self.__shift = np.array(dataset['origin_shift'], dtype=np.double)
+      self.__transform = np.array(dataset['transformation_matrix'], dtype=np.double)
+      self.nsyms = len(dataset['rotations'])
+      self.__rotations = np.array(dataset['rotations'], dtype=np.double)
+      self.__translations = np.array(dataset['translations'], dtype=np.double)
+      
+      self.__crotations = np.empty_like(self.__rotations)
+      self.__ctranslations = np.empty_like(self.__translations)
       for i in range(self.nsyms):
-          for j in range(3):
-              self.__translations[i,j]=data.translations[i][j]
-              for k in range(3):
-                  self.__rotations[i,j,k]=data.rotations[i][j][k]
-      self.__crotations=np.empty_like(self.__rotations)
-      self.__ctranslations=np.empty_like(self.__translations)
-      for i in range(self.nsyms):
-          tmp2d=np.dot(self.__lattvec,
+          tmp2d = np.dot(self.__lattvec,
                        np.dot(self.__rotations[i,:,:],
                               sp.linalg.inv(self.__lattvec)))
-          self.__crotations[i,:,:]=tmp2d
-          tmp1d=np.dot(self.__lattvec,self.__translations[i,:])
-          self.__ctranslations[i,:]=tmp1d
-      spglibdataset.spg_free_dataset(data)
+          self.__crotations[i,:,:] = tmp2d
+          tmp1d = np.dot(self.__lattvec, self.__translations[i,:])
+          self.__ctranslations[i,:] = tmp1d
 
   def __cinit__(self,lattvec,types,positions,symprec=1e-5):
       self.__lattvec=np.array(lattvec,dtype=np.double)
@@ -242,15 +203,7 @@ cdef class SymmetryOperations:
           raise ValueError("positions must be a natoms x 3 array")
       if not (self.__lattvec.shape[0]==self.__lattvec.shape[1]==3):
           raise ValueError("lattice vectors must form a 3 x 3 matrix")
-      self.__build_c_arrays()
-      self.__refresh_c_arrays()
       self.__spg_get_dataset()
-
-  def __dealloc__(self):
-      if self.c_types is not NULL:
-          free(self.c_types)
-      if self.c_positions is not NULL:
-          free(self.c_positions)
 
   cdef __apply_all(self,double[:] r_in):
       """
@@ -354,8 +307,8 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     natoms=len(poscar["types"])
     ntot=len(sposcar["types"])
     if is_sparse:
-        print("using sparse method!")
-        vnruter = SparseTensor8D((3,3,3,3,natoms,ntot,ntot,ntot))
+        print("using sparse method with dok sparse matrix !")
+        vnruter=sparse.zeros((3,3,3,3,natoms,ntot,ntot,ntot), format="dok")
     else:
         vnruter=np.zeros((3,3,3,3,natoms,ntot,ntot,ntot),dtype=np.double)
     naccumindependent=np.insert(np.cumsum(
@@ -364,11 +317,11 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     ntotalindependent=naccumindependent[-1]
     vphipart=phipart
     nlist6=len(list4)
-    for ii in range(nlist6):
+    for ii in track(range(nlist6), description="Processing list6"):
         e0,e1,e2,e3,e4,e5=list4[ii]
         vnruter[e3,e4,e5,:,e0,e1,e2,:]=vphipart[:,ii,:]
     philist=[]
-    for ii in range(nlist):
+    for ii in track(range(nlist), description="Building philist"):
         for jj in range(wedge.nindependentbasis[ii]):
             kk=wedge.independentbasis[jj,ii]//27
             ll=wedge.independentbasis[jj,ii]%27//9
@@ -392,57 +345,33 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
 
     nrows=ntotalindependent
     ncols=natoms*ntot*81
-    if nrows*ncols<=MAXDENSE:
-        print("- Storing the coefficients in a dense matrix")
-        aaa=np.zeros((nrows,ncols),dtype=np.double)
-        vaa=aaa
-        colindex=0
-        for ii in range(natoms):
-            for jj in range(ntot):
-                tribasisindex=0
-                for ll in range(3):
-                    for mm in range(3):
-                        for nn in range(3):
-                            for aa1 in range(3):
-                                for kk in range(ntot):
-                                    for bb in range(ntot):
-                                        for ix in range(nlist):
-                                            if vind1[ii,jj,kk,bb]==ix:
-                                               for ss in range(naccumindependent[ix],
-                                                         naccumindependent[ix+1]):
-                                                   tt=ss-naccumindependent[ix]
-                                                   vaa[ss,colindex]+=vtrans[tribasisindex,tt,
-                                                                     vind2[ii,jj,kk,bb],ix]
-                                tribasisindex+=1
-                                colindex+=1
-    else:
-        print("- Storing the coefficients in a sparse matrix")
-        i=[]
-        j=[]
-        v=[]
-        colindex=0
-        for ii in range(natoms):
-            for jj in range(ntot):
-                tribasisindex=0
-                for ll in range(3):
-                    for mm in range(3):
-                        for nn in range(3):
-                            for aa1 in range(3):
-                                for kk in range(ntot):
-                                    for bb in range(ntot):
-                                        for ix in range(nlist):
-                                            if vind1[ii,jj,kk,bb]==ix:
-                                               for ss in range(naccumindependent[ix],
-                                                         naccumindependent[ix+1]):
-                                                   tt=ss-naccumindependent[ix]
-                                                   i.append(ss)
-                                                   j.append(colindex)
-                                                   v.append(vtrans[tribasisindex,tt,
-                                                            vind2[ii,jj,kk,bb],ix])
-                                tribasisindex+=1
-                                colindex+=1
-        print("- \t Density: {0:.2g}%".format(100.*len(i)/float(nrows*ncols)))
-        aaa=sp.sparse.coo_matrix((v,(i,j)),(nrows,ncols)).tocsr()
+    print("- Storing the coefficients in a sparse matrix")
+    i=[]
+    j=[]
+    v=[]
+    colindex=0
+    for ii in range(natoms):
+        for jj in range(ntot):
+            tribasisindex=0
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        for aa1 in range(3):
+                            for kk in range(ntot):
+                                for bb in range(ntot):
+                                    for ix in range(nlist):
+                                        if vind1[ii,jj,kk,bb]==ix:
+                                            for ss in range(naccumindependent[ix],
+                                                        naccumindependent[ix+1]):
+                                                tt=ss-naccumindependent[ix]
+                                                i.append(ss)
+                                                j.append(colindex)
+                                                v.append(vtrans[tribasisindex,tt,
+                                                        vind2[ii,jj,kk,bb],ix])
+                            tribasisindex+=1
+                            colindex+=1
+    print("- \t Density: {0:.2g}%".format(100.*len(i)/float(nrows*ncols)))
+    aaa=sp.sparse.coo_matrix((v,(i,j)),(nrows,ncols)).tocsr()
     D=sp.sparse.spdiags(aphilist,[0,],aphilist.size,aphilist.size,
                            format="csr")
     bbs=D.dot(aaa)
@@ -454,7 +383,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
 
     # Build the final, full set of 4th-order IFCs.
     vnruter[:,:,:,:,:,:,:,:]=0.
-    for ii in range(nlist):
+    for ii in track(range(nlist), description="Building final IFCs"):
         for jj in range(wedge.nequi[ii]):
             for ll in range(3):
                 for mm in range(3):

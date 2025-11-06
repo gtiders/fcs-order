@@ -7,17 +7,20 @@ from ase.calculators.singlepoint import SinglePointCalculator
 try:
     from phonopy import Phonopy
     from phonopy.structure.atoms import PhonopyAtoms
+
     phonopy_exists = True
 except ModuleNotFoundError:  # pragma: no cover
     phonopy_exists = False
     Phonopy = None
 
 
-def get_force_constants(structure: Atoms,
-                        calculator: SinglePointCalculator,
-                        supercell_matrix: np.ndarray,
-                        kwargs_phonopy: Dict[str, Any] = {},
-                        kwargs_generate_displacements: Dict[str, Any] = {}) -> Phonopy:
+def get_force_constants(
+    structure: Atoms,
+    calculator: SinglePointCalculator,
+    supercell_matrix: np.ndarray,
+    kwargs_phonopy: Dict[str, Any] = {},
+    kwargs_generate_displacements: Dict[str, Any] = {},
+) -> Phonopy:
     """
     Calculates the force constants for a given structure using
     `phonopy <https://phonopy.github.io/phonopy/>`_, which needs to be cited if this function
@@ -49,9 +52,11 @@ def get_force_constants(structure: Atoms,
         magnitude of the atomic displacement imposed when calculating the force constant matrix
     """
     if not phonopy_exists:
-        raise ModuleNotFoundError('phonopy (https://pypi.org/project/phonopy/) is '
-                                  'required in order to use the functionality '
-                                  'in the phonons module.')  # pragma: no cover
+        raise ModuleNotFoundError(
+            "phonopy (https://pypi.org/project/phonopy/) is "
+            "required in order to use the functionality "
+            "in the phonons module."
+        )  # pragma: no cover
 
     # prepare primitive unit cell for phonopy
     structure_ph = ase_to_phonopy(structure)
@@ -77,10 +82,16 @@ def get_force_constants(structure: Atoms,
 
 
 def ase_to_phonopy(atoms, **kwargs):
-    return PhonopyAtoms(numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions,
-                        **kwargs)
+    return PhonopyAtoms(
+        numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions, **kwargs
+    )
 
 
 def phonopy_to_ase(atoms, **kwargs):
-    return Atoms(cell=atoms.cell, numbers=atoms.numbers, positions=atoms.positions, pbc=True,
-                 **kwargs)
+    return Atoms(
+        cell=atoms.cell,
+        numbers=atoms.numbers,
+        positions=atoms.positions,
+        pbc=True,
+        **kwargs,
+    )
