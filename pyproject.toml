@@ -1,14 +1,11 @@
 [project]
 name = "fcs-order"
-version = "3.0.6"
+version = "3.1"
 description = "Third-order force constants calculation tool for VASP"
 readme = "README.md"
-license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "ase>=3.22.1",
-    "calorine>=3.2",
-    "click>=8.1.8",
     "cython>=3.1.6",
     "hiphive>=1.5",
     "matplotlib>=3.9.4",
@@ -21,42 +18,39 @@ dependencies = [
     "typer>=0.20.0",
 ]
 
+
+[project.license]
+text = "GPL-3.0-or-later"
+
+
 [project.scripts]
 fcsorder = "fcsorder.__init__:cli"
 
-[project.optional-dependencies]
-deepmd = [
-    "deepmd-kit>=2.2.0", # DeepMD potential support
-]
-
-hiphive = [
-    "hiphive>=0.6", # Force constant potential with hiphive
-]
-
-mlp = [
-    "pypolymlp>=0.15", # MLP potential (requires Eigen3 system library)
-]
-
-calorine = [
-    "calorine>=1.0", # Calorine potential support
-]
-
-all = [
-    "deepmd-kit>=2.2.0",
-    "hiphive>=0.6", 
-    "calorine>=1.0",
-    "pypolymlp>=0.15",
-]
 
 [[tool.uv.index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
+
+[project.optional-dependencies]
+deepmd = [ "deepmd-kit>=2.2.0" ]
+hiphive = [ "hiphive>=0.6" ]
+mlp = [ "pypolymlp>=0.15" ]
+calorine = [ "calorine>=1.0" ]
+all = [
+"deepmd-kit>=2.2.0",
+"hiphive>=0.6",
+"calorine>=1.0",
+"pypolymlp>=0.15"
+]
+
+
 [tool.uv.workspace]
 members = [
-    ".",
-    ".",
-    ".",
+ ".",
+ ".",
+ ".",
+ ".",
 ]
 
 [tool.uv.sources]
@@ -64,14 +58,16 @@ fcs-order = { workspace = true }
 
 
 [build-system]
-requires = ["setuptools>=45", "wheel", "cython>=3.0.12", "numpy>=1.21.6", "spglib>=2.2.0"]
+requires = [
+"setuptools>=45",
+"wheel",
+"cython>=3.0.12",
+"numpy>=1.21.6",
+"spglib>=2.2.0"
+]
 build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
     "fcs-order",
 ]
-
-
-
-

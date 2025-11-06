@@ -259,7 +259,7 @@ def hiphive(
 
     Args:
         na, nb, nc: Supercell size, corresponding to expansion times in a, b, c directions
-                    Note: The supercell size must be greater than or equal to the size used 
+                    Note: The supercell size must be greater than or equal to the size used
                     for training the fcp potential. It cannot be smaller.
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
         potential: Hiphive potential file path
@@ -274,8 +274,8 @@ def hiphive(
 
         fcp = ForceConstantPotential.read(potential)
         # Create a dummy atoms object to get force constants
-        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation4(
-            na, nb, nc, cutoff
+        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+            prepare_calculation4(na, nb, nc, cutoff)
         )
         atoms = get_atoms(normalize_SPOSCAR(sposcar))
         force_constants = fcp.get_force_constants(atoms)
@@ -296,9 +296,7 @@ def ploymp(
         ...,
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
-    potential: str = typer.Option(
-        ..., exists=True, help="PolyMLP potential file path"
-    ),
+    potential: str = typer.Option(..., exists=True, help="PolyMLP potential file path"),
     is_write: bool = typer.Option(
         False,
         "--is-write",

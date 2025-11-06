@@ -1,230 +1,331 @@
-# FCS-Order
+# FCS-Order: 多阶力常数与机器学习势计算工具
 
-Repository: [https://github.com/gtiders/fcs-order](https://github.com/gtiders/fcs-order)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-GPL%203.0%2B-green.svg)](LICENSE)
 
-A comprehensive Python package for calculating third-order and fourth-order force constants using finite displacement methods, with support for machine learning potentials and thermal disorder generation.
+FCS-Order是一个全面的Python工具包，专为计算二阶、三阶和四阶力常数而设计，支持基于有限位移方法和机器学习势的高效计算。本工具特别适用于声子散射率计算、热导率预测以及材料热学性质研究。
 
-## Features
+## 🌟 主要特性
 
-- **Third-order force constants**: Calculate 3-phonon interactions
-- **Fourth-order force constants**: Calculate 4-phonon interactions  
-- **Machine Learning Integration**: Direct calculation using ML potentials (NEP, DeepMD, HiPhive, Polymlp)
-- **VASP Compatibility**: Full integration with VASP DFT calculations
-- **Thermal Disorder Generation**: Create phonon-rattled structures at finite temperatures
+### 📊 多阶力常数计算
+- **二阶力常数**：声子色散关系和振动性质分析
+- **三阶力常数**：三声子相互作用和声子寿命计算
+- **四阶力常数**：四声子相互作用和高阶热输运性质
 
-## Installation
+### 🤖 机器学习势集成
+- **NEP势**：高效的神经进化势函数
+- **DeepMD势**：深度势能模型
+- **HiPhive势**：高阶力常数拟合势
+- **Polymlp势**：多项式机器学习势
 
+### 💾 内存优化
+- **稀疏张量方法**：大幅降低大系统内存需求
+- **批处理计算**：高效处理大规模体系
+
+### 🌡️ 热无序结构生成
+- **声子扰动**：基于声子振动的热无序结构生成
+- **温度控制**：支持任意温度下的结构生成
+- **智能过滤**：自动过滤不合理结构
+
+## 📦 安装
+
+### 基础安装
 ```bash
 pip install fcs-order
 ```
 
-Or install from source:
-
+### 从源码安装
 ```bash
-git clone https://github.com/your-repo/fcs-order.git
+git clone https://github.com/gtiders/fcs-order.git
 cd fcs-order
 pip install -e .
 ```
 
-## Available Commands
-
-### Core Force Constant Commands
-
-#### 1. Third-order Force Constants (`sow3` & `reap3`)
-
-**Generate displaced structures:**
+### 可选依赖
 ```bash
+# 安装所有机器学习势支持
+pip install fcs-order[all]
+
+# 或单独安装特定势
+pip install fcs-order[deepmd]    # DeepMD势
+pip install fcs-order[hiphive]    # HiPhive势
+pip install fcs-order[mlp]        # Polymlp势
+pip install fcs-order[calorine]   # Calorine库
+```
+
+## 🚀 快速开始
+
+### 1. 二阶力常数计算（使用机器学习势）
+```bash
+# 使用NEP势计算二阶力常数
+fcsorder mlp2 nep --potential nep.txt --supercell 4 4 4
+
+# 使用DeepMD势
+fcsorder mlp2 dp --potential model.pb --supercell 4 4 4
+
+# 使用Polymlp势
+fcsorder mlp2 polymlp --potential polymlp.yaml --supercell 4 4 4
+```
+
+### 2. 三阶力常数计算
+```bash
+# 使用机器学习势计算三阶力常数（稀疏张量优化）
+fcsorder mlp3 nep --potential nep.txt --supercell 4 4 4 --cutoff 0.8 --is-sparse
+
+# 传统VASP计算流程
+fcsorder sow3 4 4 4 --cutoff -8  # 生成位移结构
+# 运行VASP计算...
+fcsorder reap3 4 4 4 --cutoff -8 --is-sparse vasprun.*.xml  # 提取力常数
+```
+
+### 3. 四阶力常数计算
+```bash
+# 使用机器学习势计算四阶力常数
+fcsorder mlp4 nep --potential nep.txt --supercell 3 3 3 --cutoff 0.8
+
+# 传统VASP计算流程
+fcsorder sow4 3 3 3 --cutoff -8  # 生成位移结构
+# 运行VASP计算...
+fcsorder reap4 3 3 3 --cutoff -8 vasprun.*.xml  # 提取力常数
+```
+
+### 4. 热无序结构生成
+```bash
+# 基于声子振动生成热无序结构
+fcsorder phononrattle SPOSCAR FORCE_CONSTANTS_2ND --temperatures 300,600,900 --number 100
+```
+
+## 📖 详细命令参考
+
+### 二阶力常数命令 (mlp2)
+
+#### 基本语法
+```bash
+fcsorder mlp2 <calculator> [options]
+```
+
+#### 计算器子命令
+- `nep`: NEP势计算器
+- `dp`: DeepMD势计算器
+- `polymlp`: Polymlp势计算器
+
+#### 共同参数
+- `--supercell`: 超胞尺寸（格式：na nb nc）
+- `--potential`: 势文件路径
+- `--outfile`: 输出文件路径（默认：FORCECONSTANTS_2ND）
+
+#### 示例
+```bash
+# NEP势计算
+fcsorder mlp2 nep --supercell 4 4 4 --potential nep.txt
+
+# 指定输出文件
+fcsorder mlp2 dp --supercell 4 4 4 --potential model.pb --outfile my_fc2.dat
+
+# GPU加速（仅NEP支持）
+fcsorder mlp2 nep --supercell 4 4 4 --potential nep.txt --gpu
+```
+
+### 三阶力常数命令 (mlp3)
+
+#### 基本语法
+```bash
+fcsorder mlp3 <calculator> [options]
+```
+
+#### 计算器子命令
+- `nep`: NEP势计算器
+- `dp`: DeepMD势计算器
+- `polymlp`: Polymlp势计算器
+
+#### 共同参数
+- `--supercell`: 超胞尺寸（格式：na nb nc）
+- `--cutoff`: 截断距离（负值为最近邻数，正值为距离nm）
+- `--potential`: 势文件路径
+- `--is-sparse`: 使用稀疏张量方法（推荐大系统）
+- `--is-write`: 保存中间文件
+
+#### 示例
+```bash
+# NEP势计算三阶力常数
+fcsorder mlp3 nep --supercell 4 4 4 --cutoff 0.8 --potential nep.txt
+
+# 使用稀疏张量方法（推荐大系统）
+fcsorder mlp3 dp --supercell 4 4 4 --cutoff 0.8 --potential model.pb --is-sparse
+
+# 保存中间文件
+fcsorder mlp3 hiphive --supercell 4 4 4 --cutoff -8 --potential potential.fcp --is-write
+```
+
+### 四阶力常数命令 (mlp4)
+
+#### 基本语法
+```bash
+fcsorder mlp4 <calculator> [options]
+```
+
+#### 计算器子命令
+- `nep`: NEP势计算器
+- `dp`: DeepMD势计算器
+- `hiphive`: HiPhive势计算器
+- `polymlp`: Polymlp势计算器
+
+#### 共同参数
+- `--supercell`: 超胞尺寸（格式：na nb nc）
+- `--cutoff`: 截断距离（负值为最近邻数，正值为距离nm）
+- `--potential`: 势文件路径
+- `--is-write`: 保存中间文件
+
+#### 示例
+```bash
+# NEP势计算四阶力常数
+fcsorder mlp4 nep --supercell 3 3 3 --cutoff 0.8 --potential nep.txt
+
+# DeepMD势计算
+fcsorder mlp4 dp --supercell 3 3 3 --cutoff -8 --potential model.pb
+```
+
+### VASP计算命令
+
+#### 三阶力常数 (sow3/reap3)
+```bash
+# 生成位移结构
 fcsorder sow3 <na> <nb> <nc> --cutoff <cutoff>
+
+# 提取力常数
+fcsorder reap3 <na> <nb> <nc> --cutoff <cutoff> [--is-sparse] vasprun.*.xml
 ```
 
-**Extract force constants from VASP results:**
+#### 四阶力常数 (sow4/reap4)
 ```bash
-fcsorder reap3 <na> <nb> <nc> --cutoff <cutoff> vasprun.0001.xml vasprun.0002.xml ...
-```
-
-Parameters:
-- `na, nb, nc`: Supercell dimensions (expansion factors in a, b, c directions)
-- `--cutoff`: Interaction cutoff (negative for nearest neighbors like -8, positive for distance in nm like 0.5)
-- `vasprun.xml files`: VASP calculation results in order
-
-#### 2. Fourth-order Force Constants (`sow4` & `reap4`)
-
-**Generate displaced structures:**
-```bash
+# 生成位移结构
 fcsorder sow4 <na> <nb> <nc> --cutoff <cutoff>
+
+# 提取力常数
+fcsorder reap4 <na> <nb> <nc> --cutoff <cutoff> vasprun.*.xml
 ```
 
-**Extract force constants from VASP results:**
+### 热无序结构生成 (phononrattle)
+
+#### 基本语法
 ```bash
-fcsorder reap4 <na> <nb> <nc> --cutoff <cutoff> vasprun.0001.xml vasprun.0002.xml ...
+fcsorder phononrattle <SPOSCAR> <fc2_file> [options]
 ```
 
-Parameters: Same as third-order commands
+#### 参数
+- `SPOSCAR`: 超胞结构文件
+- `fc2_file`: 二阶力常数文件
+- `--temperatures`: 温度列表（K），默认"300"
+- `--number`: 每个温度生成的结构数，默认100
+- `--min-distance`: 最小原子间距（Å），默认1.5
+- `--if-qm`: 是否考虑量子效应，默认True
+- `--imag-freq-factor`: 虚频因子，默认1.0
+- `--output`: 输出文件前缀，默认"structures_phonon_rattle"
 
-### Machine Learning Potential Commands
-
-#### 3. ML Second-order Force Constants (`mlp2`)
-
+#### 示例
 ```bash
-fcsorder mlp2 <supercell_matrix> --calc <calculator> --potential <potential_file> --outfile <output_file>
+# 单温度生成
+fcsorder phononrattle SPOSCAR FORCE_CONSTANTS_2ND --temperatures 300 --number 50
+
+# 多温度生成
+fcsorder phononrattle SPOSCAR FORCE_CONSTANTS_2ND --temperatures 300,600,900 --number 100
+
+# 自定义参数
+fcsorder phononrattle SPOSCAR FORCE_CONSTANTS_2ND --temperatures 800 --number 200 --min-distance 1.2
 ```
 
-Parameters:
-- `supercell_matrix`: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3×3 matrix)
-  - Diagonal format: `<na> <nb> <nc>` (e.g., `2 2 2` creates a 2×2×2 diagonal matrix)
-  - Full matrix format: `<m11> <m12> <m13> <m21> <m22> <m23> <m31> <m32> <m33>` (9 numbers for complete 3×3 matrix)
-- `--calc`: Calculator type (`nep`, `dp`, `hiphive`, `polymlp`)
-- `--potential`: Path to potential file (format depends on calculator)
-- `--outfile`: Output file path (default: `FORCECONSTANTS_2ND`)
+## 🔧 高级功能
 
-Examples:
-```bash
-# Diagonal supercell (2×2×2)
-fcsorder mlp2 2 2 2 --calc nep --potential nep.txt
+### 稀疏张量优化
 
-# Full 3×3 matrix (custom supercell)
-fcsorder mlp2 2 0 0 0 2 0 0 0 2 --calc nep --potential nep.txt
-```
-
-#### 4. ML Third-order Force Constants (`mlp3`)
-
-```bash
-fcsorder mlp3 <na> <nb> <nc> --cutoff <cutoff> --calc <calculator> --potential <potential_file>
-```
-
-#### 5. ML Fourth-order Force Constants (`mlp4`)
+对于大系统（4×4×4超胞或更大），建议使用稀疏张量方法大幅降低内存需求：
 
 ```bash
-fcsorder mlp4 <na> <nb> <nc> --cutoff <cutoff> --calc <calculator> --potential <potential_file>
+# 三阶力常数稀疏计算
+fcsorder mlp3 nep --supercell 4 4 4 --cutoff 0.8 --potential nep.txt --is-sparse
+fcsorder reap3 4 4 4 --cutoff -8 --is-sparse vasprun.*.xml
+
+# 二阶和四阶力常数目前使用密集存储
+fcsorder mlp2 nep --supercell 4 4 4 --potential nep.txt
+fcsorder mlp4 nep --supercell 3 3 3 --cutoff 0.8 --potential nep.txt
 ```
 
-Parameters:
-- `--calc`: Calculator type (`nep`, `dp`, `hiphive`, `polymlp`)
-- `--potential`: Path to potential file (format depends on calculator)
-- `--if_write`: Optional flag to save intermediate files
+### GPU加速
 
-Supported ML Potentials:
-- **NEP**: NEP potential (file: `nep.txt`)
-- **DeepMD**: Deep Potential (file: `model.pb`)  
-- **HiPhive**: HiPhive potential (file: `potential.fcp`)
-- **Polymlp**: Polynomial ML potential (file: `polymlp.yaml`)
-
-#### Sparse Tensor Optimization (Memory Efficient)
-
-For large systems, the `reap3` and `mlp3` commands support sparse tensor methods to significantly reduce memory usage:
+NEP势支持GPU加速，可显著提高计算速度：
 
 ```bash
-fcsorder reap3 <na> <nb> <nc> --cutoff <cutoff> --is_sparse vasprun.0001.xml vasprun.0002.xml ...
-fcsorder mlp3 <na> <nb> <nc> --cutoff <cutoff> --calc <calculator> --potential <potential_file> --is_sparse
+# 启用GPU加速
+fcsorder mlp2 nep --supercell 4 4 4 --potential nep.txt --gpu
+fcsorder mlp3 nep --supercell 4 4 4 --cutoff 0.8 --potential nep.txt --gpu
+fcsorder mlp4 nep --supercell 3 3 3 --cutoff 0.8 --potential nep.txt --gpu
 ```
 
-The `--is_sparse` flag enables sparse tensor storage, which is particularly beneficial for:
-- Large supercells (e.g., 4×4×4 or larger)
-- Systems with many atoms
-- Limited memory environments
+## 📁 文件格式
 
-**Note**: Sparse tensor optimization is currently only available for `reap3` and `mlp3` commands (third-order force constants). The `mlp2`, `reap4` and `mlp4` commands use dense storage by default.
+| 文件类型 | 描述 | 用途 |
+|---------|------|------|
+| SPOSCAR | VASP超胞结构文件 | 输入结构 |
+| FORCECONSTANTS_2ND | 二阶力常数 | mlp2输出，声子计算输入 |
+| FORCE_CONSTANTS_3RD | 三阶力常数 | mlp3/reap3输出 |
+| FORCE_CONSTANTS_4TH | 四阶力常数 | mlp4/reap4输出 |
+| 3RD.POSCAR.* | 三阶位移结构 | VASP计算输入 |
+| 4TH.POSCAR.* | 四阶位移结构 | VASP计算输入 |
+| *.xyz | 热无序结构 | phononrattle输出 |
 
-### Phonon Rattling Command
+## 🛠️ 系统要求
 
-#### 6. Generate Thermally Disordered Structures (`phonon-rattle`)
+- **Python**: 3.10-3.13
+- **操作系统**: Linux, macOS, Windows
+- **核心依赖**: NumPy, SciPy, ASE, spglib, Typer
+- **VASP**: 用于DFT计算（可选）
+- **机器学习势包**: 根据需要安装
 
+## 📚 应用场景
+
+### 1. 声子热导率计算
 ```bash
-fcsorder phonon-rattle <SPOSCAR> <fc2_file> [options]
+# 完整的三阶力常数计算流程
+fcsorder mlp2 nep --supercell 4 4 4 --potential nep.txt
+fcsorder mlp3 nep --supercell 4 4 4 --cutoff 0.8 --potential nep.txt --is-sparse
+# 使用ShengBTE或其他工具计算热导率
 ```
 
-Parameters:
-- `SPOSCAR`: Supercell structure file
-- `fc2_file`: Second-order force constants file (2nd, fc2, or FORCE_CONSTANTS_2ND)
-
-Options:
-- `--temperature, -t`: Temperature in Kelvin (default: 300.0)
-- `--n_structures, -n`: Number of structures to generate (default: 100)
-- `--max_disp`: Maximum displacement in Ångströms (default: 0.5)
-- `--min_distance`: Minimum atomic distance in Ångströms (default: 1.5)
-- `--batch_size`: Batch size for generation (default: 5000)
-- `--if_qm`: Enable quantum statistics (default: True)
-- `--imag_freq_factor`: Imaginary frequency scaling factor (default: 1.0)
-
-Output: Saves valid structures to `structures_phonon_rattle_T<temperature>.xyz`
-
-## Usage Examples
-
-### Basic Third-order Calculation Workflow
-
-1. Generate displaced structures:
+### 2. 高阶热输运性质研究
 ```bash
-fcsorder sow3 2 2 2 --cutoff -8
+# 四阶力常数计算
+fcsorder mlp4 nep --supercell 3 3 3 --cutoff 0.8 --potential nep.txt
+# 结合三阶力常数研究四声子散射效应
 ```
 
-2. Run VASP calculations on generated 3RD.POSCAR.* files
-
-3. Extract force constants:
+### 3. 有限温度结构生成
 ```bash
-fcsorder reap3 2 2 2 --cutoff -8 vasprun.*.xml
+# 生成高温下的热无序结构
+fcsorder phononrattle SPOSCAR FORCE_CONSTANTS_2ND --temperatures 300,600,900 --number 100
+# 用于分子动力学或结构性质研究
 ```
 
-### Machine Learning Potential Calculation
+## 🤝 贡献指南
 
-```bash
-# Second-order force constants
-fcsorder mlp2 4 4 4 --calc nep --potential nep.txt
+我们欢迎社区贡献！请查看[CONTRIBUTING.md](CONTRIBUTING.md)了解详细信息。
 
-# Third-order force constants
-fcsorder mlp3 4 4 4 --cutoff 0.8 --calc nep --potential nep.txt
-```
+## 📄 许可证
 
-### Memory-Efficient Calculation with Sparse Tensors
+本项目采用GNU General Public License v3.0或更高版本许可证。详见[LICENSE](LICENSE)文件。
 
-For large systems, use sparse tensor methods to significantly reduce memory usage:
+## 🙏 致谢
 
-```bash
-# Second-order force constants (dense storage)
-fcsorder mlp2 4 4 4 --calc nep --potential nep.txt
+- ASE项目提供了原子模拟环境
+- spglib提供了空间群分析功能
+- Typer提供了现代CLI框架
+- 各种机器学习势项目的开发者
 
-# Third-order with sparse tensors (recommended for large systems)
-fcsorder reap3 4 4 4 --cutoff -8 --is_sparse vasprun.*.xml
-fcsorder mlp3 4 4 4 --cutoff 0.8 --calc nep --potential nep.txt --is_sparse
+## 📞 联系我们
 
-# Fourth-order (dense storage only)
-fcsorder reap4 3 3 3 --cutoff -8 vasprun.*.xml
-fcsorder mlp4 3 3 3 --cutoff 0.8 --calc nep --potential nep.txt
-```
+- **问题报告**: [GitHub Issues](https://github.com/gtiders/fcs-order/issues)
+- **功能请求**: [GitHub Discussions](https://github.com/gtiders/fcs-order/discussions)
+- **邮件联系**: [维护者邮箱]
 
-### Phonon Rattling at High Temperature
+---
 
-```bash
-fcsorder phonon-rattle SPOSCAR FORCE_CONSTANTS_2ND --temperature 800 --n_structures 200 --max_disp 0.8
-```
-
-## File Formats
-
-- **SPOSCAR**: VASP structure format for supercells
-- **FORCECONSTANTS_2ND**: Second-order force constants output (from `mlp2`)
-- **FORCE_CONSTANTS_3RD**: Third-order force constants output
-- **FORCE_CONSTANTS_4TH**: Fourth-order force constants output  
-- **3RD.POSCAR.***: Displaced structures for 3-phonon calculations
-- **4TH.POSCAR.***: Displaced structures for 4-phonon calculations
-- **.xyz files**: Extended XYZ format for rattled structures
-
-## Requirements
-
-- Python 3.9+
-- NumPy
-- Click
-- spglib
-- VASP (for DFT calculations)
-- Machine learning potential packages (optional)
-
-## License
-
-This project is licensed under the GNU General Public License v3.0 or later - see the LICENSE file for details.
-
-## Citation
-
-If you use FCS-Order in your research, please cite:
-
-
-## Support
-
-For issues and questions, please open an issue on GitHub or contact the development team.
+**FCS-Order** - 让多阶力常数计算变得简单高效！

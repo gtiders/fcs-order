@@ -221,60 +221,6 @@ def dp(
 
 
 @app.command()
-def hiphive(
-    na: int,
-    nb: int,
-    nc: int,
-    cutoff: str = typer.Option(
-        ...,
-        help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
-    ),
-    potential: str = typer.Option(
-        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
-    ),
-    is_write: bool = typer.Option(
-        False,
-        "--is-write",
-        help="Whether to save intermediate files during the calculation process",
-    ),
-    is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
-    ),
-):
-    """
-    Calculate 3-phonon force constants using hiphive force constant potential.
-
-    Args:
-        na, nb, nc: Supercell size, corresponding to expansion times in a, b, c directions\n
-                    Note: The supercell size must be greater than or equal to the size used\n
-                    for training the fcp potential. It cannot be smaller.\n
-        cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)\n
-        potential: Hiphive potential file path\n
-        is_write: Whether to save intermediate files\n
-        is_sparse: Use sparse tensor method for memory efficiency
-    """
-    # Hiphive calculator initialization
-    print(f"Using hiphive calculator with potential: {potential}")
-    try:
-        from hiphive import ForceConstantPotential
-        from hiphive.calculators import ForceConstantCalculator
-
-        fcp = ForceConstantPotential.read(potential)
-        # Create a dummy atoms object to get force constants
-        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
-            prepare_calculation3(na, nb, nc, cutoff)
-        )
-        atoms = get_atoms(normalize_SPOSCAR(sposcar))
-        force_constants = fcp.get_force_constants(atoms)
-        calc = ForceConstantCalculator(force_constants)
-    except ImportError:
-        print("hiphive not found, please install it first")
-        sys.exit(1)
-
-    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, is_sparse)
-
-
-@app.command()
 def ploymp(
     na: int,
     nb: int,

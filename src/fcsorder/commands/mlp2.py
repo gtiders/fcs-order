@@ -8,7 +8,6 @@ import sys
 import typer
 import numpy as np
 from ase.io import read
-from ase.build import make_supercell
 from ase.calculators.calculator import Calculator
 
 # Local imports
@@ -31,6 +30,7 @@ def calculate_phonon_force_constants_2nd(
     Returns:
         None (writes FORCECONSTANTS_2ND file)
     """
+
     atoms = read("POSCAR")
 
     try:
@@ -157,65 +157,6 @@ def dp(
         calc = DP(model=potential)
     except ImportError:
         print("deepmd not found, please install it first")
-        sys.exit(1)
-
-    calculate_phonon_force_constants_2nd(supercell_array, calc, outfile)
-
-
-@app.command()
-def hiphive(
-    supercell_matrix: list[int] = typer.Argument(
-        ...,
-        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
-    ),
-    potential: str = typer.Option(
-        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
-    ),
-    outfile: str = typer.Option(
-        "FORCECONSTANTS_2ND",
-        "--outfile",
-        help="Output file path, default is 'FORCECONSTANTS_2ND'",
-    ),
-):
-    """
-    Calculate 2-phonon force constants using hiphive force constant potential.
-
-    Args:
-        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
-                        Note: The supercell size must be greater than or equal to the size used\n
-                        for training the fcp potential. It cannot be smaller.\n
-        potential: Hiphive potential file path\n
-        outfile: Output file path for force constants\n
-    """
-    # Validate supercell matrix dimensions
-    if len(supercell_matrix) not in [3, 9]:
-        raise typer.BadParameter(
-            "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
-        )
-
-    # Convert supercell matrix to 3x3 format
-    if len(supercell_matrix) == 3:
-        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
-        na, nb, nc = supercell_matrix
-        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
-    else:
-        # Full 3x3 matrix: reshape 9 numbers into 3x3
-        supercell_array = np.array(supercell_matrix).reshape(3, 3)
-
-    # Hiphive calculator initialization
-    print(f"Using hiphive calculator with potential: {potential}")
-    try:
-        from hiphive import ForceConstantPotential
-        from hiphive.calculators import ForceConstantCalculator
-
-        fcp = ForceConstantPotential.read(potential)
-        # Create a dummy atoms object to get force constants
-        atoms = read("POSCAR")
-        supercell = make_supercell(atoms, supercell_array)
-        force_constants = fcp.get_force_constants(supercell)
-        calc = ForceConstantCalculator(force_constants)
-    except ImportError:
-        print("hiphive not found, please install it first")
         sys.exit(1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, outfile)

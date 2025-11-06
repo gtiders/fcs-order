@@ -13,7 +13,9 @@ from ..utils.order_common import (
 from ..utils.prepare_calculation import prepare_calculation4
 
 
-def reap4(na: int, nb: int, nc: int, cutoff: str, vaspruns: list[str], is_sparse: bool = False) -> None:
+def reap4(
+    na: int, nb: int, nc: int, cutoff: str, vaspruns: list[str], is_sparse: bool = False
+) -> None:
     """
     Extract 4-phonon force constants from VASP calculation results.
 
