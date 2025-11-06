@@ -287,7 +287,6 @@ def id2ind(ngrid, nspecies, filename):
         tmp, ispecies[ii] = divmod(ii, nspecies)
         tmp, icell[0, ii] = divmod(tmp, ngrid[0])
         icell[2, ii], icell[1, ii] = divmod(tmp, ngrid[1])
-        # jj = (icell[0, ii] + 1) * (icell[1, ii] + 1) * (icell[2, ii] + 1)
         f.write(
             "{:>6d} {:>6d} {:>6d}\n".format(
                 ii + 1, (ii + nspecies) // nspecies, ispecies[ii]

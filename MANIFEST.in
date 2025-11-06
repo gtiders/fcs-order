@@ -1,7 +1,6 @@
 # Include Cython source files
-include src/fcs_order/core/bin/thirdorder_core.pyx
-include src/fcs_order/core/bin/fourthorder_core.pyx
-include src/fcs_order/core/bin/spglibdataset.pxd
+include src/fcsorder/core/thirdorder_core.pyx
+include src/fcsorder/core/fourthorder_core.pyx
 
 # Include all Python files
 recursive-include src *.py

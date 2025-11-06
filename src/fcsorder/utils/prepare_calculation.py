@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .bin import thirdorder_core, fourthorder_core  # type: ignore
-from ..utils.vasp_order_common import (
+from ..core import thirdorder_core, fourthorder_core  # type: ignore
+from .order_common import (
     SYMPREC,
     _validate_cutoff,
     _parse_cutoff,
@@ -13,7 +13,7 @@ from ..utils.vasp_order_common import (
 )
 
 
-def _prepare_calculation3(na, nb, nc, cutoff):
+def prepare_calculation3(na, nb, nc, cutoff):
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)
 
@@ -39,7 +39,7 @@ def _prepare_calculation3(na, nb, nc, cutoff):
     return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh
 
 
-def _prepare_calculation4(na, nb, nc, cutoff):
+def prepare_calculation4(na, nb, nc, cutoff):
     """
     Validate the input parameters and prepare the calculation.
     """
