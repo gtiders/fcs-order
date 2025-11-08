@@ -1,10 +1,8 @@
-import sys
-
 from libc.math cimport fabs
 
 import numpy as np
 import scipy as sp
-import spglib
+import time
 import sparse
 from rich.progress import track
 
@@ -108,182 +106,7 @@ cdef tuple _id2ind(int[:] ngrid,int nspecies):
     return (np_icell,np_ispecies)
 
 
-# Thin, specialized wrapper around spglib.
-cdef class SymmetryOperations:
-  """
-  Object that contains all the interesting information about the
-  crystal symmetry group of a set of atoms.
-  """
-  cdef double[:,:] __lattvec
-  cdef int[:] __types
-  cdef double[:,:] __positions
-  cdef readonly str symbol
-  cdef double[:] __shift
-  cdef double[:,:] __transform
-  cdef double[:,:,:] __rotations
-  cdef double[:,:,:] __crotations
-  cdef double[:,:] __translations
-  cdef double[:,:] __ctranslations
-  cdef readonly int natoms,nsyms
-  cdef readonly double symprec
-
-  property lattice_vectors:
-      def __get__(self):
-          return np.asarray(self.__lattvec)
-  property types:
-      def __get__(self):
-          return np.asarray(self.__types)
-  property positions:
-      def __get__(self):
-          return np.asarray(self.__positions)
-  property origin_shift:
-      def __get__(self):
-          return np.asarray(self.__shift)
-  property transformation_matrix:
-      def __get__(self):
-          return np.asarray(self.__transform)
-  property rotations:
-      def __get__(self):
-          return np.asarray(self.__rotations)
-  property translations:
-      def __get__(self):
-          return np.asarray(self.__translations)
-  property crotations:
-      def __get__(self):
-          return np.asarray(self.__crotations)
-  property ctranslations:
-      def __get__(self):
-          return np.asarray(self.__ctranslations)
-
-  cdef void __spg_get_dataset(self) except *:
-      """
-      Thin, slightly selective wrapper around spglib.get_symmetry_dataset(). The
-      interesting information is copied out to Python objects and the
-      rest discarded.
-      """
-      cdef int i,j,k,l
-      cdef double[:] tmp1d
-      cdef double[:,:] tmp2d
-      
-      # Convert C arrays to numpy arrays for spglib Python API
-      lattice = np.asarray(self.__lattvec).T  # Transpose to match spglib format
-      positions = np.asarray(self.__positions)  # positions is already in natoms x 3 format
-      types = np.asarray(self.__types)
-      
-      # Use Python spglib API instead of C API
-      dataset = spglib.get_symmetry_dataset((lattice, positions, types), symprec=self.symprec)
-      
-      if dataset is None:
-          raise MemoryError()
-
-      self.symbol = dataset['international']
-      self.__shift = np.array(dataset['origin_shift'], dtype=np.double)
-      self.__transform = np.array(dataset['transformation_matrix'], dtype=np.double)
-      self.nsyms = len(dataset['rotations'])
-      self.__rotations = np.array(dataset['rotations'], dtype=np.double)
-      self.__translations = np.array(dataset['translations'], dtype=np.double)
-      
-      self.__crotations = np.empty_like(self.__rotations)
-      self.__ctranslations = np.empty_like(self.__translations)
-      for i in range(self.nsyms):
-          tmp2d = np.dot(self.__lattvec,
-                       np.dot(self.__rotations[i,:,:],
-                              sp.linalg.inv(self.__lattvec)))
-          self.__crotations[i,:,:] = tmp2d
-          tmp1d = np.dot(self.__lattvec, self.__translations[i,:])
-          self.__ctranslations[i,:] = tmp1d
-
-  def __cinit__(self,lattvec,types,positions,symprec=1e-5):
-      self.__lattvec=np.array(lattvec,dtype=np.double)
-      self.__types=np.array(types,dtype=np.intc)
-      self.__positions=np.array(positions,dtype=np.double)
-      self.natoms=self.positions.shape[0]
-      self.symprec=symprec
-      if self.__positions.shape[0]!=self.natoms or self.__positions.shape[1]!=3:
-          raise ValueError("positions must be a natoms x 3 array")
-      if not (self.__lattvec.shape[0]==self.__lattvec.shape[1]==3):
-          raise ValueError("lattice vectors must form a 3 x 3 matrix")
-      self.__spg_get_dataset()
-
-  cdef __apply_all(self,double[:] r_in):
-      """
-      Apply all symmetry operations to a vector and return the results.
-      """
-      cdef int ii,jj,kk,ll
-      cdef np.ndarray r_out
-      cdef double[:,:] vr_out
-
-      r_out=np.zeros((3,self.nsyms),dtype=np.double)
-      vr_out=r_out
-      for ii in range(self.nsyms):
-          for jj in range(3):
-              for kk in range(3):
-                 # for ll in range(3):
-                  vr_out[jj,ii]+=self.__crotations[ii,jj,kk]*r_in[kk]
-              vr_out[jj,ii]+=self.__ctranslations[ii,jj]
-      return r_out
-
-  @cython.boundscheck(False)
-  @cython.wraparound(False)
-  cdef map_supercell(self,dict sposcar):
-      """
-      Each symmetry operation defines an atomic permutation in a supercell. This method
-      returns an array with those permutations. The supercell must be compatible with
-      the unit cell used to create the object.
-      """
-      cdef int ntot
-      cdef int i,ii,ll,isym
-      cdef int[:] ngrid,vec
-      cdef int[:,:] v_nruter
-      cdef double diff
-      cdef double[:] car,tmp
-      cdef double[:,:] car_sym,positions,lattvec,motif
-      cdef np.ndarray nruter
-      cdef tuple factorization
-
-      positions=sposcar["positions"]
-      lattvec=sposcar["lattvec"]
-      ngrid=np.array([sposcar["na"],sposcar["nb"],sposcar["nc"]],
-                     dtype=np.intc)
-      ntot=positions.shape[1]
-      natoms=ntot//(ngrid[0]*ngrid[1]*ngrid[2])
-      motif=np.empty((3,natoms),dtype=np.double)
-      for i in range(natoms):
-          for ii in range(3):
-              motif[ii,i]=(self.__positions[i,0]*self.__lattvec[ii,0]+
-                           self.__positions[i,1]*self.__lattvec[ii,1]+
-                           self.__positions[i,2]*self.__lattvec[ii,2])
-      nruter=np.empty((self.nsyms,ntot),dtype=np.intc)
-      car=np.empty(3,dtype=np.double)
-      tmp=np.empty(3,dtype=np.double)
-      v_nruter=nruter
-      vec=np.empty(3,dtype=np.intc)
-      factorization=sp.linalg.lu_factor(self.__lattvec)
-      for i in range(ntot):
-          for ii in range(3):
-              car[ii]=(positions[0,i]*lattvec[ii,0]+
-                       positions[1,i]*lattvec[ii,1]+
-                       positions[2,i]*lattvec[ii,2])
-          car_sym=self.__apply_all(car)
-          for isym in range(self.nsyms):
-              for ii in range(natoms):
-                  for ll in range(3):
-                      tmp[ll]=car_sym[ll,isym]-motif[ll,ii]
-                  tmp=sp.linalg.lu_solve(factorization,tmp)
-                  for ll in range(3):
-                      vec[ll]=int(round(tmp[ll]))
-                  diff=(fabs(vec[0]-tmp[0])+
-                        fabs(vec[1]-tmp[1])+
-                        fabs(vec[2]-tmp[2]))
-                  for ll in range(3):
-                      vec[ll]=vec[ll]%ngrid[ll]
-                  if diff<1e-4:
-                      v_nruter[isym,i]=_ind2id(vec,ii,ngrid,natoms)
-                      break
-              else:
-                  sys.exit("Error: equivalent atom not found for isym={}, atom={}"
-                           .format(isym,i))
-      return nruter
+from .symmetry import SymmetryOperations
 
 
 @cython.boundscheck(False)
@@ -328,9 +151,9 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
             mm=wedge.independentbasis[jj,ii]%9//3
             nn=wedge.independentbasis[jj,ii]%3
             philist.append(vnruter[kk,ll,mm,nn,
-                                  wedge.llist[0,ii],
-                                  wedge.llist[1,ii],
-                                  wedge.llist[2,ii],
+                                        wedge.llist[0,ii],
+                                        wedge.llist[1,ii],
+                                        wedge.llist[2,ii],
                                   wedge.llist[3,ii]])
     aphilist=np.array(philist,dtype=np.double)
     vind1=-np.ones((natoms,ntot,ntot,ntot),dtype=np.intc)
@@ -362,7 +185,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
                                     for ix in range(nlist):
                                         if vind1[ii,jj,kk,bb]==ix:
                                             for ss in range(naccumindependent[ix],
-                                                        naccumindependent[ix+1]):
+                                                            naccumindependent[ix+1]):
                                                 tt=ss-naccumindependent[ix]
                                                 i.append(ss)
                                                 j.append(colindex)
@@ -378,27 +201,103 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     ones=np.ones_like(aphilist)
     multiplier=-sp.sparse.linalg.lsqr(bbs,ones)[0]
     compensation=D.dot(bbs.dot(multiplier))
-
     aphilist+=compensation
 
-    # Build the final, full set of 4th-order IFCs.
-    vnruter[:,:,:,:,:,:,:,:]=0.
+
+    if is_sparse:
+        # Two-pass COO construction: count -> allocate -> fill -> build once
+        nnz = 0
+        EPSVAL = 1e-15
+        for ii in range(nlist):
+            nind = wedge.nindependentbasis[ii]
+            ne = wedge.nequi[ii]
+            if nind==0 or ne==0:
+                continue
+            offset = naccumindependent[ii]
+            phi = aphilist[offset:offset+nind]
+            T = wedge.transformationarray[:, :nind, :ne, ii]  # (81, nind, ne)
+            out = np.tensordot(T, phi, axes=([1],[0]))        # (81, ne)
+            for jj in range(ne):
+                block = out[:, jj].reshape(3,3,3,3)
+                for ll in range(3):
+                    for mm in range(3):
+                        for nn in range(3):
+                            for aa1 in range(3):
+                                val = block[ll,mm,nn,aa1]
+                                if val!=0.0 and abs(val)>EPSVAL:
+                                    nnz += 1
+        coords = np.empty((8, nnz), dtype=np.intp)
+        data = np.empty(nnz, dtype=np.double)
+        p = 0
+        for ii in range(nlist):
+            nind = wedge.nindependentbasis[ii]
+            ne = wedge.nequi[ii]
+            if nind==0 or ne==0:
+                continue
+            offset = naccumindependent[ii]
+            phi = aphilist[offset:offset+nind]
+            T = wedge.transformationarray[:, :nind, :ne, ii]
+            out = np.tensordot(T, phi, axes=([1],[0]))
+            for jj in range(ne):
+                e0 = vequilist[0,jj,ii]
+                e1 = vequilist[1,jj,ii]
+                e2 = vequilist[2,jj,ii]
+                e3 = vequilist[3,jj,ii]
+                block = out[:, jj].reshape(3,3,3,3)
+                for ll in range(3):
+                    for mm in range(3):
+                        for nn in range(3):
+                            for aa1 in range(3):
+                                val = block[ll,mm,nn,aa1]
+                                if val!=0.0 and abs(val)>EPSVAL:
+                                    coords[0,p] = ll
+                                    coords[1,p] = mm
+                                    coords[2,p] = nn
+                                    coords[3,p] = aa1
+                                    coords[4,p] = e0
+                                    coords[5,p] = e1
+                                    coords[6,p] = e2
+                                    coords[7,p] = e3
+                                    data[p] = val
+                                    p += 1
+        vnruter = sparse.COO(coords, data, shape=(3,3,3,3,natoms,ntot,ntot,ntot))
+    else:
+        vnruter=np.zeros((3,3,3,3,natoms,ntot,ntot,ntot),dtype=np.double)
+
+    # Vectorized rebuild of final IFCs.
+    # Rationale: For fixed (ii, jj), original code computes for each tribasisindex in [0..80]
+    #   sum_{ix=0..nind-1} transformationarray[tribasisindex, ix, jj, ii] * aphilist[offset+ix].
+    # This is exactly a matrix-vector product (81 x nind) @ (nind,), so we can replace the
+    # innermost loops with a single BLAS-backed dot/tensordot without changing results.
     for ii in track(range(nlist), description="Building final IFCs"):
-        for jj in range(wedge.nequi[ii]):
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            tribasisindex=((ll*3+mm)*3+nn)*3+aa1
-                            for ix in range(wedge.nindependentbasis[ii]):
-                                vnruter[ll,mm,nn,aa1,vequilist[0,jj,ii],
-                                    vequilist[1,jj,ii],
-                                    vequilist[2,jj,ii],vequilist[3,jj,ii]
-                                    ]+=wedge.transformationarray[
-                                        tribasisindex,ix,jj,ii]*aphilist[
-                                            naccumindependent[ii]+ix]
+        nind = wedge.nindependentbasis[ii]
+        ne = wedge.nequi[ii]
+        if nind==0 or ne==0:
+            continue
+        offset = naccumindependent[ii]
+        phi = aphilist[offset:offset+nind]
+        # T has shape (81, nind, ne); each column along axis=2 corresponds to one jj equivalence.
+        T = wedge.transformationarray[:, :nind, :ne, ii]
+        # out has shape (81, ne); each column is the 81-length result for a given jj.
+        out = np.tensordot(T, phi, axes=([1],[0]))
+        for jj in range(ne):
+            e0 = vequilist[0,jj,ii]
+            e1 = vequilist[1,jj,ii]
+            e2 = vequilist[2,jj,ii]
+            e3 = vequilist[3,jj,ii]
+            block = out[:, jj].reshape(3,3,3,3)
+            # Dense path writes directly; sparse has been constructed above via COO.
+            if not is_sparse:
+                for ll in range(3):
+                    for mm in range(3):
+                        for nn in range(3):
+                            for aa1 in range(3):
+                                val = block[ll,mm,nn,aa1]
+                                if val!=0.0:
+                                    vnruter[ll,mm,nn,aa1,e0,e1,e2,e3] += val
 
     return vnruter
+
 
 
 cdef class Wedge:
@@ -407,7 +306,7 @@ cdef class Wedge:
     of force constants and to reconstruct the full Fourth-order IFC
     matrix from them.
     """
-    cdef readonly SymmetryOperations symops
+    cdef readonly object symops
     cdef readonly dict poscar,sposcar
     cdef int allocsize,allallocsize,nalllist
     cdef readonly int nlist

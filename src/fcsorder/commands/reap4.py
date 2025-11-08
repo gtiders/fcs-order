@@ -14,7 +14,13 @@ from ..utils.prepare_calculation import prepare_calculation4
 
 
 def reap4(
-    na: int, nb: int, nc: int, cutoff: str, vaspruns: list[str], is_sparse: bool = False
+    na: int,
+    nb: int,
+    nc: int,
+    cutoff: str,
+    vaspruns: list[str],
+    is_sparse: bool = False,
+    poscar_path: str = "POSCAR",
 ) -> None:
     """
     Extract 4-phonon force constants from VASP calculation results.
@@ -22,11 +28,12 @@ def reap4(
     Args:
         na, nb, nc: Supercell dimensions along a, b, c directions
         cutoff: Cutoff distance (negative for nearest neighbors, positive for distance in nm)
-        is_sparse: Use sparse tensor method for memory efficiency, default is False
         vaspruns: Paths to vasprun.xml files from VASP calculations, in order
+        is_sparse: Use sparse tensor method for memory efficiency, default is False
+        poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation4(
-        na, nb, nc, cutoff
+        na, nb, nc, cutoff, poscar_path
     )
     wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"Found {wedge.nlist} quartet equivalence classes")

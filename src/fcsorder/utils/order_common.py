@@ -46,12 +46,12 @@ def _parse_cutoff(cutoff):
         return None, frange
 
 
-def read_POSCAR():
+def read_POSCAR(poscar_path: str):
     """
     Return all the relevant information contained in a POSCAR file.
     """
 
-    atoms = read("POSCAR", format="vasp")
+    atoms = read(poscar_path)
 
     nruter = dict()
     nruter["lattvec"] = 0.1 * atoms.get_cell().T

@@ -7,5 +7,7 @@ recursive-include src *.py
 
 # Include README and other documentation
 include README.md
+include README_zh.md
+include LICENSE
 include pyproject.toml
 include setup.py

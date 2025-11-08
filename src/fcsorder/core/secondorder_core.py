@@ -95,3 +95,17 @@ def phonopy_to_ase(atoms, **kwargs):
         pbc=True,
         **kwargs,
     )
+
+
+def build_supercell_from_matrix(primcell: Atoms, supercell_matrix: list[int]) -> Atoms:
+    if len(supercell_matrix) == 3:
+        na, nb, nc = supercell_matrix
+        mat = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
+    elif len(supercell_matrix) == 9:
+        mat = np.array(supercell_matrix).reshape(3, 3)
+    else:
+        raise ValueError("supercell_matrix must have 3 or 9 integers")
+
+    structure_ph = ase_to_phonopy(primcell)
+    phonon = Phonopy(structure_ph, mat)
+    return phonopy_to_ase(phonon.supercell)

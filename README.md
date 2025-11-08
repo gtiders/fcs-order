@@ -1,165 +1,166 @@
-# FCS-Order: Force Constants Calculation Tool for VASP
+# fcs-order
 
-FCS-Order是一个用于计算VASP力常数的命令行工具，支持二阶、三阶和四阶力常数计算，以及自洽声子计算。
+Force constants calculation toolkit built on ASE and Typer. Compute 2nd/3rd/4th-order interatomic force constants and run SCPH workflows using various machine-learning potentials (NEP, DeepMD, PolyMLP, MTP) or Hiphive.
 
-## 安装
+Repo: https://github.com/gtiders/fcs-order
 
-### 使用pip安装
+## Features
 
-```bash
-pip install fcs-order
-```
+- 2nd-order force constants (phonopy-compatible)
+- 3rd- and 4th-order force constants (ShengBTE/ShengBTE-like formats)
+- SCPH (Self-Consistent Phonon) workflow
+- Multiple ML calculators: NEP, DeepMD, PolyMLP, MTP; and Hiphive
+- Handy sow/reap utilities for VASP workflows
 
-### 从源码安装
+## Installation
 
-```bash
-git clone <repository-url>
-cd fcs-order
-pip install -e .
-```
-
-## 依赖
-
-FCS-Order需要以下依赖：
-- Python 3.8+
-- typer
-- numpy
-- ase
-- phonopy
-- seekpath
-- matplotlib
-- pandas
-
-## 命令行工具
-
-FCS-Order提供以下命令：
-
-### 主要命令
-
-#### `sow3` - 生成三阶力常数计算文件
+- Python 3.9+
+- Recommended: create a fresh virtual environment
 
 ```bash
-fcsorder sow3 na nb nc --cutoff CUTOFF
+pip install git+https://github.com/gtiders/fcs-order.git
 ```
 
-参数：
-- `na`, `nb`, `nc`: 超胞在a、b、c方向的维度
-- `--cutoff`: 截断距离（负值表示最近邻，正值表示以nm为单位的距离）
+Optional dependencies per backend (install only what you need):
 
-#### `sow4` - 生成四阶力常数计算文件
+- NEP: `pip install calorine`
+- DeepMD: `pip install deepmd-kit`
+- PolyMLP: `pip install pypolymlp`
+- Hiphive: `pip install hiphive`
+- MTP: external `mlp` binary (Moment Tensor Potential), make sure it’s on PATH
+
+## CLI Overview
+
+The main entry is a Typer App with subcommands:
+
+- Top-level utilities
+  - `sow3` / `sow4`: generate displaced POSCARs
+  - `reap3` / `reap4`: collect forces (from VASP) and build IFCs
+  - `plot_phband`: plot phonon band structures from FORCE_CONSTANTS files
+  - `phonon_sow`: rattle utility (from utils)
+- Sub-apps for ML potentials and SCPH
+  - `mlp2`: 2nd-order IFCs via ML calculators (nep/dp/ploymp/mtp)
+  - `mlp3`: 3rd-order IFCs via ML calculators (nep/dp/ploymp/mtp)
+  - `mlp4`: 4th-order IFCs via ML calculators (nep/dp/ploymp/mtp)
+  - `scph`: SCPH workflow via ML calculators (nep/dp/ploymp/hiphive/mtp)
+
+Run `python -m fcsorder --help` for the full tree.
+
+## Commands
+
+### sow3
+Generate 3rd-order displacement structures.
 
 ```bash
-fcsorder sow4 na nb nc --cutoff CUTOFF
+python -m fcsorder sow3 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
 ```
 
-参数：
-- `na`, `nb`, `nc`: 超胞在a、b、c方向的维度
-- `--cutoff`: 截断距离（负值表示最近邻，正值表示以nm为单位的距离）
-
-#### `reap3` - 从VASP计算结果提取三阶力常数
+### sow4
+Generate 4th-order displacement structures.
 
 ```bash
-fcsorder reap3 na nb nc --cutoff CUTOFF [--is-sparse] vasprun.xml...
+python -m fcsorder sow4 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
 ```
 
-参数：
-- `na`, `nb`, `nc`: 超胞在a、b、c方向的维度
-- `--cutoff`: 截断距离（负值表示最近邻，正值表示以nm为单位的距离）
-- `--is-sparse`: 使用稀疏张量方法提高内存效率（可选）
-- `vasprun.xml`: VASP计算结果文件的路径（可多个）
-
-#### `reap4` - 从VASP计算结果提取四阶力常数
+### reap3
+Collect VASP results and build 3rd-order IFCs.
 
 ```bash
-fcsorder reap4 na nb nc --cutoff CUTOFF [--is-sparse] vasprun.xml...
+python -m fcsorder reap3 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN1.xml VASPRUN2.xml ...
 ```
 
-参数：
-- `na`, `nb`, `nc`: 超胞在a、b、c方向的维度
-- `--cutoff`: 截断距离（负值表示最近邻，正值表示以nm为单位的距离）
-- `--is-sparse`: 使用稀疏张量方法提高内存效率（可选）
-- `vasprun.xml`: VASP计算结果文件的路径（可多个）
-
-#### `plot_phband` - 绘制声子能带图
+### reap4
+Collect VASP results and build 4th-order IFCs.
 
 ```bash
-fcsorder plot_phband na nb nc primcell fcs_orders...
+python -m fcsorder reap4 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN*.xml
 ```
 
-参数：
-- `na`, `nb`, `nc`: 超胞在a、b、c方向的维度
-- `primcell`: 原胞文件路径（如POSCAR）
-- `fcs_orders`: FORCE_CONSTANTS文件的路径（可多个）
+### mlp2 (2nd-order)
+Subcommands: `nep`, `dp`, `ploymp`, `mtp`
 
-此工具使用原胞结构和多个FORCE_CONSTANTS文件的力常数生成声子能带图，每个数据集使用colormap中的不同颜色绘制。
+Matrix input for supercell: either 3 diagonal ints or 9 ints for a full 3x3 matrix.
 
-#### `phonon_sow` - 生成声子扰动结构
+- NEP
+```bash
+python -m fcsorder mlp2 nep 2 2 2 --potential nep.txt --poscar POSCAR --outfile FORCE_CONSTANTS_2ND [--is-gpu]
+```
+- DeepMD
+```bash
+python -m fcsorder mlp2 dp 2 2 2 --potential model.pb --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
+```
+- PolyMLP
+```bash
+python -m fcsorder mlp2 ploymp 2 2 2 --potential polymlp.pot --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
+```
+- MTP (Moment Tensor Potential, requires `mlp` executable)
+```bash
+python -m fcsorder mlp2 mtp 2 2 2 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] --outfile FORCE_CONSTANTS_2ND
+```
+Note: For MTP, the code automatically detects unique elements from the POSCAR via ASE; you do not need to pass them.
+
+### mlp3 (3rd-order)
+Subcommands: `nep`, `dp`, `ploymp`, `mtp`
 
 ```bash
-fcsorder phonon_sow [OPTIONS]
+# Example with MTP
+python -m fcsorder mlp3 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
 ```
 
-### 子命令组
+Other backends follow the same pattern as `mlp2`, with `--cutoff` required.
 
-#### `mlp2` - 使用机器学习势计算二阶力常数
+### mlp4 (4th-order)
+Subcommands: `nep`, `dp`, `ploymp`, `mtp`
 
 ```bash
-fcsorder mlp2 [SUBCOMMAND] [OPTIONS]
+python -m fcsorder mlp4 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
 ```
 
-#### `mlp3` - 使用机器学习势计算三阶力常数
+### scph
+Subcommands: `nep`, `dp`, `hiphive`, `ploymp`, `mtp`
 
+Common arguments:
+
+- `primcell`: path to primitive cell (e.g. POSCAR)
+- `supercell_matrix`: 3 or 9 ints
+- `temperatures`: e.g. "100,200,300"
+- `cutoff`: cluster space cutoff (backend-specific meaning)
+
+Examples:
+
+- NEP
 ```bash
-fcsorder mlp3 [SUBCOMMAND] [OPTIONS]
+python -m fcsorder scph nep POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential nep.txt [--is-gpu]
 ```
-
-#### `mlp4` - 使用机器学习势计算四阶力常数
-
+- DP
 ```bash
-fcsorder mlp4 [SUBCOMMAND] [OPTIONS]
+python -m fcsorder scph dp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential graph.pb
 ```
-
-#### `scph` - 使用机器学习势运行自洽声子计算
-
+- Hiphive
 ```bash
-fcsorder scph [SUBCOMMAND] [OPTIONS]
+python -m fcsorder scph hiphive POSCAR 2 2 2 --temperatures 300 --cutoff 3.0 --potential model.fcp
 ```
-
-## 使用示例
-
-### 1. 生成三阶力常数计算文件
-
+- PolyMLP
 ```bash
-fcsorder sow3 2 2 2 --cutoff -3
+python -m fcsorder scph ploymp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential polymlp.pot
 ```
-
-### 2. 从VASP计算结果提取三阶力常数
-
+- MTP
 ```bash
-fcsorder reap3 2 2 2 --cutoff -3 vasprun_1.xml vasprun_2.xml
+python -m fcsorder scph mtp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential pot.mtp [--mtp-exe mlp]
 ```
+Note: For MTP, unique elements are obtained from the provided `primcell` via ASE.
 
-### 3. 绘制声子能带图
+## MTP Notes
 
-```bash
-fcsorder plot_phband 2 2 2 POSCAR FORCE_CONSTANTS_1 FORCE_CONSTANTS_2
-```
+- Requires `mlp` binary accessible via `PATH` or specify `--mtp-exe`.
+- Temporary files are written under the system temp directory by default.
+- In calculations, unique chemical symbols are collected from the ASE Atoms object automatically.
 
-## 输出文件
+## Development
 
-- `3RD.POSCAR.*`: 三阶力常数计算用的位移结构
-- `4TH.POSCAR.*`: 四阶力常数计算用的位移结构
-- `FORCE_CONSTANTS`: 提取的力常数文件
-- `phband.svg`: 声子能带图
+- Run formatting and basic lint if desired
+- Contribute via PRs on GitHub: https://github.com/gtiders/fcs-order
 
-## 许可证
+## License
 
-请参阅LICENSE文件了解许可证信息。
-
-## 贡献
-
-欢迎提交问题和拉取请求来改进这个项目。
-
-## 引用
-
-如果您在研究中使用了FCS-Order，请考虑引用相关论文。
+TBD.
