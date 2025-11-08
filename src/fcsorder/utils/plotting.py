@@ -77,15 +77,14 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
         phonon.run_band_structure([path["explicit_kpoints_rel"]])
         band = phonon.get_band_structure_dict()
 
-        # Create DataFrame for this dataset
-        import pandas as pd
-
-        df = pd.DataFrame(band["frequencies"][0])
-        df.index = path["explicit_kpoints_linearcoord"]
+        # Plot bands using NumPy arrays (no pandas)
+        freqs = np.array(band["frequencies"][0])  # shape: (n_k, n_bands)
+        kline = np.array(path["explicit_kpoints_linearcoord"])  # shape: (n_k,)
 
         # Plot each band with the same color for this dataset
-        for col in df.columns:
-            ax_band.plot(df.index, df[col], color=colors[i], alpha=0.8, linewidth=1.2)
+        n_bands = freqs.shape[1] if freqs.ndim == 2 else 0
+        for b in range(n_bands):
+            ax_band.plot(kline, freqs[:, b], color=colors[i], alpha=0.8, linewidth=1.2)
 
     # Beautify the band structure plot
     ax_band.set_xlim(
@@ -104,15 +103,17 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
     labels = path["explicit_kpoints_labels"]
     labels = [r'$\Gamma$' if m == 'GAMMA' else m for m in labels]
     labels = [m.replace("_", "$_") + "$" if "_" in m else m for m in labels]
-    import pandas as pd
 
-    df_path = pd.DataFrame(
-        dict(labels=labels, positions=path["explicit_kpoints_linearcoord"])
-    )
-    df_path.drop(df_path.index[df_path.labels == ""], axis=0, inplace=True)
-    ax_band.set_xticks(df_path.positions)
-    ax_band.set_xticklabels(df_path.labels, fontsize=11)
-    for xp in df_path.positions:
+    # Use NumPy to filter out empty labels
+    kcoords = np.array(path["explicit_kpoints_linearcoord"])  # (n_k,)
+    label_array = np.array(labels, dtype=object)
+    mask = label_array != ""
+    tick_positions = kcoords[mask]
+    tick_labels = label_array[mask].tolist()
+
+    ax_band.set_xticks(tick_positions)
+    ax_band.set_xticklabels(tick_labels, fontsize=11)
+    for xp in tick_positions:
         ax_band.axvline(xp, color="0.6", linestyle='-', linewidth=0.8, alpha=0.7)
 
     # Add legend in separate subplot

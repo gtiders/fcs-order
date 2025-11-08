@@ -1,24 +1,13 @@
 import os
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+from typing import Any
 
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 
-try:
-    from hiphive import ClusterSpace, ForceConstantPotential
-    from hiphive.self_consistent_phonons import self_consistent_harmonic_model
-    from hiphive.utilities import extract_parameters
-    from hiphive import ForceConstants
-except ImportError:
-    raise ImportError(
-        "Failed to import hiphive. Please install hiphive package first. "
-        "You can install it using: pip install hiphive"
-    )
 
-
-def parse_parameters_form_fcs2(fcs_2nd: str, supercell: Atoms, cs: ClusterSpace):
+def parse_parameters_form_fcs2(fcs_2nd: str, supercell: Atoms, cs: Any):
     """Parse the parameters from the FCS2 file.
 
     Args:
@@ -29,6 +18,14 @@ def parse_parameters_form_fcs2(fcs_2nd: str, supercell: Atoms, cs: ClusterSpace)
     Returns:
         dict: The parsed parameters.
     """
+    try:
+        from hiphive.utilities import extract_parameters
+        from hiphive import ForceConstants
+    except ImportError as e:
+        raise ImportError(
+            "Failed to import hiphive utilities. Install hiphive: pip install hiphive"
+        ) from e
+
     fcs = ForceConstants.read_phonopy(supercell, fcs_2nd)
     parameters = extract_parameters(fcs, cs)
     return parameters
@@ -66,6 +63,16 @@ def run_scph(
     Returns:
         None: Results are saved to files in the 'fcps/' and 'scph_trajs/' directories.
     """
+    # Lazy import hiphive here to avoid hard dependency at import-time
+    try:
+        from hiphive import ClusterSpace, ForceConstantPotential
+        from hiphive.self_consistent_phonons import self_consistent_harmonic_model
+    except ImportError as e:
+        raise ImportError(
+            "Failed to import hiphive. Please install hiphive package first. "
+            "You can install it using: pip install hiphive"
+        ) from e
+
     ## parameters
     cutoffs = [cutoff]
     # setup scph
@@ -150,14 +157,12 @@ def analyze_scph_convergence(temperatures: list[float]):
         ax1.set_xlabel(f"SCPH iteration {T} K")
         ax1.set_ylabel("Parameters")
         ax1.set_xlim([0, len(parameter_trajs)])
-        ax1.legend()
 
         # set labels and limits for parameter difference plot
         ax2.set_xlabel(f"SCPH iteration {T} K")
         ax2.set_ylabel("$\\Delta$ Parameters")
         ax2.set_xlim([0, len(delta_parameters)])
         ax2.set_ylim(bottom=0.0)
-        ax2.legend()
 
         fig.tight_layout()
         fig.savefig(f"scph_parameter_convergence_T{T}.svg")
