@@ -11,6 +11,7 @@ from ase.io import read
 
 # Local imports
 from ..core.scph_core import run_scph, analyze_scph_convergence
+from ..core.secondorder_core import  build_supercell_from_matrix
 
 
 # Create the main app
@@ -22,7 +23,9 @@ app = typer.Typer(
 @app.command()
 def nep(
     primcell: str = typer.Argument(..., help="Path to the primitive cell file (e.g., 'POSCAR')"),
-    supercell: str = typer.Argument(..., help="Path to the supercell file (e.g., 'SPOSCAR')"),
+    supercell_matrix: list[int] = typer.Argument(
+        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+    ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
     ),
@@ -54,7 +57,7 @@ def nep(
 
     Args:
         primcell: Path to the primitive cell file (e.g., 'POSCAR')\n
-        supercell: Path to the supercell file (e.g., 'SPOSCAR')\n
+        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
         temperatures: Temperatures for calculation, e.g., '100,200,300'\n
         cutoff: Cutoff radius for the cluster space\n
         potential: NEP potential file path\n
@@ -84,9 +87,9 @@ def nep(
         print("calorine not found, please install it first")
         sys.exit(1)
 
-    # Read primitive cell and supercell
+    # Read primitive cell and build supercell from matrix
     primcell = read(primcell)
-    supercell = read(supercell)
+    supercell = build_supercell_from_matrix(primcell, supercell_matrix)
 
     # Run SCPH calculation
     run_scph(
@@ -111,7 +114,9 @@ def nep(
 @app.command()
 def dp(
     primcell: str = typer.Argument(..., help="Path to the primitive cell file (e.g., 'POSCAR')"),
-    supercell: str = typer.Argument(..., help="Path to the supercell file (e.g., 'SPOSCAR')"),
+    supercell_matrix: list[int] = typer.Argument(
+        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+    ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
     ),
@@ -140,7 +145,7 @@ def dp(
 
     Args:
         primcell: Path to the primitive cell file (e.g., 'POSCAR')\n
-        supercell: Path to the supercell file (e.g., 'SPOSCAR')\n
+        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
         temperatures: Temperatures for calculation, e.g., '100,200,300'\n
         cutoff: Cutoff radius for the cluster space\n
         potential: DeepMD potential file path\n
@@ -164,9 +169,9 @@ def dp(
         print("deepmd not found, please install it first")
         sys.exit(1)
 
-    # Read primitive cell and supercell
+    # Read primitive cell and build supercell from matrix
     primcell = read(primcell)
-    supercell = read(supercell)
+    supercell = build_supercell_from_matrix(primcell, supercell_matrix)
 
     # Run SCPH calculation
     run_scph(
@@ -191,7 +196,9 @@ def dp(
 @app.command()
 def hiphive(
     primcell: str = typer.Argument(..., help="Path to the primitive cell file (e.g., 'POSCAR')"),
-    supercell: str = typer.Argument(..., help="Path to the supercell file (e.g., 'SPOSCAR')"),
+    supercell_matrix: list[int] = typer.Argument(
+        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+    ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
     ),
@@ -220,7 +227,7 @@ def hiphive(
 
     Args:
         primcell: Path to the primitive cell file (e.g., 'POSCAR')\n
-        supercell: Path to the supercell file (e.g., 'SPOSCAR')\n
+        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
         temperatures: Temperatures for calculation, e.g., '100,200,300'\n
         cutoff: Cutoff radius for the cluster space\n
         potential: Hiphive potential file path\n
@@ -234,9 +241,9 @@ def hiphive(
     # Parse temperatures string to list of floats
     T = [float(t) for t in temperatures.split(",")]
 
-    # Read primitive cell and supercell
+    # Read primitive cell and build supercell from matrix
     primcell = read(primcell)
-    supercell = read(supercell)
+    supercell = build_supercell_from_matrix(primcell, supercell_matrix)
 
     # Hiphive calculator initialization
     print(f"Initializing Hiphive calculator with potential: {potential}")
@@ -275,7 +282,9 @@ def hiphive(
 @app.command()
 def ploymp(
     primcell: str = typer.Argument(..., help="Path to the primitive cell file (e.g., 'POSCAR')"),
-    supercell: str = typer.Argument(..., help="Path to the supercell file (e.g., 'SPOSCAR')"),
+    supercell_matrix: list[int] = typer.Argument(
+        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+    ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
     ),
@@ -304,7 +313,7 @@ def ploymp(
 
     Args:
         primcell: Path to the primitive cell file (e.g., 'POSCAR')\n
-        supercell: Path to the supercell file (e.g., 'SPOSCAR')\n
+        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
         temperatures: Temperatures for calculation, e.g., '100,200,300'\n
         cutoff: Cutoff radius for the cluster space\n
         potential: PolyMLP potential file path\n
@@ -328,9 +337,9 @@ def ploymp(
         print("pypolymlp not found, please install it first")
         sys.exit(1)
 
-    # Read primitive cell and supercell
+    # Read primitive cell and build supercell from matrix
     primcell = read(primcell)
-    supercell = read(supercell)
+    supercell = build_supercell_from_matrix(primcell, supercell_matrix)
 
     # Create output directories
     os.makedirs("fcps/", exist_ok=True)
@@ -338,6 +347,100 @@ def ploymp(
     # Run SCPH calculation
     run_scph(
         primcell=primcell,
+        calc=calc,
+        supercell=supercell,
+        temperatures=T,
+        cutoff=cutoff,
+        alpha=alpha,
+        n_iterations=n_iterations,
+        n_structures=n_structures,
+        fcs_2nd=fcs_2nd,
+        is_qm=is_qm,
+        imag_freq_factor=imag_freq_factor,
+    )
+
+    # Analyze convergence if requested
+    if analyze_convergence:
+        analyze_scph_convergence(T)
+
+
+@app.command()
+def mtp(
+    primcell: str = typer.Argument(..., help="Path to the primitive cell file (e.g., 'POSCAR')"),
+    supercell_matrix: list[int] = typer.Argument(
+        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+    ),
+    temperatures: str = typer.Option(
+        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+    ),
+    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    potential: str = typer.Option(
+        ..., exists=True, help="MTP potential file path (e.g., 'pot.mtp')"
+    ),
+    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    fcs_2nd: str = typer.Option(
+        None, help="Path to the FCS2 file for initial parameters"
+    ),
+    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    imag_freq_factor: float = typer.Option(
+        1.0, help="Factor for handling imaginary frequencies"
+    ),
+    mtp_exe: str = typer.Option(
+        "mlp", "--mtp-exe", help="Path to MLP executable, default is 'mlp'"
+    ),
+    analyze_convergence: bool = typer.Option(
+        True,
+        "--analyze-convergence",
+        help="Analyze SCPH parameter convergence after calculation",
+    ),
+):
+    """
+    Run self-consistent phonon calculation using MTP (Moment Tensor Potential) model.
+
+    Args:
+        primcell: Path to the primitive cell file (e.g., 'POSCAR')\n
+        supercell_matrix: Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)\n
+        temperatures: Temperatures for calculation, e.g., '100,200,300'\n
+        cutoff: Cutoff radius for the cluster space\n
+        potential: MTP potential file path\n
+        alpha: Mixing parameter for SCPH iterations\n
+        n_iterations: Number of iterations for SCPH\n
+        n_structures: Number of structures to generate\n
+        fcs_2nd: Path to the FCS2 file for initial parameters\n
+        is_qm: Whether to use quantum statistics\n
+        imag_freq_factor: Factor for handling imaginary frequencies\n
+        mtp_exe: Path to MLP executable\n
+    """
+    # Parse temperatures string to list of floats
+    T = [float(t) for t in temperatures.split(",")]
+
+    # Read primitive cell and build supercell from matrix
+    primcell_atoms = read(primcell)
+    supercell = build_supercell_from_matrix(primcell_atoms, supercell_matrix)
+    
+    # Get unique elements from primitive cell
+    unique_elements = sorted(set(primcell_atoms.get_chemical_symbols()))
+
+    # MTP calculator initialization
+    print(f"Initializing MTP calculator with potential: {potential}")
+    try:
+        from ..utils import MTP
+
+        calc = MTP(
+            mtp_path=potential,
+            mtp_exe=mtp_exe,
+            unique_elements=unique_elements
+        )
+        print(f"Using MTP calculator with elements: {unique_elements}")
+    except ImportError as e:
+        print(f"Error importing MTP: {e}")
+        sys.exit(1)
+
+    # Run SCPH calculation
+    run_scph(
+        primcell=primcell_atoms,
         calc=calc,
         supercell=supercell,
         temperatures=T,

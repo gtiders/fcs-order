@@ -7,16 +7,17 @@ from ..utils.prepare_calculation import prepare_calculation4
 from ..core import fourthorder_core  # type: ignore
 
 
-def sow4(na: int, nb: int, nc: int, cutoff: str):
+def sow4(na: int, nb: int, nc: int, cutoff: str, poscar_path: str = "POSCAR"):
     """
     Generate 4TH.POSCAR.* files for 4-phonon calculations.
 
     Args:
         na, nb, nc: Supercell dimensions along a, b, c directions.
         cutoff: Cutoff distance (negative for nearest neighbors, positive for distance in nm).
+        poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'.
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation4(
-        na, nb, nc, cutoff
+        na, nb, nc, cutoff, poscar_path
     )
     wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"Found {wedge.nlist} quartet equivalence classes")

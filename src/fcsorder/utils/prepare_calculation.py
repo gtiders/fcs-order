@@ -13,12 +13,12 @@ from .order_common import (
 )
 
 
-def prepare_calculation3(na, nb, nc, cutoff):
+def prepare_calculation3(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)
 
     print("Reading POSCAR")
-    poscar = read_POSCAR()
+    poscar = read_POSCAR(poscar_path)
     print("Analyzing the symmetries")
     symops = thirdorder_core.SymmetryOperations(
         poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC
@@ -39,14 +39,14 @@ def prepare_calculation3(na, nb, nc, cutoff):
     return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh
 
 
-def prepare_calculation4(na, nb, nc, cutoff):
+def prepare_calculation4(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     """
     Validate the input parameters and prepare the calculation.
     """
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)
     print("Reading POSCAR")
-    poscar = read_POSCAR()
+    poscar = read_POSCAR(poscar_path)
     print("Analyzing the symmetries")
     symops = fourthorder_core.SymmetryOperations(
         poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC

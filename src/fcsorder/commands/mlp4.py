@@ -44,6 +44,7 @@ def calculate_phonon_force_constants_4th(
     calculation,
     is_write: bool = False,
     is_sparse: bool = False,
+    poscar_path: str = "POSCAR",
 ):
     """
     Core function to calculate 4-phonon force constants.
@@ -59,7 +60,7 @@ def calculate_phonon_force_constants_4th(
         None (writes FORCE_CONSTANTS_4TH file)
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation4(
-        na, nb, nc, cutoff
+        na, nb, nc, cutoff, poscar_path
     )
     natoms = len(poscar["types"])
     ntot = natoms * na * nb * nc
@@ -160,6 +161,9 @@ def nep(
     is_gpu: bool = typer.Option(
         False, "--is-gpu", help="Use GPU calculator for faster computation"
     ),
+    poscar: str = typer.Option(
+        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+    ),
 ):
     """
     Calculate 4-phonon force constants using NEP (Neural Evolution Potential) model.
@@ -171,6 +175,7 @@ def nep(
         is_write: Whether to save intermediate files
         is_sparse: Use sparse tensor method for memory efficiency
         is_gpu: Use GPU calculator for faster computation
+        poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     print(f"Initializing NEP calculator with potential: {potential}")
     try:
@@ -186,7 +191,9 @@ def nep(
         print("calorine not found, please install it first")
         sys.exit(1)
 
-    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, is_sparse)
+    calculate_phonon_force_constants_4th(
+        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+    )
 
 
 @app.command()
@@ -209,6 +216,9 @@ def dp(
     is_sparse: bool = typer.Option(
         False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
     ),
+    poscar: str = typer.Option(
+        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE. Default: 'POSCAR'", exists=True
+    ),
 ):
     """
     Calculate 4-phonon force constants using Deep Potential (DP) model.
@@ -219,6 +229,7 @@ def dp(
         potential: Deep Potential model file path
         is_write: Whether to save intermediate files
         is_sparse: Use sparse tensor method for memory efficiency
+        poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # DP calculator initialization
     print(f"Initializing DP calculator with potential: {potential}")
@@ -230,7 +241,9 @@ def dp(
         print("deepmd not found, please install it first")
         sys.exit(1)
 
-    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, is_sparse)
+    calculate_phonon_force_constants_4th(
+        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+    )
 
 
 @app.command()
@@ -253,6 +266,9 @@ def hiphive(
     is_sparse: bool = typer.Option(
         False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
     ),
+    poscar: str = typer.Option(
+        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+    ),
 ):
     """
     Calculate 4-phonon force constants using hiphive force constant potential.
@@ -265,6 +281,7 @@ def hiphive(
         potential: Hiphive potential file path
         is_write: Whether to save intermediate files
         is_sparse: Use sparse tensor method for memory efficiency
+        poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # Hiphive calculator initialization
     print(f"Using hiphive calculator with potential: {potential}")
@@ -275,7 +292,7 @@ def hiphive(
         fcp = ForceConstantPotential.read(potential)
         # Create a dummy atoms object to get force constants
         poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
-            prepare_calculation4(na, nb, nc, cutoff)
+            prepare_calculation4(na, nb, nc, cutoff, poscar)
         )
         atoms = get_atoms(normalize_SPOSCAR(sposcar))
         force_constants = fcp.get_force_constants(atoms)
@@ -284,7 +301,9 @@ def hiphive(
         print("hiphive not found, please install it first")
         sys.exit(1)
 
-    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, is_sparse)
+    calculate_phonon_force_constants_4th(
+        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+    )
 
 
 @app.command()
@@ -305,6 +324,9 @@ def ploymp(
     is_sparse: bool = typer.Option(
         False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
     ),
+    poscar: str = typer.Option(
+        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+    ),
 ):
     """
     Calculate 4-phonon force constants using PolyMLP (Polynomial Machine Learning Potential) model.
@@ -315,6 +337,7 @@ def ploymp(
         potential: PolyMLP potential file path
         is_write: Whether to save intermediate files
         is_sparse: Use sparse tensor method for memory efficiency
+        poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # PolyMLP calculator initialization
     print(f"Using ploymp calculator with potential: {potential}")
@@ -326,4 +349,73 @@ def ploymp(
         print("pypolymlp not found, please install it first")
         sys.exit(1)
 
-    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, is_sparse)
+    calculate_phonon_force_constants_4th(
+        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+    )
+
+
+@app.command()
+def mtp(
+    na: int,
+    nb: int,
+    nc: int,
+    cutoff: str = typer.Option(
+        ...,
+        help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
+    ),
+    potential: str = typer.Option(
+        ..., exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
+    ),
+    is_write: bool = typer.Option(
+        False,
+        "--is-write",
+        help="Whether to save intermediate files during the calculation process",
+    ),
+    is_sparse: bool = typer.Option(
+        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+    ),
+    mtp_exe: str = typer.Option(
+        "mlp", "--mtp-exe", help="Path to MLP executable, default is 'mlp'"
+    ),
+    poscar: str = typer.Option(
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
+    ),
+):
+    """
+    Calculate 4-phonon force constants using MTP (Moment Tensor Potential) model.
+
+    Args:
+        na, nb, nc: Supercell size, corresponding to expansion times in a, b, c directions\n
+        cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)\n
+        potential: MTP potential file path\n
+        is_write: Whether to save intermediate files\n
+        is_sparse: Use sparse tensor method for memory efficiency\n
+        mtp_exe: Path to MLP executable\n
+        poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
+    """
+    # Read atoms to get unique elements
+    from ase.io import read
+    atoms = read(poscar)
+    unique_elements = sorted(set(atoms.get_chemical_symbols()))
+
+    # MTP calculator initialization
+    print(f"Initializing MTP calculator with potential: {potential}")
+    try:
+        from ..utils import MTP
+
+        calc = MTP(
+            mtp_path=potential,
+            mtp_exe=mtp_exe,
+            unique_elements=unique_elements
+        )
+        print(f"Using MTP calculator with elements: {unique_elements}")
+    except ImportError as e:
+        print(f"Error importing MTP: {e}")
+        sys.exit(1)
+
+    calculate_phonon_force_constants_4th(
+        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+    )

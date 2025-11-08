@@ -17,6 +17,7 @@ def sow3(
     nb: int,
     nc: int,
     cutoff: str,
+    poscar_path: str = "POSCAR",
 ):
     """
     Generate 3RD.POSCAR.* files for 3-phonon calculations.
@@ -24,9 +25,10 @@ def sow3(
     Args:
         na, nb, nc: Supercell dimensions along a, b, c directions.
         cutoff: Cutoff distance (negative for nearest neighbors, positive for distance in nm).
+        poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'.
     """
     poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation3(
-        na, nb, nc, cutoff
+        na, nb, nc, cutoff, poscar_path
     )
     wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print(f"Found {wedge.nlist} triplet equivalence classes")
