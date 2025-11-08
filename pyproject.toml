@@ -6,12 +6,14 @@ readme = "README.md"
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "ase>=3.22.1",
+    "calorine>=3.2",
     "cython>=3.1.6",
     "hiphive>=1.5",
     "matplotlib>=3.9.4",
     "numpy>=1.21.6",
     "phonopy>=2.43.6",
     "scipy>=1.7.3",
+    "seekpath>=2.1.0",
     "setuptools>=80.9.0",
     "sparse>=0.15.5",
     "spglib>=2.2.0",

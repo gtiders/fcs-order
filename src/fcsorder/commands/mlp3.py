@@ -221,6 +221,39 @@ def dp(
 
 
 @app.command()
+def hiphive(
+    na: int,
+    nb: int,
+    nc: int,
+    potential: str = typer.Option(
+        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
+    ),
+):
+    """
+    Calculate 4-phonon force constants using hiphive force constant potential.
+
+    Args:
+        na, nb, nc: Supercell size, corresponding to expansion times in a, b, c directions
+                    Note: The supercell size must be greater than or equal to the size used
+                    for training the fcp potential. It cannot be smaller.
+        potential: Hiphive potential file path
+    """
+    # Hiphive calculator initialization
+    print(f"Using hiphive calculator with potential: {potential}")
+    try:
+        from hiphive import ForceConstantPotential
+
+        fcp = ForceConstantPotential.read(potential)
+        prim = fcp.primitive_structure
+        supercell = prim.repeat((na, nb, nc))
+        force_constants = fcp.get_force_constants(supercell)
+        force_constants.write_to_shengBTE("FORCE_CONSTANTS_3RD", prim)
+    except ImportError:
+        print("hiphive not found, please install it first")
+        sys.exit(1)
+
+
+@app.command()
 def ploymp(
     na: int,
     nb: int,
