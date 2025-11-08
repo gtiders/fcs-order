@@ -344,6 +344,7 @@ version = "3.1"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
+    { name = "calorine" },
     { name = "cython" },
     { name = "hiphive" },
     { name = "matplotlib" },
@@ -352,6 +353,7 @@ dependencies = [
     { name = "phonopy" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.2", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "seekpath" },
     { name = "setuptools" },
     { name = "sparse" },
     { name = "spglib" },
@@ -386,6 +388,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.22.1" },
+    { name = "calorine", specifier = ">=3.2" },
     { name = "calorine", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "calorine", marker = "extra == 'calorine'", specifier = ">=1.0" },
     { name = "cython", specifier = ">=3.1.6" },
@@ -400,6 +403,7 @@ requires-dist = [
     { name = "pypolymlp", marker = "extra == 'all'", specifier = ">=0.15" },
     { name = "pypolymlp", marker = "extra == 'mlp'", specifier = ">=0.15" },
     { name = "scipy", specifier = ">=1.7.3" },
+    { name = "seekpath", specifier = ">=2.1.0" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "sparse", specifier = ">=0.15.5" },
     { name = "spglib", specifier = ">=2.2.0" },
@@ -1554,6 +1558,20 @@ wheels = [
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/4e/7b/f127a5795d5ba8ece4e0dce7d4a9fb7cb9e4f4757137757d7a69ab7d4f1a/scipy-1.16.2-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:fa01f0f6a3050fa6a9771a95d5faccc8e2f5a92b4a2e5440a0fa7264a2398472", size = 38783985, upload-time = "2025-09-11T17:43:06.661Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/3e/9f/bc81c1d1e033951eb5912cd3750cc005943afa3e65a725d2443a3b3c4347/scipy-1.16.2-cp313-cp313t-win_amd64.whl", hash = "sha256:116296e89fba96f76353a8579820c2512f6e55835d3fad7780fece04367de351", size = 38631367, upload-time = "2025-09-11T17:43:14.44Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/d6/5e/2cc7555fd81d01814271412a1d59a289d25f8b63208a0a16c21069d55d3e/scipy-1.16.2-cp313-cp313t-win_arm64.whl", hash = "sha256:98e22834650be81d42982360382b43b17f7ba95e0e6993e2a4f5b9ad9283a94d", size = 25787992, upload-time = "2025-09-11T17:43:19.745Z" },
+]
+
+[[package]]
+name = "seekpath"
+version = "2.1.0"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "spglib" },
+]
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/55/6c/0a0525f78062d126f29930042d26478824d56fb7dca754373368309a02d2/seekpath-2.1.0.tar.gz", hash = "sha256:31cec579628262e6d4a4c3693fefa70d6ccae1ceeef7c9d10ea3cd48988452c4" }
+wheels = [
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/30/2c/fcb31e185a3a74d4098d9c44ac108ddcf1a4c88d7d3cea5a569dd812c62b/seekpath-2.1.0-py2.py3-none-any.whl", hash = "sha256:e825d0b17e3fcca4aa27e979888665e72209faa3215687db47dbf0e075551bb3" },
 ]
 
 [[package]]

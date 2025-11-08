@@ -17,7 +17,7 @@ from ..core import get_force_constants
 def calculate_phonon_force_constants_2nd(
     supercell_array: np.ndarray,
     calculation: Calculator,
-    outfile: str = "FORCECONSTANTS_2ND",
+    outfile: str = "FORCE_CONSTANTS_2ND",
 ):
     """
     Core function to calculate 2-phonon force constants.
@@ -28,7 +28,7 @@ def calculate_phonon_force_constants_2nd(
         outfile: Output file name for force constants
 
     Returns:
-        None (writes FORCECONSTANTS_2ND file)
+        None (writes FORCE_CONSTANTS_2ND file)
     """
 
     atoms = read("POSCAR")
@@ -61,9 +61,9 @@ def nep(
         ..., exists=True, help="NEP potential file path (e.g. 'nep.txt')"
     ),
     outfile: str = typer.Option(
-        "FORCECONSTANTS_2ND",
+        "FORCE_CONSTANTS_2ND",
         "--outfile",
-        help="Output file path, default is 'FORCECONSTANTS_2ND'",
+        help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
     is_gpu: bool = typer.Option(
         False, "--is-gpu", help="Use GPU calculator for faster computation"
@@ -121,9 +121,9 @@ def dp(
         ..., exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
     ),
     outfile: str = typer.Option(
-        "FORCECONSTANTS_2ND",
+        "FORCE_CONSTANTS_2ND",
         "--outfile",
-        help="Output file path, default is 'FORCECONSTANTS_2ND'",
+        help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
 ):
     """
@@ -163,6 +163,39 @@ def dp(
 
 
 @app.command()
+def hiphive(
+    na: int,
+    nb: int,
+    nc: int,
+    potential: str = typer.Option(
+        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
+    ),
+):
+    """
+    Calculate 4-phonon force constants using hiphive force constant potential.
+
+    Args:
+        na, nb, nc: Supercell size, corresponding to expansion times in a, b, c directions
+                    Note: The supercell size must be greater than or equal to the size used
+                    for training the fcp potential. It cannot be smaller.
+        potential: Hiphive potential file path
+    """
+    # Hiphive calculator initialization
+    print(f"Using hiphive calculator with potential: {potential}")
+    try:
+        from hiphive import ForceConstantPotential
+
+        fcp = ForceConstantPotential.read(potential)
+        prim = fcp.primitive_structure
+        supercell = prim.repeat((na, nb, nc))
+        force_constants = fcp.get_force_constants(supercell)
+        force_constants.write_to_phonopy("FORCE_CONSTANTS_2ND", format="text")
+    except ImportError:
+        print("hiphive not found, please install it first")
+        sys.exit(1)
+
+
+@app.command()
 def ploymp(
     supercell_matrix: list[int] = typer.Argument(
         ...,
@@ -170,9 +203,9 @@ def ploymp(
     ),
     potential: str = typer.Option(..., exists=True, help="PolyMLP potential file path"),
     outfile: str = typer.Option(
-        "FORCECONSTANTS_2ND",
+        "FORCE_CONSTANTS_2ND",
         "--outfile",
-        help="Output file path, default is 'FORCECONSTANTS_2ND'",
+        help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
 ):
     """
