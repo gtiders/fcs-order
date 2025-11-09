@@ -1,3 +1,4 @@
+The fcs-order project is currently under active development. If you want to experience and use the project, you can install it via Git with the command `pip install git+https://github.com/gtiders/fcs-order.git`. After installation, run `fcsorder --help` to view detailed help information for each command, so that you can better understand and use the project's features.
 # fcs-order
 
 Force constants calculation toolkit built on ASE and Typer. Compute 2nd/3rd/4th-order interatomic force constants and run SCPH workflows using various machine-learning potentials (NEP, DeepMD, PolyMLP, MTP) or Hiphive.
