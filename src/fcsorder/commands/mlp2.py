@@ -11,7 +11,7 @@ from ase.io import read
 from ase.calculators.calculator import Calculator
 
 # Local imports
-from ..core import get_force_constants
+from ..core.secondorder_core import get_force_constants
 from ..utils.supercell import parse_supercell_matrix
 from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 

@@ -12,7 +12,7 @@ from typing import List
 
 
 # Local imports
-from ..core.scph_core import run_scph, analyze_scph_convergence
+from ..core.self_consistent_phonons import run_scph, analyze_scph_convergence
 from ..core.secondorder_core import  build_supercell_from_matrix
 from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 
