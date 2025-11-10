@@ -20,15 +20,18 @@ ext = ".pyx" if USE_CYTHON else ".c"
 
 extensions = [
     Extension(
-        "thirdorder_core", ["thirdorder_core" + ext],
+        "thirdorder_core",
+        ["thirdorder_core" + ext],
         include_dirs=[numpy.get_include()] + INCLUDE_DIRS,
         library_dirs=LIBRARY_DIRS,
         runtime_library_dirs=LIBRARY_DIRS,
-        libraries=["symspg"])
+        libraries=["symspg"],
+    )
 ]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
+
     extensions = cythonize(extensions)
 
 setup(name="thirdorder", ext_modules=extensions)

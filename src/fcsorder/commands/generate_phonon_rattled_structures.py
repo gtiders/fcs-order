@@ -15,6 +15,7 @@ from collections import OrderedDict
 # Core helpers (moved here)
 # ==========================
 
+
 def _n_BE(T, w_s):
     """
     Bose-Einstein distribution function.
@@ -129,7 +130,9 @@ class _PhononRattler:
         argsort = np.argsort(np.abs(w2_s))
         w2_gamma = w2_s[argsort][:3]
         if np.any(np.abs(w2_gamma) > frequency_tol):
-            typer.print(f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}")
+            typer.print(
+                f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}"
+            )
 
         # warning if any imaginary modes
         if np.any(w2_s < -frequency_tol):
@@ -158,6 +161,7 @@ class _PhononRattler:
 
 
 # public core APIs
+
 
 def generate_phonon_rattled_structures(
     atoms: Atoms,
@@ -256,6 +260,7 @@ def plot_distributions(structure_list, ref_pos, T):
 # ==========================
 # Typer command
 # ==========================
+
 
 def generate_phonon_rattled_structures(
     sposcar: str = typer.Argument(..., exists=True, help="Path to SPOSCAR file"),
@@ -359,7 +364,9 @@ def generate_phonon_rattled_structures(
 
             write(output_filename, selected_structures, format="extxyz")
             plot_distributions(selected_structures, ref_pos, T=t)
-            typer.print(f"  Saved {len(selected_structures)} structures to {output_filename}")
+            typer.print(
+                f"  Saved {len(selected_structures)} structures to {output_filename}"
+            )
 
         if len(valid_structures) < number:
             typer.print(

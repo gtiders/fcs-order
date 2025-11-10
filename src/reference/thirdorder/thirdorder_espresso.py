@@ -21,6 +21,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
+
 try:
     xrange
 except NameError:
@@ -70,115 +71,125 @@ def qe_cell(ibrav, celldm):
         nruter[0, 1] = 0.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = -0.5
-        nruter[1, 1] = np.sqrt(3.) / 2.
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = 0.
+        nruter[1, 1] = np.sqrt(3.0) / 2.0
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = 0.0
         nruter[2, 2] = celldm[3]
     elif ibrav == 5:
-        nruter[0, 0] = np.sqrt((1 - celldm[4]) / 2.)
-        nruter[0, 1] = -np.sqrt((1 - celldm[4]) / 6.)
-        nruter[0, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.)
-        nruter[1, 0] = 0.
-        nruter[1, 1] = 2. * np.sqrt((1 - celldm[4]) / 6.)
-        nruter[1, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.)
-        nruter[2, 0] = -np.sqrt((1 - celldm[4]) / 2.)
-        nruter[2, 1] = -np.sqrt((1 - celldm[4]) / 6.)
-        nruter[2, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.)
+        nruter[0, 0] = np.sqrt((1 - celldm[4]) / 2.0)
+        nruter[0, 1] = -np.sqrt((1 - celldm[4]) / 6.0)
+        nruter[0, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.0)
+        nruter[1, 0] = 0.0
+        nruter[1, 1] = 2.0 * np.sqrt((1 - celldm[4]) / 6.0)
+        nruter[1, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.0)
+        nruter[2, 0] = -np.sqrt((1 - celldm[4]) / 2.0)
+        nruter[2, 1] = -np.sqrt((1 - celldm[4]) / 6.0)
+        nruter[2, 2] = np.sqrt((1 + 2 * celldm[4]) / 3.0)
     elif ibrav == 6:
         nruter[0, 0] = 1.0
         nruter[0, 1] = 0.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = 0.0
         nruter[1, 1] = 1.0
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = 0.
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = 0.0
         nruter[2, 2] = celldm[3]
     elif ibrav == 7:
         nruter[0, 0] = 0.5
         nruter[0, 1] = -0.5
-        nruter[0, 2] = celldm[3] / 2.
+        nruter[0, 2] = celldm[3] / 2.0
         nruter[1, 0] = 0.5
         nruter[1, 1] = 0.5
-        nruter[1, 2] = celldm[3] / 2.
+        nruter[1, 2] = celldm[3] / 2.0
         nruter[2, 0] = -0.5
         nruter[2, 1] = -0.5
-        nruter[2, 2] = celldm[3] / 2.
+        nruter[2, 2] = celldm[3] / 2.0
     elif ibrav == 8:
         nruter[0, 0] = 1.0
         nruter[0, 1] = 0.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = 0.0
         nruter[1, 1] = celldm[2]
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = 0.
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = 0.0
         nruter[2, 2] = celldm[3]
     elif ibrav == 9:
         nruter[0, 0] = 0.5
-        nruter[0, 1] = celldm[2] / 2.
+        nruter[0, 1] = celldm[2] / 2.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = -0.5
-        nruter[1, 1] = celldm[2] / 2.
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = 0.
+        nruter[1, 1] = celldm[2] / 2.0
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = 0.0
         nruter[2, 2] = celldm[3]
     elif ibrav == 10:
         nruter[0, 0] = 0.5
         nruter[0, 1] = 0.0
-        nruter[0, 2] = celldm[3] / 2.
+        nruter[0, 2] = celldm[3] / 2.0
         nruter[1, 0] = 0.5
-        nruter[1, 1] = celldm[2] / 2.
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = celldm[2] / 2.
-        nruter[2, 2] = celldm[3] / 2.
+        nruter[1, 1] = celldm[2] / 2.0
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = celldm[2] / 2.0
+        nruter[2, 2] = celldm[3] / 2.0
     elif ibrav == 11:
         nruter[0, 0] = 0.5
-        nruter[0, 1] = celldm[2] / 2.
-        nruter[0, 2] = celldm[3] / 2.
+        nruter[0, 1] = celldm[2] / 2.0
+        nruter[0, 2] = celldm[3] / 2.0
         nruter[1, 0] = -0.5
-        nruter[1, 1] = celldm[2] / 2.
-        nruter[1, 2] = celldm[3] / 2.
+        nruter[1, 1] = celldm[2] / 2.0
+        nruter[1, 2] = celldm[3] / 2.0
         nruter[2, 0] = -0.5
-        nruter[2, 1] = -celldm[2] / 2.
-        nruter[2, 2] = celldm[3] / 2.
+        nruter[2, 1] = -celldm[2] / 2.0
+        nruter[2, 2] = celldm[3] / 2.0
     elif ibrav == 12:
         nruter[0, 0] = 1.0
         nruter[0, 1] = 0.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = celldm[2] * celldm[4]
-        nruter[1, 1] = celldm[2] * np.sqrt(1 - celldm[4]**2)
-        nruter[1, 2] = 0.
-        nruter[2, 0] = 0.
-        nruter[2, 1] = 0.
+        nruter[1, 1] = celldm[2] * np.sqrt(1 - celldm[4] ** 2)
+        nruter[1, 2] = 0.0
+        nruter[2, 0] = 0.0
+        nruter[2, 1] = 0.0
         nruter[2, 2] = celldm[3]
     elif ibrav == 13:
         nruter[0, 0] = 0.5
         nruter[0, 1] = 0.0
-        nruter[0, 2] = -celldm[3] / 2.
+        nruter[0, 2] = -celldm[3] / 2.0
         nruter[1, 0] = celldm[2] * celldm[4]
-        nruter[1, 1] = celldm[2] * np.sqrt(1 - celldm[4]**2)
-        nruter[1, 2] = 0.
+        nruter[1, 1] = celldm[2] * np.sqrt(1 - celldm[4] ** 2)
+        nruter[1, 2] = 0.0
         nruter[2, 0] = 0.5
-        nruter[2, 1] = 0.
-        nruter[2, 2] = celldm[3] / 2.
+        nruter[2, 1] = 0.0
+        nruter[2, 2] = celldm[3] / 2.0
     elif ibrav == 14:
         nruter[0, 0] = 1.0
         nruter[0, 1] = 0.0
         nruter[0, 2] = 0.0
         nruter[1, 0] = celldm[2] * celldm[6]
         nruter[1, 1] = celldm[2] * np.sin(np.arccos(celldm[6]))
-        nruter[1, 2] = 0.
+        nruter[1, 2] = 0.0
         nruter[2, 0] = celldm[3] * celldm[5]
-        nruter[2,
-               1] = celldm[3] * (celldm[4] - celldm[5] * celldm[6]) / np.sin(
-                   np.arccos(celldm[6]))
-        nruter[2, 2] = celldm[3] * np.sqrt(
-            1 + 2 * celldm[4] * celldm[5] * celldm[6] - celldm[4]**2 -
-            celldm[5]**2 - celldm[6]**2) / np.sin(np.arccos(celldm[6]))
+        nruter[2, 1] = (
+            celldm[3]
+            * (celldm[4] - celldm[5] * celldm[6])
+            / np.sin(np.arccos(celldm[6]))
+        )
+        nruter[2, 2] = (
+            celldm[3]
+            * np.sqrt(
+                1
+                + 2 * celldm[4] * celldm[5] * celldm[6]
+                - celldm[4] ** 2
+                - celldm[5] ** 2
+                - celldm[6] ** 2
+            )
+            / np.sin(np.arccos(celldm[6]))
+        )
     else:
         raise ValueError("unknown ibrav")
     return nruter
@@ -196,7 +207,8 @@ def eval_qe_algebraic(expression):
     for i in expression:
         if i not in validchars:
             raise ValueError(
-                "invalid character \"{0}\" in algebraic expression".format(i))
+                'invalid character "{0}" in algebraic expression'.format(i)
+            )
     if expression[0] == "+":
         raise ValueError("expression starts with +")
     # Translate the exponential notantion and the power operator into Python.
@@ -207,7 +219,7 @@ def eval_qe_algebraic(expression):
         prefactor = -1
         expr = expr[1:]
     else:
-        prefactor = 1.
+        prefactor = 1.0
 
     def eval_node(node):
         """
@@ -227,7 +239,7 @@ def eval_qe_algebraic(expression):
             elif type(node.op) == ast.Div:
                 return eval_node(node.left) / eval_node(node.right)
             elif type(node.op) == ast.Pow:
-                return eval_node(node.left)**eval_node(node.right)
+                return eval_node(node.left) ** eval_node(node.right)
             else:
                 raise ValueError("invalid binary operator")
         else:
@@ -242,11 +254,11 @@ def read_qe_in(filename):
     input file.
     """
     celldmre = re.compile(
-        r"celldm\((?P<number>\d)\)\s*=\s*(?P<value>\S+?)(?:$|[,!\s])",
-        re.MULTILINE)
+        r"celldm\((?P<number>\d)\)\s*=\s*(?P<value>\S+?)(?:$|[,!\s])", re.MULTILINE
+    )
     tagre = lambda keyword: re.compile(
-        re.escape(keyword) + r"\s*=\s*(?P<value>\S+?)(?:$|[,!\s])", re.
-        MULTILINE)
+        re.escape(keyword) + r"\s*=\s*(?P<value>\S+?)(?:$|[,!\s])", re.MULTILINE
+    )
     kindre = re.compile(r"\S+\s+[\{\(\s]*(?P<kind>\w+)[\}\)\s]*")
     contents = open(filename, "r").read()
     try:
@@ -285,9 +297,7 @@ def read_qe_in(filename):
         if reading:
             fields = l.split()
             nruter["elements"].append(fields[0])
-            nruter["positions"][:, read] = [
-                eval_qe_algebraic(i) for i in fields[1:4]
-            ]
+            nruter["positions"][:, read] = [eval_qe_algebraic(i) for i in fields[1:4]]
             read = read + 1
             if read == natoms:
                 break
@@ -298,14 +308,16 @@ def read_qe_in(filename):
                 raise ValueError("Type of ATOMIC_POSITIONS missing")
             if poskind not in ("alat", "bohr", "angstrom", "crystal"):
                 raise ValueError(
-                    "cannot interpret coordinates in \"{0}\" format".format(
-                        poskind))
+                    'cannot interpret coordinates in "{0}" format'.format(poskind)
+                )
             reading = True
     # Sanity check
     if read < natoms:
         raise ValueError(
-            "Proper ATOMIC_POSITIONS not found (expected: {0}; found: {1})".
-            format(natoms, read))
+            "Proper ATOMIC_POSITIONS not found (expected: {0}; found: {1})".format(
+                natoms, read
+            )
+        )
     # Read CELL_PARAMETERS if ibrav == 0
     reading = False
     read = 0
@@ -322,7 +334,7 @@ def read_qe_in(filename):
                     elif latkind == "bohr":
                         nruter["lattvec"] *= BOHR_RADIUS
                     elif latkind == "angstrom":
-                        nruter["lattvec"] *= .1
+                        nruter["lattvec"] *= 0.1
                     break
             if l.startswith("CELL_PARAMETERS"):
                 try:
@@ -331,8 +343,10 @@ def read_qe_in(filename):
                     raise ValueError("Type of CELL_PARAMETERS missing")
                 if latkind not in ("alat", "bohr", "angstrom"):
                     raise ValueError(
-                        "cannot interpret cell parameters in \"{0}\" format".
-                        format(latkind))
+                        'cannot interpret cell parameters in "{0}" format'.format(
+                            latkind
+                        )
+                    )
                 if latkind == "alat" and len(celldm) == 0:
                     raise ValueError("CELL_PARAMETERS alat requires celldm(1)")
                 reading = True
@@ -344,10 +358,9 @@ def read_qe_in(filename):
     elif poskind == "bohr":
         nruter["positions"] *= BOHR_RADIUS
     elif poskind == "angstrom":
-        nruter["positions"] *= .1
+        nruter["positions"] *= 0.1
     if poskind != "crystal":
-        nruter["positions"] = sp.linalg.solve(nruter["lattvec"],
-                                              nruter["positions"])
+        nruter["positions"] = sp.linalg.solve(nruter["lattvec"], nruter["positions"])
     aux = []
     for e in nruter["elements"]:
         if e not in aux:
@@ -371,14 +384,18 @@ def gen_supercell(poscar, na, nb, nc):
     nruter["lattvec"][:, 2] *= nc
     nruter["elements"] = []
     nruter["types"] = []
-    nruter["positions"] = np.empty(
-        (3, poscar["positions"].shape[1] * na * nb * nc))
+    nruter["positions"] = np.empty((3, poscar["positions"].shape[1] * na * nb * nc))
     pos = 0
     for pos, (k, j, i, iat) in enumerate(
-            itertools.product(xrange(nc), xrange(nb), xrange(na),
-                              xrange(poscar["positions"].shape[1]))):
-        nruter["positions"][:, pos] = (poscar["positions"][:, iat] +
-                                       [i, j, k]) / [na, nb, nc]
+        itertools.product(
+            xrange(nc), xrange(nb), xrange(na), xrange(poscar["positions"].shape[1])
+        )
+    ):
+        nruter["positions"][:, pos] = (poscar["positions"][:, iat] + [i, j, k]) / [
+            na,
+            nb,
+            nc,
+        ]
         nruter["elements"].append(poscar["elements"][iat])
         nruter["types"].append(poscar["types"][iat])
     return nruter
@@ -392,18 +409,21 @@ def write_supercell(templatefile, poscar, filename, number):
     text = open(templatefile, "r").read()
     for i in ("##CELL##", "##NATOMS##", "##COORDINATES##"):
         if i not in text:
-            raise ValueError(
-                "the template does not contain a {0} tag".format(i))
+            raise ValueError("the template does not contain a {0} tag".format(i))
     text = text.replace("##NATOMS##", str(len(poscar["types"])))
-    celltext = "CELL_PARAMETERS angstrom\n" + "\n".join([
-        " ".join(["{0:>20.15g}".format(10. * i) for i in j])
-        for j in poscar["lattvec"].T.tolist()
-    ])
+    celltext = "CELL_PARAMETERS angstrom\n" + "\n".join(
+        [
+            " ".join(["{0:>20.15g}".format(10.0 * i) for i in j])
+            for j in poscar["lattvec"].T.tolist()
+        ]
+    )
     text = text.replace("##CELL##", celltext)
-    coordtext = "ATOMIC_POSITIONS crystal\n" + "\n".join([
-        e + " " + " ".join(["{0:>20.15g}".format(i) for i in j])
-        for e, j in zip(poscar["elements"], poscar["positions"].T.tolist())
-    ])
+    coordtext = "ATOMIC_POSITIONS crystal\n" + "\n".join(
+        [
+            e + " " + " ".join(["{0:>20.15g}".format(i) for i in j])
+            for e, j in zip(poscar["elements"], poscar["positions"].T.tolist())
+        ]
+    )
     text = text.replace("##COORDINATES##", coordtext)
     text = text.replace("##NUMBER##", str(number))
     open(filename, "w").write(text)
@@ -418,8 +438,7 @@ def read_forces(filename):
     with open(filename, "r") as f:
         for l in f:
             fields = l.split()
-            if len(fields
-                   ) == 9 and fields[0] == "atom" and fields[4] == "force":
+            if len(fields) == 9 and fields[0] == "atom" and fields[4] == "force":
                 nruter.append([float(i) for i in fields[6:]])
             elif fields[-3:] == ["contrib.", "to", "forces"]:
                 break
@@ -433,10 +452,13 @@ if __name__ == "__main__":
         """
         Print an usage message and exit.
         """
-        sys.exit("""Usage:
+        sys.exit(
+            """Usage:
 \t{program:s} unitcell.in sow na nb nc cutoff[nm/-integer] supercell_template.in
 \t{program:s} unitcell.in reap na nb nc cutoff[nm/-integer]""".format(
-            program=sys.argv[0]))
+                program=sys.argv[0]
+            )
+        )
 
     if len(sys.argv) not in (7, 8) or sys.argv[2] not in ("sow", "reap"):
         usage()
@@ -465,15 +487,15 @@ if __name__ == "__main__":
             frange = float(sys.argv[6])
         except ValueError:
             sys.exit("Error: invalid cutoff")
-        if frange == 0.:
+        if frange == 0.0:
             sys.exit("Error: invalid cutoff")
     print("Reading {0}".format(ufilename))
     poscar = read_qe_in(ufilename)
     natoms = len(poscar["types"])
     print("Analyzing symmetries")
-    symops = thirdorder_core.SymmetryOperations(poscar["lattvec"],
-                                                poscar["types"],
-                                                poscar["positions"].T, SYMPREC)
+    symops = thirdorder_core.SymmetryOperations(
+        poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC
+    )
     print("- Symmetry group {0} detected".format(symops.symbol))
     print("- {0} symmetry operations".format(symops.translations.shape[0]))
     print("Creating the supercell")
@@ -487,8 +509,7 @@ if __name__ == "__main__":
     else:
         print("- User-defined cutoff: {0} nm".format(frange))
     print("Looking for an irreducible set of third-order IFCs")
-    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts,
-                                  frange)
+    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print("- {0} triplet equivalence classes found".format(wedge.nlist))
     list4 = wedge.build_list4()
     nirred = len(list4)
@@ -496,24 +517,31 @@ if __name__ == "__main__":
     print("- {0} DFT runs are needed".format(nruns))
     if action == "sow":
         print(sowblock)
-        print("Writing undisplaced coordinates to BASE.{0}".format(
-            os.path.basename(sfilename)))
-        write_supercell(sfilename, sposcar,
-                        "BASE.{0}".format(os.path.basename(sfilename)), 0)
+        print(
+            "Writing undisplaced coordinates to BASE.{0}".format(
+                os.path.basename(sfilename)
+            )
+        )
+        write_supercell(
+            sfilename, sposcar, "BASE.{0}".format(os.path.basename(sfilename)), 0
+        )
         width = len(str(4 * (len(list4) + 1)))
-        namepattern = "DISP.{0}.{{0:0{1}d}}".format(
-            os.path.basename(sfilename), width)
-        print("Writing displaced coordinates to DISP.{0}.*".format(
-            os.path.basename(sfilename)))
+        namepattern = "DISP.{0}.{{0:0{1}d}}".format(os.path.basename(sfilename), width)
+        print(
+            "Writing displaced coordinates to DISP.{0}.*".format(
+                os.path.basename(sfilename)
+            )
+        )
         for i, e in enumerate(list4):
             for n in xrange(4):
-                isign = (-1)**(n // 2)
-                jsign = -(-1)**(n % 2)
+                isign = (-1) ** (n // 2)
+                jsign = -((-1) ** (n % 2))
                 # Start numbering the files at 1 for aesthetic
                 # reasons.
                 number = nirred * n + i + 1
-                dsposcar = move_two_atoms(sposcar, e[1], e[3], isign * H, e[0],
-                                          e[2], jsign * H)
+                dsposcar = move_two_atoms(
+                    sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H
+                )
                 filename = namepattern.format(number)
                 write_supercell(sfilename, dsposcar, filename, number)
     else:
@@ -544,15 +572,17 @@ if __name__ == "__main__":
         phipart = np.zeros((3, nirred, ntot))
         for i, e in enumerate(list4):
             for n in xrange(4):
-                isign = (-1)**(n // 2)
-                jsign = -(-1)**(n % 2)
+                isign = (-1) ** (n // 2)
+                jsign = -((-1) ** (n % 2))
                 number = nirred * n + i
                 phipart[:, i, :] -= isign * jsign * forces[number].T
-        phipart /= (4000. * H * H)
+        phipart /= 4000.0 * H * H
         print("Reconstructing the full matrix")
-        phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4,
-                                                   poscar, sposcar)
+        phifull = thirdorder_core.reconstruct_ifcs(
+            phipart, wedge, list4, poscar, sposcar
+        )
         print("Writing the constants to FORCE_CONSTANTS_3RD")
-        write_ifcs(phifull, poscar, sposcar, dmin, nequi, shifts, frange,
-                   "FORCE_CONSTANTS_3RD")
+        write_ifcs(
+            phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
+        )
     print(doneblock)

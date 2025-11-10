@@ -15,7 +15,6 @@ from .order_common import (
 )
 
 
-
 def prepare_calculation3(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)

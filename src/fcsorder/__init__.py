@@ -5,7 +5,9 @@ from .commands.mlp2 import app as mlp2_app
 from .commands.mlp3 import app as mlp3_app
 from .commands.mlp4 import app as mlp4_app
 from .commands.scph import app as scph_app
-from .commands.generate_phonon_rattled_structures import generate_phonon_rattled_structures
+from .commands.generate_phonon_rattled_structures import (
+    generate_phonon_rattled_structures,
+)
 from .utils.plotting import plot_phband
 
 cli = typer.Typer(help="Force constants calculation tool for VASP")
@@ -112,7 +114,9 @@ cli.add_typer(
     name="scph",
     help="Run self-consistent phonon calculations using machine learning potentials",
 )
-cli.command(name="generate_phonon_rattled_structures")(generate_phonon_rattled_structures)
+cli.command(name="generate_phonon_rattled_structures")(
+    generate_phonon_rattled_structures
+)
 
 
 __all__ = ["cli"]

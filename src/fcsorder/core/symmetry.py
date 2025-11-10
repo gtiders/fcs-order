@@ -51,16 +51,18 @@ class SymmetryOperations:
         positions = np.asarray(self.__positions)
         types = np.asarray(self.__types)
 
-        dataset = spglib.get_symmetry_dataset((lattice, positions, types), symprec=self.symprec)
+        dataset = spglib.get_symmetry_dataset(
+            (lattice, positions, types), symprec=self.symprec
+        )
         if dataset is None:
             raise MemoryError()
 
-        self.symbol = dataset['international'].strip()
-        self.__shift = np.array(dataset['origin_shift'], dtype=np.double)
-        self.__transform = np.array(dataset['transformation_matrix'], dtype=np.double)
-        self.nsyms = len(dataset['rotations'])
-        self.__rotations = np.array(dataset['rotations'], dtype=np.double)
-        self.__translations = np.array(dataset['translations'], dtype=np.double)
+        self.symbol = dataset["international"].strip()
+        self.__shift = np.array(dataset["origin_shift"], dtype=np.double)
+        self.__transform = np.array(dataset["transformation_matrix"], dtype=np.double)
+        self.nsyms = len(dataset["rotations"])
+        self.__rotations = np.array(dataset["rotations"], dtype=np.double)
+        self.__translations = np.array(dataset["translations"], dtype=np.double)
 
         self.__crotations = np.empty_like(self.__rotations)
         self.__ctranslations = np.empty_like(self.__translations)
@@ -87,7 +89,9 @@ class SymmetryOperations:
         r_in = np.asarray(r_in, dtype=np.double)
         r_out = np.zeros((3, self.nsyms), dtype=np.double)
         for ii in range(self.nsyms):
-            r_out[:, ii] = np.dot(self.__crotations[ii, :, :], r_in) + self.__ctranslations[ii, :]
+            r_out[:, ii] = (
+                np.dot(self.__crotations[ii, :, :], r_in) + self.__ctranslations[ii, :]
+            )
         return r_out
 
     def map_supercell(self, sposcar):
@@ -125,15 +129,23 @@ class SymmetryOperations:
                     tmp = sp.linalg.lu_solve(factorization, tmp)
                     for ll in range(3):
                         vec[ll] = int(round(tmp[ll]))
-                    diff = (abs(vec[0] - tmp[0]) + abs(vec[1] - tmp[1]) + abs(vec[2] - tmp[2]))
+                    diff = (
+                        abs(vec[0] - tmp[0])
+                        + abs(vec[1] - tmp[1])
+                        + abs(vec[2] - tmp[2])
+                    )
                     for ll in range(3):
                         vec[ll] = vec[ll] % ngrid[ll]
                     if diff < 1e-4:
                         nruter[isym, i] = (
-                            (vec[0] + (vec[1] + vec[2] * ngrid[1]) * ngrid[0]) * natoms + ii
-                        )
+                            vec[0] + (vec[1] + vec[2] * ngrid[1]) * ngrid[0]
+                        ) * natoms + ii
                         found = True
                         break
                 if not found:
-                    sys.exit("Error: equivalent atom not found for isym={}, atom={}".format(isym, i))
+                    sys.exit(
+                        "Error: equivalent atom not found for isym={}, atom={}".format(
+                            isym, i
+                        )
+                    )
         return nruter

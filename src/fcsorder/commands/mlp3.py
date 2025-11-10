@@ -25,9 +25,6 @@ from ..utils.atoms import get_atoms
 from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 
 
- 
-
-
 def calculate_phonon_force_constants(
     na: int,
     nb: int,
@@ -150,7 +147,9 @@ def nep(
     typer.print(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print("Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP")
+        typer.print(
+            "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
+        )
     except ImportError as e:
         typer.print(str(e))
         raise typer.Exit(code=1)
@@ -237,7 +236,10 @@ def dp(
         False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
 ):
     """
@@ -316,7 +318,10 @@ def ploymp(
         False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="ASE可解析的结构文件路径（如 VASP POSCAR、CIF、XYZ 等），默认 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="ASE可解析的结构文件路径（如 VASP POSCAR、CIF、XYZ 等），默认 'POSCAR'",
+        exists=True,
     ),
 ):
     """
@@ -387,6 +392,7 @@ def mtp2(
     """
     # Read atoms to get unique elements
     from ase.io import read
+
     atoms = read(poscar)
     unique_elements = list(dict.fromkeys(atoms.get_chemical_symbols()))
 
