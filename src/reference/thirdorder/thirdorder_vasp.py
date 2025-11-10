@@ -21,6 +21,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
+
 try:
     xrange
 except NameError:
@@ -29,15 +30,19 @@ except NameError:
 import sys
 import os.path
 import glob
+
 try:
     from lxml import etree as ElementTree
+
     xmllib = "lxml.etree"
 except ImportError:
     try:
         import xml.etree.cElementTree as ElementTree
+
         xmllib = "cElementTree"
     except ImportError:
         import xml.etree.ElementTree as ElementTree
+
         xmllib = "ElementTree"
 try:
     import cStringIO as StringIO
@@ -48,6 +53,7 @@ except ImportError:
         import io as StringIO
 try:
     import hashlib
+
     hashes = True
 except ImportError:
     hashes = False
@@ -65,7 +71,7 @@ def read_POSCAR(directory):
         nruter["lattvec"] = np.empty((3, 3))
         f = open("POSCAR", "r")
         firstline = next(f)
-        factor = .1 * float(next(f).strip())
+        factor = 0.1 * float(next(f).strip())
         for i in xrange(3):
             nruter["lattvec"][:, i] = [float(j) for j in next(f).split()]
         nruter["lattvec"] *= factor
@@ -82,8 +88,7 @@ def read_POSCAR(directory):
             typeline = "".join(fields)
         else:
             nruter["elements"] = line.split()
-            nruter["numbers"] = np.array(
-                [int(i) for i in fields], dtype=np.intc)
+            nruter["numbers"] = np.array([int(i) for i in fields], dtype=np.intc)
             typeline = next(f)
         natoms = nruter["numbers"].sum()
         nruter["positions"] = np.empty((3, natoms))
@@ -94,8 +99,9 @@ def read_POSCAR(directory):
     for i in xrange(len(nruter["numbers"])):
         nruter["types"] += [i] * nruter["numbers"][i]
     if typeline[0] == "C":
-        nruter["positions"] = sp.linalg.solve(nruter["lattvec"],
-                                              nruter["positions"] * factor)
+        nruter["positions"] = sp.linalg.solve(
+            nruter["lattvec"], nruter["positions"] * factor
+        )
     return nruter
 
 
@@ -107,14 +113,20 @@ def write_POSCAR(poscar, filename):
     f = StringIO.StringIO()
     f.write("1.0\n")
     for i in xrange(3):
-        f.write("{0[0]:>20.15f} {0[1]:>20.15f} {0[2]:>20.15f}\n".format((
-            poscar["lattvec"][:, i] * 10.).tolist()))
+        f.write(
+            "{0[0]:>20.15f} {0[1]:>20.15f} {0[2]:>20.15f}\n".format(
+                (poscar["lattvec"][:, i] * 10.0).tolist()
+            )
+        )
     f.write("{0}\n".format(" ".join(poscar["elements"])))
     f.write("{0}\n".format(" ".join([str(i) for i in poscar["numbers"]])))
     f.write("Direct\n")
     for i in xrange(poscar["positions"].shape[1]):
-        f.write("{0[0]:>20.15f} {0[1]:>20.15f} {0[2]:>20.15f}\n".format(
-            poscar["positions"][:, i].tolist()))
+        f.write(
+            "{0[0]:>20.15f} {0[1]:>20.15f} {0[2]:>20.15f}\n".format(
+                poscar["positions"][:, i].tolist()
+            )
+        )
     if hashes:
         toencode = f.getvalue()
         if sys.hexversion >= 0x3000000:
@@ -138,7 +150,8 @@ def normalize_SPOSCAR(sposcar):
     # k,j,i,iat For VASP, iat must be the most significant index,
     # i.e., atoms of the same element must go together.
     indices = np.array(xrange(nruter["positions"].shape[1])).reshape(
-        (sposcar["nc"], sposcar["nb"], sposcar["na"], -1))
+        (sposcar["nc"], sposcar["nb"], sposcar["na"], -1)
+    )
     indices = np.rollaxis(indices, 3, 0).flatten().tolist()
     nruter["positions"] = nruter["positions"][:, indices]
     nruter["types"].sort()
@@ -167,15 +180,15 @@ def build_unpermutation(sposcar):
     version of sposcar to their original indices.
     """
     indices = np.array(xrange(sposcar["positions"].shape[1])).reshape(
-        (sposcar["nc"], sposcar["nb"], sposcar["na"], -1))
+        (sposcar["nc"], sposcar["nb"], sposcar["na"], -1)
+    )
     indices = np.rollaxis(indices, 3, 0).flatten()
     return indices.argsort().tolist()
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 6 or sys.argv[1] not in ("sow", "reap"):
-        sys.exit("Usage: {0} sow|reap na nb nc cutoff[nm/-integer]".format(
-            sys.argv[0]))
+        sys.exit("Usage: {0} sow|reap na nb nc cutoff[nm/-integer]".format(sys.argv[0]))
     action = sys.argv[1]
     na, nb, nc = [int(i) for i in sys.argv[2:5]]
     if min(na, nb, nc) < 1:
@@ -193,14 +206,15 @@ if __name__ == "__main__":
             frange = float(sys.argv[5])
         except ValueError:
             sys.exit("Error: invalid cutoff")
-        if frange == 0.:
+        if frange == 0.0:
             sys.exit("Error: invalid cutoff")
     print("Reading POSCAR")
     poscar = read_POSCAR(".")
     natoms = len(poscar["types"])
     print("Analyzing the symmetries")
     symops = thirdorder_core.SymmetryOperations(
-        poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC)
+        poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC
+    )
     print("- Symmetry group {0} detected".format(symops.symbol))
     print("- {0} symmetry operations".format(symops.translations.shape[0]))
     print("Creating the supercell")
@@ -214,8 +228,7 @@ if __name__ == "__main__":
     else:
         print("- User-defined cutoff: {0} nm".format(frange))
     print("Looking for an irreducible set of third-order IFCs")
-    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts,
-                                  frange)
+    wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
     print("- {0} triplet equivalence classes found".format(wedge.nlist))
     list4 = wedge.build_list4()
     nirred = len(list4)
@@ -230,14 +243,16 @@ if __name__ == "__main__":
         print("Writing displaced coordinates to 3RD.POSCAR.*")
         for i, e in enumerate(list4):
             for n in xrange(4):
-                isign = (-1)**(n // 2)
-                jsign = -(-1)**(n % 2)
+                isign = (-1) ** (n // 2)
+                jsign = -((-1) ** (n % 2))
                 # Start numbering the files at 1 for aesthetic
                 # reasons.
                 number = nirred * n + i + 1
                 dsposcar = normalize_SPOSCAR(
-                    move_two_atoms(sposcar, e[1], e[3], isign * H, e[0], e[2],
-                                   jsign * H))
+                    move_two_atoms(
+                        sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H
+                    )
+                )
                 filename = namepattern.format(number)
                 write_POSCAR(dsposcar, filename)
     else:
@@ -270,15 +285,17 @@ if __name__ == "__main__":
         phipart = np.zeros((3, nirred, ntot))
         for i, e in enumerate(list4):
             for n in xrange(4):
-                isign = (-1)**(n // 2)
-                jsign = -(-1)**(n % 2)
+                isign = (-1) ** (n // 2)
+                jsign = -((-1) ** (n % 2))
                 number = nirred * n + i
                 phipart[:, i, :] -= isign * jsign * forces[number].T
-        phipart /= (400. * H * H)
+        phipart /= 400.0 * H * H
         print("Reconstructing the full array")
-        phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4,
-                                                   poscar, sposcar)
+        phifull = thirdorder_core.reconstruct_ifcs(
+            phipart, wedge, list4, poscar, sposcar
+        )
         print("Writing the constants to FORCE_CONSTANTS_3RD")
-        write_ifcs(phifull, poscar, sposcar, dmin, nequi, shifts, frange,
-                   "FORCE_CONSTANTS_3RD")
+        write_ifcs(
+            phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
+        )
     print(doneblock)

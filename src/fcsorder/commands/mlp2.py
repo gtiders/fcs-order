@@ -100,7 +100,9 @@ def nep(
     typer.print(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print("Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP")
+        typer.print(
+            "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
+        )
     except ImportError as e:
         typer.print(str(e))
         raise typer.Exit(code=1)

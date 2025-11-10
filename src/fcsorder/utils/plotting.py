@@ -4,7 +4,9 @@
 from typing import List
 
 
-def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str]) -> None:
+def plot_phband(
+    na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str]
+) -> None:
     """
     Plot phonon band structure from multiple FORCE_CONSTANTS files.
 
@@ -59,9 +61,9 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
     gs = fig.add_gridspec(1, 2, width_ratios=[3, 2], wspace=0.15)
     ax_band = fig.add_subplot(gs[0])
     ax_legend = fig.add_subplot(gs[1])
-    
+
     # Hide axes for legend subplot
-    ax_legend.axis('off')
+    ax_legend.axis("off")
 
     # Get colors from colormap
     colors = cm.tab10(np.linspace(0, 1, len(fcs_orders)))
@@ -91,17 +93,17 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
         path["explicit_kpoints_linearcoord"].min(),
         path["explicit_kpoints_linearcoord"].max(),
     )
-    ax_band.set_ylabel("Frequency (THz)", fontsize=11, fontweight='bold')
-    ax_band.set_xlabel("Wave Vector", fontsize=11, fontweight='bold')
-    ax_band.tick_params(axis='both', which='major', labelsize=10)
-    ax_band.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
-    
+    ax_band.set_ylabel("Frequency (THz)", fontsize=11, fontweight="bold")
+    ax_band.set_xlabel("Wave Vector", fontsize=11, fontweight="bold")
+    ax_band.tick_params(axis="both", which="major", labelsize=10)
+    ax_band.grid(True, alpha=0.3, linestyle="--", linewidth=0.5)
+
     # Add horizontal line at 0 frequency
-    ax_band.axhline(y=0, color='gray', linestyle='-', linewidth=0.8, alpha=0.5)
+    ax_band.axhline(y=0, color="gray", linestyle="-", linewidth=0.8, alpha=0.5)
 
     # Beautify the labels on the x-axis
     labels = path["explicit_kpoints_labels"]
-    labels = [r'$\Gamma$' if m == 'GAMMA' else m for m in labels]
+    labels = [r"$\Gamma$" if m == "GAMMA" else m for m in labels]
     labels = [m.replace("_", "$_") + "$" if "_" in m else m for m in labels]
 
     # Use NumPy to filter out empty labels
@@ -114,7 +116,7 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
     ax_band.set_xticks(tick_positions)
     ax_band.set_xticklabels(tick_labels, fontsize=11)
     for xp in tick_positions:
-        ax_band.axvline(xp, color="0.6", linestyle='-', linewidth=0.8, alpha=0.7)
+        ax_band.axvline(xp, color="0.6", linestyle="-", linewidth=0.8, alpha=0.7)
 
     # Add legend in separate subplot
     import os
@@ -126,14 +128,14 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
         for i in range(len(fcs_orders))
     ]
     ax_legend.legend(
-        handles=legend_elements, 
-        loc='center left',
+        handles=legend_elements,
+        loc="center left",
         fontsize=10,
         frameon=True,
         fancybox=True,
         shadow=True,
-        title='Force Constants',
-        title_fontsize=11
+        title="Force Constants",
+        title_fontsize=11,
     )
 
     # Adjust layout to avoid tight_layout warning
@@ -141,7 +143,7 @@ def plot_phband(na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str])
 
     # Save the plot
     output_file = "phband.svg"
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches="tight")
     import typer
 
     typer.echo(f"Phonon band structure plot saved to {output_file}")

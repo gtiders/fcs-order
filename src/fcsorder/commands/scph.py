@@ -13,7 +13,7 @@ from typing import List
 
 # Local imports
 from ..core.self_consistent_phonons import run_scph, analyze_scph_convergence
-from ..core.secondorder_core import  build_supercell_from_matrix
+from ..core.secondorder_core import build_supercell_from_matrix
 from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 
 
@@ -27,6 +27,7 @@ def parse_temperatures(s: str) -> List[float]:
     """
     return [float(t) for t in s.split(",")]
 
+
 # Create the main app
 app = typer.Typer(
     help="Run self-consistent phonon calculations using machine learning potentials."
@@ -36,10 +37,14 @@ app = typer.Typer(
 @app.command()
 def nep(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -91,7 +96,9 @@ def nep(
     typer.print(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print("Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP")
+        typer.print(
+            "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
+        )
     except ImportError as e:
         typer.print(str(e))
         sys.exit(1)
@@ -123,10 +130,14 @@ def nep(
 @app.command()
 def tace(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -204,10 +215,14 @@ def tace(
 @app.command()
 def dp(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -286,10 +301,14 @@ def dp(
 @app.command()
 def hiphive(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -374,10 +393,14 @@ def hiphive(
 @app.command()
 def ploymp(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -457,12 +480,16 @@ def ploymp(
 
 
 @app.command()
-def mtp(
+def mtp2(
     supercell_matrix: list[int] = typer.Argument(
-        ..., help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     poscar: str = typer.Option(
-        "POSCAR", "--poscar", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
     temperatures: str = typer.Option(
         ..., help="Temperatures for calculation, e.g., '100,200,300'"
@@ -513,7 +540,7 @@ def mtp(
     # Read primitive cell and build supercell from matrix
     poscar = read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
-    
+
     # Get unique elements from primitive cell
     unique_elements = sorted(set(poscar.get_chemical_symbols()))
 

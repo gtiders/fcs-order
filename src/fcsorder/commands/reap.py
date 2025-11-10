@@ -38,12 +38,14 @@ def reap(
         poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ)
     """
     if order == 3:
-        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation3(
-            na, nb, nc, cutoff, poscar_path
+        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+            prepare_calculation3(na, nb, nc, cutoff, poscar_path)
         )
         natoms = len(poscar["types"])
         ntot = natoms * na * nb * nc
-        wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
+        wedge = thirdorder_core.Wedge(
+            poscar, sposcar, symops, dmin, nequi, shifts, frange
+        )
         typer.print(f"Found {wedge.nlist} triplet equivalence classes")
         list4 = wedge.build_list4()
         nirred = len(list4)
@@ -84,10 +86,12 @@ def reap(
         return
 
     if order == 4:
-        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = prepare_calculation4(
-            na, nb, nc, cutoff, poscar_path
+        poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
+            prepare_calculation4(na, nb, nc, cutoff, poscar_path)
         )
-        wedge = fourthorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
+        wedge = fourthorder_core.Wedge(
+            poscar, sposcar, symops, dmin, nequi, shifts, frange
+        )
         typer.print(f"Found {wedge.nlist} quartet equivalence classes")
         list6 = wedge.build_list4()
         natoms = len(poscar["types"])
