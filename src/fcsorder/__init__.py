@@ -1,20 +1,18 @@
 import typer
-from .commands.sow3 import sow3
-from .commands.sow4 import sow4
-from .commands.reap3 import reap3
-from .commands.reap4 import reap4
+from .commands.sow import sow
+from .commands.reap import reap
 from .commands.mlp2 import app as mlp2_app
 from .commands.mlp3 import app as mlp3_app
 from .commands.mlp4 import app as mlp4_app
 from .commands.scph import app as scph_app
-from .commands.phonon_sow import phononrattle
+from .commands.generate_phonon_rattled_structures import generate_phonon_rattled_structures
 from .utils.plotting import plot_phband
 
 cli = typer.Typer(help="Force constants calculation tool for VASP")
 
 
-@cli.command(name="sow3")
-def sow3_command(
+@cli.command(name="sow")
+def sow_command(
     na: int = typer.Argument(..., help="Supercell dimension along a direction"),
     nb: int = typer.Argument(..., help="Supercell dimension along b direction"),
     nc: int = typer.Argument(..., help="Supercell dimension along c direction"),
@@ -23,6 +21,7 @@ def sow3_command(
         "--cutoff",
         help="Cutoff distance (negative for nearest neighbors, positive for distance in nm)",
     ),
+    order: int = typer.Option(3, "--order", help="Order of IFCs to generate: 3 or 4"),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
@@ -31,36 +30,13 @@ def sow3_command(
     ),
 ):
     """
-    Generate 3RD.POSCAR.* files for 3-phonon calculations.
+    Generate displaced POSCAR files for 3-phonon (order=3) or 4-phonon (order=4) calculations.
     """
-    sow3(na, nb, nc, cutoff, poscar)
+    sow(na, nb, nc, cutoff, order, poscar)
 
 
-@cli.command(name="sow4")
-def sow4_command(
-    na: int = typer.Argument(..., help="Supercell dimension along a direction"),
-    nb: int = typer.Argument(..., help="Supercell dimension along b direction"),
-    nc: int = typer.Argument(..., help="Supercell dimension along c direction"),
-    cutoff: str = typer.Option(
-        ...,
-        "--cutoff",
-        help="Cutoff distance (negative for nearest neighbors, positive for distance in nm)",
-    ),
-    poscar: str = typer.Option(
-        "POSCAR",
-        "--poscar",
-        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
-        exists=True,
-    ),
-):
-    """
-    Generate 4TH.POSCAR.* files for 4-phonon calculations.
-    """
-    sow4(na, nb, nc, cutoff, poscar)
-
-
-@cli.command(name="reap3")
-def reap3_command(
+@cli.command(name="reap")
+def reap_command(
     na: int = typer.Argument(..., help="Supercell dimension along a direction"),
     nb: int = typer.Argument(..., help="Supercell dimension along b direction"),
     nc: int = typer.Argument(..., help="Supercell dimension along c direction"),
@@ -77,6 +53,7 @@ def reap3_command(
     vaspruns: list[str] = typer.Argument(
         ..., help="Paths to vasprun.xml files from VASP calculations"
     ),
+    order: int = typer.Option(3, "--order", help="Order of IFCs to extract: 3 or 4"),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
@@ -85,40 +62,9 @@ def reap3_command(
     ),
 ):
     """
-    Extract 3-phonon force constants from VASP calculation results.
+    Extract 3-phonon (order=3) or 4-phonon (order=4) force constants from VASP calculation results.
     """
-    reap3(na, nb, nc, cutoff, vaspruns, is_sparse, poscar)
-
-
-@cli.command(name="reap4")
-def reap4_command(
-    na: int = typer.Argument(..., help="Supercell dimension along a direction"),
-    nb: int = typer.Argument(..., help="Supercell dimension along b direction"),
-    nc: int = typer.Argument(..., help="Supercell dimension along c direction"),
-    cutoff: str = typer.Option(
-        ...,
-        "--cutoff",
-        help="Cutoff distance (negative for nearest neighbors, positive for distance in nm)",
-    ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        help="Use sparse tensor method for memory efficiency",
-    ),
-    vaspruns: list[str] = typer.Argument(
-        ..., help="Paths to vasprun.xml files from VASP calculations"
-    ),
-    poscar: str = typer.Option(
-        "POSCAR",
-        "--poscar",
-        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
-        exists=True,
-    ),
-):
-    """
-    Extract 4-phonon force constants from VASP calculation results.
-    """
-    reap4(na, nb, nc, cutoff, vaspruns, is_sparse, poscar)
+    return reap(na, nb, nc, cutoff, vaspruns, is_sparse, order, poscar)
 
 
 @cli.command(name="plot_phband")
@@ -166,7 +112,7 @@ cli.add_typer(
     name="scph",
     help="Run self-consistent phonon calculations using machine learning potentials",
 )
-cli.command(name="phonon_sow")(phononrattle)
+cli.command(name="generate_phonon_rattled_structures")(generate_phonon_rattled_structures)
 
 
 __all__ = ["cli"]
