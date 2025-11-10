@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Any
-
+import typer
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 
@@ -78,7 +78,7 @@ def run_scph(
     # setup scph
     cs = ClusterSpace(primcell, cutoffs)
     if fcs_2nd is not None:
-        print("using parameters from user!")
+        typer.print("using parameters from user!")
         parameters_start = parse_parameters_form_fcs2(fcs_2nd, supercell, cs)
     else:
         parameters_start = None
@@ -87,7 +87,7 @@ def run_scph(
     os.makedirs("scph_trajs/", exist_ok=True)
     os.makedirs("fcps/", exist_ok=True)
     for T in temperatures:
-        print(f"runing at {T}K")
+        typer.print(f"runing at {T}K")
         parameters_traj = self_consistent_harmonic_model(
             atoms_ideal=supercell,
             calc=calc,
@@ -166,6 +166,6 @@ def analyze_scph_convergence(temperatures: list[float]):
 
         fig.tight_layout()
         fig.savefig(f"scph_parameter_convergence_T{T}.svg")
-        print(
+        typer.print(
             f"SCPH parameter convergence plot for T={T} K saved to 'scph_parameter_convergence_T{T}.svg'"
         )

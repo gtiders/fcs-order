@@ -12,6 +12,8 @@ from ase.calculators.calculator import Calculator
 
 # Local imports
 from ..core import get_force_constants
+from ..utils.supercell import parse_supercell_matrix
+from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 
 
 def calculate_phonon_force_constants_2nd(
@@ -38,8 +40,8 @@ def calculate_phonon_force_constants_2nd(
         from phonopy import Phonopy
         from phonopy.file_IO import write_FORCE_CONSTANTS
     except Exception as e:
-        print(f"Error importing Phonopy module from phonopy: {e}")
-        sys.exit(1)
+        typer.print(f"Error importing Phonopy module from phonopy: {e}")
+        raise typer.Exit(code=1)
 
     phonon: Phonopy = get_force_constants(atoms, calculation, supercell_array)
     fcs2 = phonon.force_constants
@@ -86,35 +88,79 @@ def nep(
         is_gpu: Use GPU calculator for faster computation\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
-    # Validate supercell matrix dimensions
-    if len(supercell_matrix) not in [3, 9]:
+    # Parse/validate supercell matrix using shared utility (preserve error type/message)
+    try:
+        supercell_array = parse_supercell_matrix(supercell_matrix)
+    except ValueError:
         raise typer.BadParameter(
             "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
         )
 
-    # Convert supercell matrix to 3x3 format
-    if len(supercell_matrix) == 3:
-        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
-        na, nb, nc = supercell_matrix
-        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
-    else:
-        # Full 3x3 matrix: reshape 9 numbers into 3x3
-        supercell_array = np.array(supercell_matrix).reshape(3, 3)
-
     # NEP calculator initialization
-    print(f"Initializing NEP calculator with potential: {potential}")
+    typer.print(f"Initializing NEP calculator with potential: {potential}")
     try:
-        from calorine.calculators import CPUNEP, GPUNEP
+        calc = make_nep(potential, is_gpu=is_gpu)
+        typer.print("Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP")
+    except ImportError as e:
+        typer.print(str(e))
+        raise typer.Exit(code=1)
 
-        if is_gpu:
-            calc = GPUNEP(potential)
-            print("Using GPU calculator for NEP")
-        else:
-            calc = CPUNEP(potential)
-            print("Using CPU calculator for NEP")
-    except ImportError:
-        print("calorine not found, please install it first")
-        sys.exit(1)
+    calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
+
+
+@app.command()
+def tace(
+    supercell_matrix: list[int] = typer.Argument(
+        ...,
+        help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
+    ),
+    model_path: str = typer.Option(
+        ..., exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+    ),
+    outfile: str = typer.Option(
+        "FORCE_CONSTANTS_2ND",
+        "--outfile",
+        help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
+    ),
+    device: str = typer.Option("cuda", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    dtype: str = typer.Option(
+        "float64",
+        help="Tensor dtype: 'float32' | 'float64' | None (string 'None' to disable)",
+    ),
+    level: int = typer.Option(0, help="Fidelity level for TACE model"),
+    poscar: str = typer.Option(
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
+    ),
+):
+    """
+    Calculate 2-phonon force constants using TACE model.
+    """
+    # Parse/validate supercell matrix
+    try:
+        supercell_array = parse_supercell_matrix(supercell_matrix)
+    except ValueError:
+        raise typer.BadParameter(
+            "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
+        )
+
+    # Normalize dtype option
+    dtype_opt = None if dtype.lower() == "none" else dtype
+
+    # TACE calculator initialization
+    typer.print(f"Initializing TACE calculator with model: {model_path}")
+    try:
+        calc = make_tace(
+            model_path=model_path,
+            device=device,
+            dtype=dtype_opt,
+            level=level,
+        )
+    except ImportError as e:
+        print(str(e))
+        raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
 
@@ -149,30 +195,21 @@ def dp(
         outfile: Output file path for force constants\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
-    # Validate supercell matrix dimensions
-    if len(supercell_matrix) not in [3, 9]:
+    # Parse/validate supercell matrix using shared utility (preserve error type/message)
+    try:
+        supercell_array = parse_supercell_matrix(supercell_matrix)
+    except ValueError:
         raise typer.BadParameter(
             "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
         )
 
-    # Convert supercell matrix to 3x3 format
-    if len(supercell_matrix) == 3:
-        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
-        na, nb, nc = supercell_matrix
-        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
-    else:
-        # Full 3x3 matrix: reshape 9 numbers into 3x3
-        supercell_array = np.array(supercell_matrix).reshape(3, 3)
-
     # DP calculator initialization
-    print(f"Initializing DP calculator with potential: {potential}")
+    typer.print(f"Initializing DP calculator with potential: {potential}")
     try:
-        from deepmd.calculator import DP
-
-        calc = DP(model=potential)
-    except ImportError:
-        print("deepmd not found, please install it first")
-        sys.exit(1)
+        calc = make_dp(potential)
+    except ImportError as e:
+        print(str(e))
+        raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
 
@@ -196,7 +233,7 @@ def hiphive(
         potential: Hiphive potential file path
     """
     # Hiphive calculator initialization
-    print(f"Using hiphive calculator with potential: {potential}")
+    typer.print(f"Using hiphive calculator with potential: {potential}")
     try:
         from hiphive import ForceConstantPotential
 
@@ -206,8 +243,8 @@ def hiphive(
         force_constants = fcp.get_force_constants(supercell)
         force_constants.write_to_phonopy("FORCE_CONSTANTS_2ND", format="text")
     except ImportError:
-        print("hiphive not found, please install it first")
-        sys.exit(1)
+        typer.print("hiphive not found, please install it first")
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -238,36 +275,27 @@ def ploymp(
         outfile: Output file path for force constants\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
-    # Validate supercell matrix dimensions
-    if len(supercell_matrix) not in [3, 9]:
+    # Parse/validate supercell matrix using shared utility (preserve error type/message)
+    try:
+        supercell_array = parse_supercell_matrix(supercell_matrix)
+    except ValueError:
         raise typer.BadParameter(
             "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
         )
 
-    # Convert supercell matrix to 3x3 format
-    if len(supercell_matrix) == 3:
-        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
-        na, nb, nc = supercell_matrix
-        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
-    else:
-        # Full 3x3 matrix: reshape 9 numbers into 3x3
-        supercell_array = np.array(supercell_matrix).reshape(3, 3)
-
     # PolyMLP calculator initialization
-    print(f"Using ploymp calculator with potential: {potential}")
+    typer.print(f"Using ploymp calculator with potential: {potential}")
     try:
-        from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
-
-        calc = PolymlpASECalculator(pot=potential)
-    except ImportError:
-        print("pypolymlp not found, please install it first")
-        sys.exit(1)
+        calc = make_polymp(potential)
+    except ImportError as e:
+        typer.print(str(e))
+        raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
 
 
 @app.command()
-def mtp(
+def mtp2(
     supercell_matrix: list[int] = typer.Argument(
         ...,
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
@@ -300,38 +328,25 @@ def mtp(
         mtp_exe: Path to MLP executable\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
-    # Validate supercell matrix dimensions
-    if len(supercell_matrix) not in [3, 9]:
+    # Parse/validate supercell matrix using shared utility (preserve error type/message)
+    try:
+        supercell_array = parse_supercell_matrix(supercell_matrix)
+    except ValueError:
         raise typer.BadParameter(
             "Supercell matrix must have either 3 numbers (diagonal) or 9 numbers (3x3 matrix)"
         )
 
-    # Convert supercell matrix to 3x3 format
-    if len(supercell_matrix) == 3:
-        # Diagonal matrix: [na, nb, nc] -> [[na, 0, 0], [0, nb, 0], [0, 0, nc]]
-        na, nb, nc = supercell_matrix
-        supercell_array = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
-    else:
-        # Full 3x3 matrix: reshape 9 numbers into 3x3
-        supercell_array = np.array(supercell_matrix).reshape(3, 3)
-
     # Read atoms to get unique elements
     atoms = read(poscar)
-    unique_elements = sorted(set(atoms.get_chemical_symbols()))
+    unique_elements = list(dict.fromkeys(atoms.get_chemical_symbols()))
 
     # MTP calculator initialization
-    print(f"Initializing MTP calculator with potential: {potential}")
+    typer.print(f"Initializing MTP calculator with potential: {potential}")
     try:
-        from ..utils import MTP
-
-        calc = MTP(
-            mtp_path=potential,
-            mtp_exe=mtp_exe,
-            unique_elements=unique_elements
-        )
-        print(f"Using MTP calculator with elements: {unique_elements}")
+        calc = make_mtp(potential, mtp_exe=mtp_exe, unique_elements=unique_elements)
+        typer.print(f"Using MTP calculator with elements: {unique_elements}")
     except ImportError as e:
-        print(f"Error importing MTP: {e}")
-        sys.exit(1)
+        typer.print(str(e))
+        raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
