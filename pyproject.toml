@@ -26,6 +26,14 @@ fcsorder = "fcsorder.__init__:cli"
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
+[tool.uv.sources]
+fcs-order = { workspace = true }
+
 [project.optional-dependencies]
 calorine = ["calorine>=1.0"]
 deepmd = ["deepmd-kit>=2.2.0"]
@@ -47,3 +55,8 @@ requires = [
     "spglib>=2.2.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "fcs-order",
+]

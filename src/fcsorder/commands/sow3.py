@@ -31,17 +31,17 @@ def sow3(
         na, nb, nc, cutoff, poscar_path
     )
     wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
-    print(f"Found {wedge.nlist} triplet equivalence classes")
+    typer.print(f"Found {wedge.nlist} triplet equivalence classes")
     list4 = wedge.build_list4()
     nirred = len(list4)
     nruns = 4 * nirred
-    print(f"Total DFT runs needed: {nruns}")
+    typer.print(f"Total DFT runs needed: {nruns}")
 
-    print("Writing undisplaced coordinates to 3RD.SPOSCAR")
+    typer.print("Writing undisplaced coordinates to 3RD.SPOSCAR")
     write_POSCAR(normalize_SPOSCAR(sposcar), "3RD.SPOSCAR")
     width = len(str(4 * (len(list4) + 1)))
     namepattern = f"3RD.POSCAR.{{:0{width}d}}"
-    print("Writing displaced coordinates to 3RD.POSCAR.* files")
+    typer.print("Writing displaced coordinates to 3RD.POSCAR.* files")
     for i, e in enumerate(list4):
         for n in range(4):
             isign = (-1) ** (n // 2)

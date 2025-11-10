@@ -38,27 +38,27 @@ def reap3(
     natoms = len(poscar["types"])
     ntot = natoms * na * nb * nc
     wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
-    print(f"Found {wedge.nlist} triplet equivalence classes")
+    typer.print(f"Found {wedge.nlist} triplet equivalence classes")
     list4 = wedge.build_list4()
     nirred = len(list4)
     nruns = 4 * nirred
-    print(f"Total DFT runs needed: {nruns}")
+    typer.print(f"Total DFT runs needed: {nruns}")
 
     if len(vaspruns) != nruns:
         raise ValueError(
             f"Error: {nruns} vasprun.xml files were expected, got {len(vaspruns)}"
         )
 
-    print("Reading the forces")
+    typer.print("Reading the forces")
     p = build_unpermutation(sposcar)
     forces = []
     for f in vaspruns:
         forces.append(read_forces(f)[p, :])
-        print(f"- {f} read successfully")
+        typer.print(f"- {f} read successfully")
         res = forces[-1].mean(axis=0)
-        print("- \t Average force:")
-        print(f"- \t {res} eV/(A * atom)")
-    print("Computing an irreducible set of anharmonic force constants")
+        typer.print("- \t Average force:")
+        typer.print(f"- \t {res} eV/(A * atom)")
+    typer.print("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
     for i, e in enumerate(list4):
         for n in range(4):
@@ -67,11 +67,11 @@ def reap3(
             number = nirred * n + i
             phipart[:, i, :] -= isign * jsign * forces[number].T
     phipart /= 400.0 * H * H
-    print("Reconstructing the full array")
+    typer.print("Reconstructing the full array")
     phifull = thirdorder_core.reconstruct_ifcs(
         phipart, wedge, list4, poscar, sposcar, is_sparse
     )
-    print("Writing the constants to FORCE_CONSTANTS_3RD")
+    typer.print("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs3(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
     )

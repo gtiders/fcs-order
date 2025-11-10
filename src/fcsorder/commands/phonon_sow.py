@@ -78,7 +78,7 @@ def phononrattle(
     temperatures = [float(t) for t in temperatures.split(",")]
 
     for t in temperatures:
-        print(f"Processing temperature: {t} K")
+        typer.print(f"Processing temperature: {t} K")
         valid_structures = []
         attempts = 0
         max_attempts = number * 50  # Prevent infinite loop, set maximum attempts
@@ -111,7 +111,7 @@ def phononrattle(
                     break
 
             attempts += batch_size
-            print(
+            typer.print(
                 f"  Generated {attempts} structures, found {len(valid_structures)} valid structures"
             )
 
@@ -131,9 +131,9 @@ def phononrattle(
 
             write(output_filename, selected_structures, format="extxyz")
             plot_distributions(selected_structures, ref_pos, T=t)
-            print(f"  Saved {len(selected_structures)} structures to {output_filename}")
+            typer.print(f"  Saved {len(selected_structures)} structures to {output_filename}")
 
         if len(valid_structures) < number:
-            print(
+            typer.print(
                 f"  Warning: Only found {len(valid_structures)} valid structures out of {number} requested"
             )
