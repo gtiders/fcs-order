@@ -29,6 +29,8 @@ default = true
 [tool.uv.workspace]
 members = [
     ".",
+    ".",
+    ".",
 ]
 
 [tool.uv.sources]
