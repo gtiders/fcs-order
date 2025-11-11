@@ -2,19 +2,19 @@
 # -*- coding: utf-8 -*-
 
 # Standard library imports
-import sys
 import os
+import sys
+from typing import List
 
 # Third-party imports
 import typer
-from ase.io import read
-from typing import List
-
 
 # Local imports
-from ..core.self_consistent_phonons import run_scph, analyze_scph_convergence
 from ..core.secondorder_core import build_supercell_from_matrix
-from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
+from ..core.self_consistent_phonons import analyze_scph_convergence, run_scph
+from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from ..utils.io_abstraction import read as io_read
+from ..utils.plotting import plot_phband
 
 
 def parse_temperatures(s: str) -> List[float]:
@@ -43,32 +43,34 @@ def nep(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     potential: str = typer.Option(
-        ..., exists=True, help="NEP potential file path (e.g., 'nep.txt')"
+        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g., 'nep.txt')"
     ),
-    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     is_gpu: bool = typer.Option(
-        False, "--is-gpu", help="Use GPU calculator for faster computation"
+        False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -93,18 +95,18 @@ def nep(
     T = parse_temperatures(temperatures)
 
     # NEP calculator initialization
-    typer.print(f"Initializing NEP calculator with potential: {potential}")
+    typer.echo(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print(
+        typer.echo(
             "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
         )
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     # Read primitive cell and build supercell from matrix
-    poscar = read(poscar)
+    poscar = io_read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -125,6 +127,9 @@ def nep(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
 @app.command()
@@ -136,35 +141,39 @@ def tace(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     model_path: str = typer.Option(
-        ..., exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
     ),
-    device: str = typer.Option("cuda", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
     dtype: str = typer.Option(
         "float32",
+        "--dtype",
+        "-t",
         help="Tensor dtype: 'float32' | 'float64' | None (string 'None' to disable)",
     ),
-    level: int = typer.Option(0, help="Fidelity level for TACE model"),
-    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    level: int = typer.Option(0, "--level", "-l", help="Fidelity level for TACE model"),
+    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -175,7 +184,7 @@ def tace(
     T = parse_temperatures(temperatures)
 
     # Initialize TACE calculator
-    typer.print(f"Initializing TACE calculator with model: {model_path}")
+    typer.echo(f"Initializing TACE calculator with model: {model_path}")
     try:
         dtype_opt = None if dtype.lower() == "none" else dtype
         calc = make_tace(
@@ -185,11 +194,11 @@ def tace(
             level=level,
         )
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     # Read primitive cell and build supercell
-    poscar = read(poscar)
+    poscar = io_read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -210,6 +219,9 @@ def tace(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
 @app.command()
@@ -221,29 +233,31 @@ def dp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     potential: str = typer.Option(
-        ..., exists=True, help="DeepMD model file path (e.g., 'graph.pb')"
+        ..., "--potential", "-P", exists=True, help="DeepMD model file path (e.g., 'graph.pb')"
     ),
-    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -267,15 +281,15 @@ def dp(
     T = parse_temperatures(temperatures)
 
     # DP calculator initialization
-    typer.print(f"Initializing DP calculator with potential: {potential}")
+    typer.echo(f"Initializing DP calculator with potential: {potential}")
     try:
         calc = make_dp(potential)
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     # Read primitive cell and build supercell from matrix
-    poscar = read(poscar)
+    poscar = io_read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -296,6 +310,9 @@ def dp(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
 @app.command()
@@ -307,29 +324,31 @@ def hiphive(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     potential: str = typer.Option(
-        ..., exists=True, help="Hiphive model file path (e.g., 'model.fcp')"
+        ..., "--potential", "-P", exists=True, help="Hiphive model file path (e.g., 'model.fcp')"
     ),
-    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -353,11 +372,11 @@ def hiphive(
     T = parse_temperatures(temperatures)
 
     # Read primitive cell and build supercell from matrix
-    poscar = read(poscar)
+    poscar = io_read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Hiphive calculator initialization
-    typer.print(f"Initializing Hiphive calculator with potential: {potential}")
+    typer.echo(f"Initializing Hiphive calculator with potential: {potential}")
     try:
         from hiphive import ForceConstantPotential
         from hiphive.calculators import ForceConstantCalculator
@@ -367,7 +386,7 @@ def hiphive(
         force_constants = fcp.get_force_constants(supercell)
         calc = ForceConstantCalculator(force_constants)
     except ImportError:
-        typer.print("hiphive not found, please install it first")
+        typer.echo("hiphive not found, please install it first")
         sys.exit(1)
 
     # Run SCPH calculation
@@ -388,6 +407,9 @@ def hiphive(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
 @app.command()
@@ -399,29 +421,31 @@ def ploymp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     potential: str = typer.Option(
-        ..., exists=True, help="Ploymp potential file path (e.g., 'model.mp')"
+        ..., "--potential", "-P", exists=True, help="Ploymp potential file path (e.g., 'model.mp')"
     ),
-    alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -445,11 +469,11 @@ def ploymp(
     T = [float(t) for t in temperatures.split(",")]
 
     # PolyMLP calculator initialization
-    typer.print(f"Using PolyMLP calculator with potential: {potential}")
+    typer.echo(f"Using PolyMLP calculator with potential: {potential}")
     try:
         calc = make_polymp(potential)
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     # Read primitive cell and build supercell from matrix
@@ -477,6 +501,9 @@ def ploymp(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
 @app.command()
@@ -488,32 +515,34 @@ def mtp2(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., help="Temperatures for calculation, e.g., '100,200,300'"
+        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
     ),
-    cutoff: float = typer.Option(..., help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
     potential: str = typer.Option(
-        ..., exists=True, help="MTP potential file path (e.g., 'pot.mtp')"
+        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g., 'pot.mtp')"
     ),
     alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, help="Number of structures to generate"),
+    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
+    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
     fcs_2nd: str = typer.Option(
-        None, help="Path to the FCS2 file for initial parameters"
+        None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
     imag_freq_factor: float = typer.Option(
-        1.0, help="Factor for handling imaginary frequencies"
+        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
     ),
     mtp_exe: str = typer.Option(
-        "mlp", "--mtp-exe", help="Path to MLP executable, default is 'mlp'"
+        "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
     ),
     analyze_convergence: bool = typer.Option(
         True,
         "--analyze-convergence",
+        "-A",
         help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
@@ -545,12 +574,12 @@ def mtp2(
     unique_elements = sorted(set(poscar.get_chemical_symbols()))
 
     # MTP calculator initialization
-    typer.print(f"Initializing MTP calculator with potential: {potential}")
+    typer.echo(f"Initializing MTP calculator with potential: {potential}")
     try:
         calc = make_mtp(potential, mtp_exe=mtp_exe, unique_elements=unique_elements)
-        typer.print(f"Using MTP calculator with elements: {unique_elements}")
+        typer.echo(f"Using MTP calculator with elements: {unique_elements}")
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     # Run SCPH calculation
@@ -571,3 +600,6 @@ def mtp2(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
+        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels=[f"{T}K" for T in T]
+        plot_phband(supercell_matrix, poscar, fcs_list, labels)

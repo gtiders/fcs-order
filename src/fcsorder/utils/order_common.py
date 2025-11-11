@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 
 # Standard library imports
-import io
-import sys
 import copy
+import io
 import itertools
-from itertools import groupby
+import sys
 
-# Third-party imports
 import click
 import numpy as np
 import scipy.linalg
 import scipy.spatial
 import scipy.spatial.distance
+
+# Third-party imports
 from ase.io import read
-from ase import Atoms
 
 # Constants
 H = 1e-3  # Magnitude of the finite displacements, in nm.
@@ -46,48 +45,7 @@ def _parse_cutoff(cutoff):
         return None, frange
 
 
-def read_POSCAR(poscar_path: str):
-    """
-    Return all the relevant information contained in a POSCAR file.
-    """
 
-    atoms = read(poscar_path)
-
-    nruter = dict()
-    nruter["lattvec"] = 0.1 * atoms.get_cell().T
-
-    chemical_symbols = atoms.get_chemical_symbols()
-    unique_symbols = []
-    numbers = []
-
-    for symbol, group in groupby(chemical_symbols):
-        unique_symbols.append(symbol)
-        numbers.append(len(list(group)))
-
-    nruter["elements"] = unique_symbols
-    nruter["numbers"] = np.array(numbers, dtype=np.intc)
-
-    positions = atoms.get_scaled_positions()
-    nruter["positions"] = positions.T
-
-    nruter["types"] = []
-    nruter["types"] = np.repeat(
-        range(len(nruter["numbers"])), nruter["numbers"]
-    ).tolist()
-
-    return nruter
-
-
-def write_POSCAR(poscar, filename):
-    symbols = np.repeat(poscar["elements"], poscar["numbers"]).tolist()
-
-    atoms = Atoms(
-        symbols=symbols,
-        scaled_positions=poscar["positions"].T,
-        cell=poscar["lattvec"].T * 10,
-    )
-
-    atoms.write(filename, format="vasp", direct=True)
 
 
 def gen_SPOSCAR(poscar, na, nb, nc):
@@ -239,155 +197,6 @@ def move_three_atoms(poscar, iat, icoord, ih, jat, jcoord, jh, kat, kcoord, kh):
     return nruter
 
 
-def write_pos(sposcar, ngrid, nspecies, filename):
-    """
-    Write out the position information
-    """
-    pos = np.dot(sposcar["lattvec"], sposcar["positions"])
-    ntot = ngrid[0] * ngrid[1] * ngrid[2] * nspecies
-    np_icell = np.empty((3, ntot), dtype=np.intc)
-    car = pos
-    np_ispecies = np.empty(ntot, dtype=np.intc)
-    icell = np_icell
-    ispecies = np_ispecies
-
-    f = io.StringIO()
-
-    for ii in range(ntot):
-        tmp, ispecies[ii] = divmod(ii, nspecies)
-        tmp, icell[0, ii] = divmod(tmp, ngrid[0])
-        icell[2, ii], icell[1, ii] = divmod(tmp, ngrid[1])
-        car[0, ii], car[1, ii], car[2, ii] = (
-            np.dot(sposcar["lattvec"], sposcar["positions"][:, ii]) * 10
-        )
-        f.write(
-            "{:>6d} {:>6d} {:>15.10f} {:>15.10f} {:>15.10f}\n".format(
-                ii + 1, ispecies[ii] + 1, car[0, ii], car[1, ii], car[2, ii]
-            )
-        )
-    ffinal = open(filename, "w")
-    ffinal.write(f.getvalue())
-    f.close()
-    ffinal.close()
-
-
-def id2ind(ngrid, nspecies, filename):
-    """
-    Create a map from supercell indices to cell+atom indices.
-    """
-    ntot = ngrid[0] * ngrid[1] * ngrid[2] * nspecies
-    np_icell = np.empty((3, ntot), dtype=np.intc)
-    np_ispecies = np.empty(ntot, dtype=np.intc)
-    icell = np_icell
-    ispecies = np_ispecies
-
-    f = io.StringIO()
-
-    for ii in range(ntot):
-        tmp, ispecies[ii] = divmod(ii, nspecies)
-        tmp, icell[0, ii] = divmod(tmp, ngrid[0])
-        icell[2, ii], icell[1, ii] = divmod(tmp, ngrid[1])
-        f.write(
-            "{:>6d} {:>6d} {:>6d}\n".format(
-                ii + 1, (ii + nspecies) // nspecies, ispecies[ii]
-            )
-        )
-    ffinal = open(filename, "w")
-    ffinal.write(f.getvalue())
-    f.close()
-    ffinal.close()
-
-
-def write_indexcell(ngrid, poscar, sposcar, dmin, nequi, shifts, frange, filename):
-    """
-    Write out the indexcell for each quartet,
-    taking the force cutoff into account.
-    """
-    natoms = len(poscar["types"])
-    ntot = len(sposcar["types"])
-    nspecies = len(poscar["types"])
-    ntot = ngrid[0] * ngrid[1] * ngrid[2] * nspecies
-    np_icell = np.empty((3, ntot), dtype=np.intc)
-    np_ispecies = np.empty(ntot, dtype=np.intc)
-    cellmap = np.empty((3, ntot), dtype=np.intc)
-    icell = np_icell
-    ispecies = np_ispecies
-
-    for ii in range(ntot):
-        tmp, ispecies[ii] = divmod(ii, nspecies)
-        tmp, icell[0, ii] = divmod(tmp, ngrid[0])
-        icell[2, ii], icell[1, ii] = divmod(tmp, ngrid[1])
-        cellmap[0, ii], cellmap[1, ii], cellmap[2, ii] = (
-            ii,
-            (ii + natoms) // natoms - 1,
-            ispecies[ii],
-        )
-
-    shifts27 = list(itertools.product(range(-1, 2), range(-1, 2), range(-1, 2)))
-    frange2 = frange * frange
-
-    nblocks = 0
-    f = io.StringIO()
-    for ii, jj in itertools.product(range(natoms), range(ntot)):
-        if dmin[ii, jj] >= frange:
-            continue
-        jatom = jj % natoms
-        shiftsij = [shifts27[i] for i in shifts[ii, jj, : nequi[ii, jj]]]
-        for kk in range(ntot):
-            if dmin[ii, kk] >= frange:
-                continue
-            katom = kk % natoms
-            shiftsik = [shifts27[i] for i in shifts[ii, kk, : nequi[ii, kk]]]
-            for ll in range(ntot):
-                if dmin[ii, ll] >= frange:
-                    continue
-                latom = ll % natoms
-                shiftsil = [shifts27[i] for i in shifts[ii, ll, : nequi[ii, ll]]]
-                # d2min_1 = np.inf
-                # d2min_2 = np.inf
-                # d2min_3 = np.inf
-                d2min = np.inf
-                for shift2 in shiftsij:
-                    carj = np.dot(
-                        sposcar["lattvec"], shift2 + sposcar["positions"][:, jj]
-                    )
-                    for shift3 in shiftsik:
-                        cark = np.dot(
-                            sposcar["lattvec"], shift3 + sposcar["positions"][:, kk]
-                        )
-                        for shift4 in shiftsil:
-                            carl = np.dot(
-                                sposcar["lattvec"], shift4 + sposcar["positions"][:, ll]
-                            )
-                            d2_1 = ((carj - cark) ** 2).sum()
-                            d2_2 = ((carj - carl) ** 2).sum()
-                            d2_3 = ((cark - carl) ** 2).sum()
-                            d2 = max(d2_1, d2_2, d2_3)
-                            if d2 < d2min:
-                                # best2 = shift2
-                                # best3 = shift3
-                                # best4 = shift4
-                                d2min = d2
-                if d2min >= frange2:
-                    continue
-                nblocks += 1
-                f.write(
-                    "{:>6d} {:>6d} {:>6d} {:>6d} {:>6d} {:>6d} {:>6d} {:>6d}\n".format(
-                        cellmap[1, ii],
-                        ii,
-                        cellmap[1, jj],
-                        jatom,
-                        cellmap[1, kk],
-                        katom,
-                        cellmap[1, ll],
-                        latom,
-                    )
-                )
-    ffinal = open(filename, "w")
-    ffinal.write("{:>5}\n".format(nblocks))
-    ffinal.write(f.getvalue())
-    f.close()
-    ffinal.close()
 
 
 def read_forces(filename):

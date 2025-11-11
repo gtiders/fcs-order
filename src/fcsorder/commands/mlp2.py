@@ -2,18 +2,16 @@
 # -*- coding: utf-8 -*-
 
 # Standard library imports
-import sys
 
 # Third-party imports
-import typer
 import numpy as np
-from ase.io import read
+import typer
 from ase.calculators.calculator import Calculator
 
 # Local imports
 from ..core.secondorder_core import get_force_constants
-from ..utils.supercell import parse_supercell_matrix
-from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
+from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from ..utils.io_abstraction import parse_supercell_matrix, read_atoms
 
 
 def calculate_phonon_force_constants_2nd(
@@ -34,13 +32,13 @@ def calculate_phonon_force_constants_2nd(
         None (writes FORCE_CONSTANTS_2ND file)
     """
 
-    atoms = read(poscar_path)
+    atoms = read_atoms(poscar_path, in_format="auto")
 
     try:
         from phonopy import Phonopy
         from phonopy.file_IO import write_FORCE_CONSTANTS
     except Exception as e:
-        typer.print(f"Error importing Phonopy module from phonopy: {e}")
+        typer.echo(f"Error importing Phonopy module from phonopy: {e}")
         raise typer.Exit(code=1)
 
     phonon: Phonopy = get_force_constants(atoms, calculation, supercell_array)
@@ -61,19 +59,21 @@ def nep(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="NEP potential file path (e.g. 'nep.txt')"
+        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g. 'nep.txt')"
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
+        "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
     is_gpu: bool = typer.Option(
-        False, "--is-gpu", help="Use GPU calculator for faster computation"
+        False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -97,14 +97,14 @@ def nep(
         )
 
     # NEP calculator initialization
-    typer.print(f"Initializing NEP calculator with potential: {potential}")
+    typer.echo(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print(
+        typer.echo(
             "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
         )
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
@@ -117,22 +117,26 @@ def tace(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     model_path: str = typer.Option(
-        ..., exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
+        "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
-    device: str = typer.Option("cuda", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
     dtype: str = typer.Option(
         "float64",
+        "--dtype",
+        "-t",
         help="Tensor dtype: 'float32' | 'float64' | None (string 'None' to disable)",
     ),
-    level: int = typer.Option(0, help="Fidelity level for TACE model"),
+    level: int = typer.Option(0, "--level", "-l", help="Fidelity level for TACE model"),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -152,7 +156,7 @@ def tace(
     dtype_opt = None if dtype.lower() == "none" else dtype
 
     # TACE calculator initialization
-    typer.print(f"Initializing TACE calculator with model: {model_path}")
+    typer.echo(f"Initializing TACE calculator with model: {model_path}")
     try:
         calc = make_tace(
             model_path=model_path,
@@ -174,16 +178,18 @@ def dp(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
+        ..., "--potential", "-P", exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
+        "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -206,7 +212,7 @@ def dp(
         )
 
     # DP calculator initialization
-    typer.print(f"Initializing DP calculator with potential: {potential}")
+    typer.echo(f"Initializing DP calculator with potential: {potential}")
     try:
         calc = make_dp(potential)
     except ImportError as e:
@@ -235,7 +241,7 @@ def hiphive(
         potential: Hiphive potential file path
     """
     # Hiphive calculator initialization
-    typer.print(f"Using hiphive calculator with potential: {potential}")
+    typer.echo(f"Using hiphive calculator with potential: {potential}")
     try:
         from hiphive import ForceConstantPotential
 
@@ -245,7 +251,7 @@ def hiphive(
         force_constants = fcp.get_force_constants(supercell)
         force_constants.write_to_phonopy("FORCE_CONSTANTS_2ND", format="text")
     except ImportError:
-        typer.print("hiphive not found, please install it first")
+        typer.echo("hiphive not found, please install it first")
         raise typer.Exit(code=1)
 
 
@@ -255,15 +261,17 @@ def ploymp(
         ...,
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
-    potential: str = typer.Option(..., exists=True, help="PolyMLP potential file path"),
+    potential: str = typer.Option(..., "--potential", "-P", exists=True, help="PolyMLP potential file path"),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
+        "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -286,11 +294,11 @@ def ploymp(
         )
 
     # PolyMLP calculator initialization
-    typer.print(f"Using ploymp calculator with potential: {potential}")
+    typer.echo(f"Using ploymp calculator with potential: {potential}")
     try:
         calc = make_polymp(potential)
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
@@ -303,19 +311,21 @@ def mtp2(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
+        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
+        "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
     mtp_exe: str = typer.Option(
-        "mlp", "--mtp-exe", help="Path to MLP executable, default is 'mlp'"
+        "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -339,16 +349,16 @@ def mtp2(
         )
 
     # Read atoms to get unique elements
-    atoms = read(poscar)
+    atoms = read_atoms(poscar, in_format="auto")
     unique_elements = list(dict.fromkeys(atoms.get_chemical_symbols()))
 
     # MTP calculator initialization
-    typer.print(f"Initializing MTP calculator with potential: {potential}")
+    typer.echo(f"Initializing MTP calculator with potential: {potential}")
     try:
         calc = make_mtp(potential, mtp_exe=mtp_exe, unique_elements=unique_elements)
-        typer.print(f"Using MTP calculator with elements: {unique_elements}")
+        typer.echo(f"Using MTP calculator with elements: {unique_elements}")
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)

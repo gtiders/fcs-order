@@ -27,10 +27,10 @@ try:
 except NameError:
     xrange = range
 
-import sys
-import os.path
 import glob
+import os.path
 import shutil
+import sys
 
 try:
     import cStringIO as StringIO

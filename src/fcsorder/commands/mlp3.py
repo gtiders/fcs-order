@@ -4,25 +4,24 @@
 # Standard library imports
 import sys
 
-# Third-party imports
 import numpy as np
 import typer
-from ase import Atoms
-from ase.calculators.calculator import Calculator
+
+# Third-party imports
 from rich.progress import track
 
 # Local imports
 from ..core import thirdorder_core  # type: ignore
+from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from ..utils.io_abstraction import get_atoms, read_atoms
 from ..utils.order_common import (
     H,
     build_unpermutation,
-    normalize_SPOSCAR,
     move_two_atoms,
+    normalize_SPOSCAR,
     write_ifcs3,
 )
 from ..utils.prepare_calculation import prepare_calculation3
-from ..utils.atoms import get_atoms
-from ..utils.calculators import make_nep, make_dp, make_polymp, make_mtp, make_tace
 
 
 def calculate_phonon_force_constants(
@@ -54,12 +53,12 @@ def calculate_phonon_force_constants(
     natoms = len(poscar["types"])
     ntot = natoms * na * nb * nc
     wedge = thirdorder_core.Wedge(poscar, sposcar, symops, dmin, nequi, shifts, frange)
-    typer.print(f"Found {wedge.nlist} triplet equivalence classes")
+    typer.echo(f"Found {wedge.nlist} triplet equivalence classes")
     list4 = wedge.build_list4()
     nirred = len(list4)
     nruns = 4 * nirred
 
-    typer.print(f"Total DFT runs needed: {nruns}")
+    typer.echo(f"Total DFT runs needed: {nruns}")
 
     # Write sposcar positions and forces to 3RD.SPOSCAR.extxyz file
     atoms = get_atoms(normalize_SPOSCAR(sposcar), calculation)
@@ -68,7 +67,7 @@ def calculate_phonon_force_constants(
     width = len(str(4 * (len(list4) + 1)))
     namepattern = f"3RD.POSCAR.{{:0{width}d}}.xyz"
     p = build_unpermutation(sposcar)
-    typer.print("Computing an irreducible set of anharmonic force constants")
+    typer.echo("Computing an irreducible set of anharmonic force constants")
     phipart = np.zeros((3, nirred, ntot))
     for i, e in enumerate(track(list4, description="Processing triplets")):
         for n in range(4):
@@ -86,11 +85,11 @@ def calculate_phonon_force_constants(
             if is_write:
                 atoms.write(filename, format="extxyz")
     phipart /= 400.0 * H * H
-    typer.print("Reconstructing the full array")
+    typer.echo("Reconstructing the full array")
     phifull = thirdorder_core.reconstruct_ifcs(
         phipart, wedge, list4, poscar, sposcar, is_sparse
     )
-    typer.print("Writing the constants to FORCE_CONSTANTS_3RD")
+    typer.echo("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs3(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
     )
@@ -109,25 +108,29 @@ def nep(
     nc: int,
     cutoff: str = typer.Option(
         ...,
+        "--cutoff",
+        "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="NEP potential file path (e.g. 'nep.txt')"
+        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g. 'nep.txt')"
     ),
     is_write: bool = typer.Option(
         False,
         "--is-write",
+        "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
     ),
     is_gpu: bool = typer.Option(
-        False, "--is-gpu", help="Use GPU calculator for faster computation"
+        False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -144,14 +147,14 @@ def nep(
         is_gpu: Use GPU calculator for faster computation\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
-    typer.print(f"Initializing NEP calculator with potential: {potential}")
+    typer.echo(f"Initializing NEP calculator with potential: {potential}")
     try:
         calc = make_nep(potential, is_gpu=is_gpu)
-        typer.print(
+        typer.echo(
             "Using GPU calculator for NEP" if is_gpu else "Using CPU calculator for NEP"
         )
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants(
@@ -166,28 +169,34 @@ def tace(
     nc: int,
     cutoff: str = typer.Option(
         ...,
+        "--cutoff",
+        "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     model_path: str = typer.Option(
-        ..., exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
     ),
     is_write: bool = typer.Option(
         False,
         "--is-write",
+        "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
     ),
-    device: str = typer.Option("cuda", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
     dtype: str = typer.Option(
         "float32",
+        "--dtype",
+        "-t",
         help="Tensor dtype: 'float32' | 'float64' | None (string 'None' to disable)",
     ),
-    level: int = typer.Option(0, help="Fidelity level for TACE model"),
+    level: int = typer.Option(0, "--level", "-l", help="Fidelity level for TACE model"),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -198,7 +207,7 @@ def tace(
     # Normalize dtype option
     dtype_opt = None if dtype.lower() == "none" else dtype
 
-    typer.print(f"Initializing TACE calculator with model: {model_path}")
+    typer.echo(f"Initializing TACE calculator with model: {model_path}")
     try:
         calc = make_tace(
             model_path=model_path,
@@ -207,7 +216,7 @@ def tace(
             level=level,
         )
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants(
@@ -222,22 +231,26 @@ def dp(
     nc: int,
     cutoff: str = typer.Option(
         ...,
+        "--cutoff",
+        "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
+        ..., "--potential", "-P", exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
     ),
     is_write: bool = typer.Option(
         False,
         "--is-write",
+        "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -254,11 +267,11 @@ def dp(
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
     # DP calculator initialization
-    typer.print(f"Initializing DP calculator with potential: {potential}")
+    typer.echo(f"Initializing DP calculator with potential: {potential}")
     try:
         calc = make_dp(potential)
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     calculate_phonon_force_constants(
@@ -285,7 +298,7 @@ def hiphive(
         potential: Hiphive potential file path
     """
     # Hiphive calculator initialization
-    typer.print(f"Using hiphive calculator with potential: {potential}")
+    typer.echo(f"Using hiphive calculator with potential: {potential}")
     try:
         from hiphive import ForceConstantPotential
 
@@ -295,7 +308,7 @@ def hiphive(
         force_constants = fcp.get_force_constants(supercell)
         force_constants.write_to_shengBTE("FORCE_CONSTANTS_3RD", prim)
     except ImportError:
-        typer.print("hiphive not found, please install it first")
+        typer.echo("hiphive not found, please install it first")
         raise typer.Exit(code=1)
 
 
@@ -306,21 +319,25 @@ def ploymp(
     nc: int,
     cutoff: str = typer.Option(
         ...,
+        "--cutoff",
+        "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
-    potential: str = typer.Option(..., exists=True, help="PolyMLP potential file path"),
+    potential: str = typer.Option(..., "--potential", "-P", exists=True, help="PolyMLP potential file path"),
     is_write: bool = typer.Option(
         False,
         "--is-write",
+        "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        help="ASE可解析的结构文件路径（如 VASP POSCAR、CIF、XYZ 等），默认 'POSCAR'",
+        "-p",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
 ):
@@ -336,11 +353,11 @@ def ploymp(
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
     # PolyMLP calculator initialization
-    typer.print(f"Using ploymp calculator with potential: {potential}")
+    typer.echo(f"Using ploymp calculator with potential: {potential}")
     try:
         calc = make_polymp(potential)
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     calculate_phonon_force_constants(
@@ -355,25 +372,29 @@ def mtp2(
     nc: int,
     cutoff: str = typer.Option(
         ...,
+        "--cutoff",
+        "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
+        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
     ),
     is_write: bool = typer.Option(
         False,
         "--is-write",
+        "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
+        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
     ),
     mtp_exe: str = typer.Option(
-        "mlp", "--mtp-exe", help="Path to MLP executable, default is 'mlp'"
+        "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
+        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -391,18 +412,16 @@ def mtp2(
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
     # Read atoms to get unique elements
-    from ase.io import read
-
-    atoms = read(poscar)
+    atoms = read_atoms(poscar, in_format="auto")
     unique_elements = list(dict.fromkeys(atoms.get_chemical_symbols()))
 
     # MTP calculator initialization
-    typer.print(f"Initializing MTP calculator with potential: {potential}")
+    typer.echo(f"Initializing MTP calculator with potential: {potential}")
     try:
         calc = make_mtp(potential, mtp_exe=mtp_exe, unique_elements=unique_elements)
-        typer.print(f"Using MTP calculator with elements: {unique_elements}")
+        typer.echo(f"Using MTP calculator with elements: {unique_elements}")
     except ImportError as e:
-        typer.print(str(e))
+        typer.echo(str(e))
         sys.exit(1)
 
     calculate_phonon_force_constants(

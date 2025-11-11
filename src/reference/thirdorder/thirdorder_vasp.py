@@ -27,9 +27,8 @@ try:
 except NameError:
     xrange = range
 
-import sys
 import os.path
-import glob
+import sys
 
 try:
     from lxml import etree as ElementTree

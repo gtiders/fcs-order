@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 
 # Third-party imports
-import numpy as np
-import typer
-from ase.io import read, write
-from ase import Atoms
-import ase.units as aunits
-import matplotlib.pyplot as plt
 from collections import OrderedDict
 
+import ase.units as aunits
+import matplotlib.pyplot as plt
+import numpy as np
+import typer
+from ase import Atoms
+from ase.io import write
+
+from ..utils.io_abstraction import read as io_read
 
 # ==========================
 # Core helpers (moved here)
@@ -130,13 +132,13 @@ class _PhononRattler:
         argsort = np.argsort(np.abs(w2_s))
         w2_gamma = w2_s[argsort][:3]
         if np.any(np.abs(w2_gamma) > frequency_tol):
-            typer.print(
+            typer.echo(
                 f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}"
             )
 
         # warning if any imaginary modes
         if np.any(w2_s < -frequency_tol):
-            typer.print("Imaginary modes present")
+            typer.echo("Imaginary modes present")
 
         # treat imaginary modes as real
         imag_mask = w2_s < -frequency_tol
@@ -304,14 +306,14 @@ def generate_phonon_rattled_structures(
     """
     Generate phonon rattled structures with filtering based on displacement and distance criteria.
     """
-    sposcar = read(sposcar)
+    sposcar = io_read(sposcar)
     ref_pos = sposcar.positions.copy()
     natoms = len(sposcar)
     fc2 = parse_FORCE_CONSTANTS(fc2, natoms)
     temperatures = [float(t) for t in temperatures.split(",")]
 
     for t in temperatures:
-        typer.print(f"Processing temperature: {t} K")
+        typer.echo(f"Processing temperature: {t} K")
         valid_structures = []
         attempts = 0
         max_attempts = number * 50  # Prevent infinite loop, set maximum attempts
@@ -344,7 +346,7 @@ def generate_phonon_rattled_structures(
                     break
 
             attempts += batch_size
-            typer.print(
+            typer.echo(
                 f"  Generated {attempts} structures, found {len(valid_structures)} valid structures"
             )
 
@@ -364,11 +366,11 @@ def generate_phonon_rattled_structures(
 
             write(output_filename, selected_structures, format="extxyz")
             plot_distributions(selected_structures, ref_pos, T=t)
-            typer.print(
+            typer.echo(
                 f"  Saved {len(selected_structures)} structures to {output_filename}"
             )
 
         if len(valid_structures) < number:
-            typer.print(
+            typer.echo(
                 f"  Warning: Only found {len(valid_structures)} valid structures out of {number} requested"
             )

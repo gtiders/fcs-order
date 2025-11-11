@@ -4,9 +4,10 @@ import os
 import re
 import subprocess
 import tempfile
+
 import numpy as np
-from ase.cell import Cell
 from ase.calculators.calculator import Calculator, all_changes
+from ase.cell import Cell
 
 
 class MTP(Calculator):
