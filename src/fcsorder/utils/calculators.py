@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from typing import Optional, Dict, Any, Sequence
+from typing import Optional, Sequence
 
 # Third-party imports are optional and imported lazily in factory functions
 
@@ -43,7 +43,7 @@ def make_mtp(
     """Create an internal MTP calculator wrapper consistent with existing usage."""
     try:
         # Local import to avoid hard dependency for users who don't need MTP
-        from ..Mycalc.mtp2ase import MTP  # type: ignore
+        from .unofficial_ase.mtp2ase import MTP  # type: ignore
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
     return MTP(

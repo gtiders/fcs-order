@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
 import typer
 
+from ..core import (
+    fourthorder_core,  # type: ignore
+    thirdorder_core,  # type: ignore
+)
+from ..utils.io_abstraction import write_structure
 from ..utils.order_common import (
     H,
-    write_POSCAR,
-    normalize_SPOSCAR,
-    move_two_atoms,
     move_three_atoms,
+    move_two_atoms,
+    normalize_SPOSCAR,
 )
 from ..utils.prepare_calculation import prepare_calculation3, prepare_calculation4
-
-from ..core import thirdorder_core  # type: ignore
-from ..core import fourthorder_core  # type: ignore
 
 
 def sow(
@@ -23,6 +26,10 @@ def sow(
     cutoff: str,
     order: int = 3,
     poscar_path: str = "POSCAR",
+    out_format: str = "poscar",
+    out_dir: str = ".",
+    name_template: str | None = None,
+    undisplaced_name: str | None = None,
 ):
     """
     Generate displaced POSCAR files for 3-phonon or 4-phonon calculations.
@@ -33,6 +40,13 @@ def sow(
         order: 3 for third-order (3-phonon), 4 for fourth-order (4-phonon).
         poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'.
     """
+    # Ensure output directory exists
+    os.makedirs(out_dir, exist_ok=True)
+
+    ofmt = out_format.lower()
+    is_vasp = ofmt in ("poscar", "vasp")
+    ext = "poscar" if is_vasp else ofmt
+
     if order == 3:
         poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh = (
             prepare_calculation3(na, nb, nc, cutoff, poscar_path)
@@ -40,17 +54,46 @@ def sow(
         wedge = thirdorder_core.Wedge(
             poscar, sposcar, symops, dmin, nequi, shifts, frange
         )
-        typer.print(f"Found {wedge.nlist} triplet equivalence classes")
+        typer.echo(f"Found {wedge.nlist} triplet equivalence classes")
         list4 = wedge.build_list4()
         nirred = len(list4)
         nruns = 4 * nirred
-        typer.print(f"Total DFT runs needed: {nruns}")
+        typer.echo(f"Total DFT runs needed: {nruns}")
 
-        typer.print("Writing undisplaced coordinates to 3RD.SPOSCAR")
-        write_POSCAR(normalize_SPOSCAR(sposcar), "3RD.SPOSCAR")
+        if undisplaced_name:
+            ctx = {
+                "order": "3RD",
+                "phase": "structure",
+                "ext": ext,
+                "width": len(str(4 * (len(list4) + 1))),
+                "index": 0,
+                "index_padded": f"{0:0{len(str(4 * (len(list4) + 1)))}d}",
+            }
+            filename = undisplaced_name.format(**ctx)
+            filepath = os.path.join(out_dir, filename)
+            typer.echo(f"Writing undisplaced coordinates to {os.path.basename(filepath)}")
+            write_structure(normalize_SPOSCAR(sposcar), filepath, ofmt)
+        else:
+            if is_vasp:
+                typer.echo("Writing undisplaced coordinates to 3RD.SPOSCAR")
+                write_structure(normalize_SPOSCAR(sposcar), os.path.join(out_dir, "3RD.SPOSCAR"), ofmt)
+            else:
+                undisplaced = os.path.join(out_dir, f"3RD.structure.{ext}")
+                typer.echo(f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}")
+                write_structure(normalize_SPOSCAR(sposcar), undisplaced, ofmt)
         width = len(str(4 * (len(list4) + 1)))
-        namepattern = f"3RD.POSCAR.{{:0{width}d}}"
-        typer.print("Writing displaced coordinates to 3RD.POSCAR.* files")
+        if name_template:
+            typer.echo("Writing displaced coordinates using custom template")
+            # name_template can use placeholders
+            # {order}, {phase}, {index}, {index_padded}, {width}, {ext}
+            namepattern = None
+        else:
+            if is_vasp:
+                namepattern = f"3RD.POSCAR.{{:0{width}d}}"
+                typer.echo("Writing displaced coordinates to 3RD.POSCAR.* files")
+            else:
+                namepattern = f"3RD.disp.{{:0{width}d}}.{ext}"
+                typer.echo(f"Writing displaced coordinates to 3RD.disp.*.{ext} files")
         for i, e in enumerate(list4):
             for n in range(4):
                 isign = (-1) ** (n // 2)
@@ -61,8 +104,21 @@ def sow(
                         sposcar, e[1], e[3], isign * H, e[0], e[2], jsign * H
                     )
                 )
-                filename = namepattern.format(number)
-                write_POSCAR(dsposcar, filename)
+                if name_template:
+                    ctx = {
+                        "order": "3RD",
+                        "phase": "disp",
+                        "index": number,
+                        "width": width,
+                        "index_padded": f"{number:0{width}d}",
+                        "ext": ext,
+                    }
+                    filename = name_template.format(**ctx)
+                    filepath = os.path.join(out_dir, filename)
+                else:
+                    filename = namepattern.format(number)
+                    filepath = os.path.join(out_dir, filename)
+                write_structure(dsposcar, filepath, ofmt)
         return
 
     if order == 4:
@@ -72,16 +128,43 @@ def sow(
         wedge = fourthorder_core.Wedge(
             poscar, sposcar, symops, dmin, nequi, shifts, frange
         )
-        typer.print(f"Found {wedge.nlist} quartet equivalence classes")
+        typer.echo(f"Found {wedge.nlist} quartet equivalence classes")
         list6 = wedge.build_list4()
         nirred = len(list6)
         nruns = 8 * nirred
-        typer.print(f"Total DFT runs needed: {nruns}")
-        typer.print("Writing undisplaced coordinates to 4TH.SPOSCAR")
-        write_POSCAR(normalize_SPOSCAR(sposcar), "4TH.SPOSCAR")
+        typer.echo(f"Total DFT runs needed: {nruns}")
+        if undisplaced_name:
+            ctx = {
+                "order": "4TH",
+                "phase": "structure",
+                "ext": ext,
+                "width": len(str(8 * (len(list6) + 1))),
+                "index": 0,
+                "index_padded": f"{0:0{len(str(8 * (len(list6) + 1)))}d}",
+            }
+            filename = undisplaced_name.format(**ctx)
+            filepath = os.path.join(out_dir, filename)
+            typer.echo(f"Writing undisplaced coordinates to {os.path.basename(filepath)}")
+            write_structure(normalize_SPOSCAR(sposcar), filepath, ofmt)
+        else:
+            if is_vasp:
+                typer.echo("Writing undisplaced coordinates to 4TH.SPOSCAR")
+                write_structure(normalize_SPOSCAR(sposcar), os.path.join(out_dir, "4TH.SPOSCAR"), ofmt)
+            else:
+                undisplaced = os.path.join(out_dir, f"4TH.structure.{ext}")
+                typer.echo(f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}")
+                write_structure(normalize_SPOSCAR(sposcar), undisplaced, ofmt)
         width = len(str(8 * (len(list6) + 1)))
-        namepattern = "4TH.POSCAR.{{0:0{0}d}}".format(width)
-        typer.print("Writing displaced coordinates to 4TH.POSCAR.* files")
+        if name_template:
+            typer.echo("Writing displaced coordinates using custom template")
+            namepattern = None
+        else:
+            if is_vasp:
+                namepattern = f"4TH.POSCAR.{{:0{width}d}}"
+                typer.echo("Writing displaced coordinates to 4TH.POSCAR.* files")
+            else:
+                namepattern = f"4TH.disp.{{:0{width}d}}.{ext}"
+                typer.echo(f"Writing displaced coordinates to 4TH.disp.*.{ext} files")
         for i, e in enumerate(list6):
             for n in range(8):
                 isign = (-1) ** (n // 4)
@@ -102,8 +185,21 @@ def sow(
                         ksign * H,
                     )
                 )
-                filename = namepattern.format(number)
-                write_POSCAR(dsposcar, filename)
+                if name_template:
+                    ctx = {
+                        "order": "4TH",
+                        "phase": "disp",
+                        "index": number,
+                        "width": width,
+                        "index_padded": f"{number:0{width}d}",
+                        "ext": ext,
+                    }
+                    filename = name_template.format(**ctx)
+                    filepath = os.path.join(out_dir, filename)
+                else:
+                    filename = namepattern.format(number)
+                    filepath = os.path.join(out_dir, filename)
+                write_structure(dsposcar, filepath, ofmt)
         return
 
     raise typer.BadParameter("--order must be either 3 or 4")

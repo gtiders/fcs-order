@@ -27,12 +27,12 @@ try:
 except NameError:
     xrange = range
 
-import sys
-import os
-import os.path
+import contextlib
 import copy
 import itertools
-import contextlib
+import os
+import os.path
+import sys
 
 try:
     import cStringIO as StringIO
@@ -48,7 +48,6 @@ try:
 except ImportError:
     hashes = False
 import numpy as np
-import scipy as sp
 import scipy.linalg
 import scipy.spatial
 import scipy.spatial.distance

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-import numpy
 from distutils.core import setup
 from distutils.extension import Extension
+
+import numpy
 
 # Add the location of the "spglib/spglib.h" to this list if necessary.
 # Example: INCLUDE_DIRS=["/home/user/local/include"]

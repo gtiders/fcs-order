@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import os
 from typing import List
+
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import numpy as np
+
+from .io_abstraction import parse_supercell_matrix, read as io_read
 
 
 def plot_phband(
-    na: int, nb: int, nc: int, primcell: str, fcs_orders: List[str]
+    supercell: List[int], poscar: str, fcs_orders: List[str], labels: List[str] | None = None
 ) -> None:
     """
     Plot phonon band structure from multiple FORCE_CONSTANTS files.
@@ -13,21 +20,22 @@ def plot_phband(
     This tool generates a phonon band structure plot using the primitive cell
     structure and force constants from multiple FORCE_CONSTANTS files.
     Each dataset is plotted with a different color from a colormap.
+
+    poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ).
+    supercell: Supercell specification as 3 or 9 integers (same semantics as mlp3),
+               e.g. [na, nb, nc] or a full 3x3 flattened matrix.
+    labels: Optional list of legend labels. If provided, its length must equal the number of FORCE_CONSTANTS files.
+            If not provided, defaults to the basenames of the files in fcs_orders.
     """
-    # Import matplotlib here to avoid issues when not plotting
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
 
-    # Read the primitive cell structure
-    from ase.io import read
 
-    primcell_atoms = read(primcell)
+    poscar = io_read(poscar)
 
     # Initialize Phonopy object
     try:
         from phonopy import Phonopy
-        from phonopy.structure.atoms import PhonopyAtoms
         from phonopy.file_IO import parse_FORCE_CONSTANTS
+        from phonopy.structure.atoms import PhonopyAtoms
         from seekpath import get_explicit_k_path
     except ImportError:
         import typer
@@ -43,35 +51,32 @@ def plot_phband(
             numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions, **kwargs
         )
 
-    # Create supercell matrix
-    import numpy as np
-
-    supercell_matrix = np.array([[na, 0, 0], [0, nb, 0], [0, 0, nc]])
+    # Create supercell matrix (accept 3 or 9 integers like mlp3)
+    supercell_matrix = parse_supercell_matrix(supercell)
 
     # Get the k-point path for the band structure (same for all datasets)
     structure_tuple = (
-        primcell_atoms.cell,
-        primcell_atoms.get_scaled_positions(),
-        primcell_atoms.numbers,
+        poscar.cell,
+        poscar.get_scaled_positions(),
+        poscar.numbers,
     )
     path = get_explicit_k_path(structure_tuple)
 
-    # Create the plot with two subplots (band structure + legend)
+    # Create the plot
     fig = plt.figure(figsize=(10, 4), dpi=140)
-    gs = fig.add_gridspec(1, 2, width_ratios=[3, 2], wspace=0.15)
-    ax_band = fig.add_subplot(gs[0])
-    ax_legend = fig.add_subplot(gs[1])
-
-    # Hide axes for legend subplot
-    ax_legend.axis("off")
+    ax_band = fig.add_subplot(111)
 
     # Get colors from colormap
     colors = cm.tab10(np.linspace(0, 1, len(fcs_orders)))
 
+    # Validate labels length if provided
+    if labels is not None and len(labels) != len(fcs_orders):
+        raise ValueError("labels length must equal number of FORCE_CONSTANTS files")
+
     # Process each FORCE_CONSTANTS file
     for i, fcs_order in enumerate(fcs_orders):
         phonon = Phonopy(
-            ase_to_phonopy(primcell_atoms), supercell_matrix=supercell_matrix
+            ase_to_phonopy(poscar), supercell_matrix=supercell_matrix
         )
         phonon.force_constants = parse_FORCE_CONSTANTS(fcs_order)
 
@@ -102,13 +107,13 @@ def plot_phband(
     ax_band.axhline(y=0, color="gray", linestyle="-", linewidth=0.8, alpha=0.5)
 
     # Beautify the labels on the x-axis
-    labels = path["explicit_kpoints_labels"]
-    labels = [r"$\Gamma$" if m == "GAMMA" else m for m in labels]
-    labels = [m.replace("_", "$_") + "$" if "_" in m else m for m in labels]
+    kpt_labels = path["explicit_kpoints_labels"]
+    kpt_labels = [r"$\\Gamma$" if m == "GAMMA" else m for m in kpt_labels]
+    kpt_labels = [m.replace("_", "$_") + "$" if "_" in m else m for m in kpt_labels]
 
     # Use NumPy to filter out empty labels
     kcoords = np.array(path["explicit_kpoints_linearcoord"])  # (n_k,)
-    label_array = np.array(labels, dtype=object)
+    label_array = np.array(kpt_labels, dtype=object)
     mask = label_array != ""
     tick_positions = kcoords[mask]
     tick_labels = label_array[mask].tolist()
@@ -118,25 +123,16 @@ def plot_phband(
     for xp in tick_positions:
         ax_band.axvline(xp, color="0.6", linestyle="-", linewidth=0.8, alpha=0.7)
 
-    # Add legend in separate subplot
-    import os
-    from matplotlib.lines import Line2D
 
-    legend_labels = [os.path.basename(fcs) for fcs in fcs_orders]
-    legend_elements = [
-        Line2D([0], [0], color=colors[i], lw=2.5, label=legend_labels[i])
-        for i in range(len(fcs_orders))
-    ]
-    ax_legend.legend(
-        handles=legend_elements,
-        loc="center left",
-        fontsize=10,
-        frameon=True,
-        fancybox=True,
-        shadow=True,
-        title="Force Constants",
-        title_fontsize=11,
-    )
+    legend_labels = labels if labels is not None else [os.path.basename(fcs) for fcs in fcs_orders]
+    cmap = mcolors.ListedColormap(colors)
+    bounds = np.arange(-0.5, len(fcs_orders) + 0.5, 1)
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+    sm = cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+    cb = fig.colorbar(sm, ax=ax_band, ticks=np.arange(len(fcs_orders)), pad=0.02)
+    cb.ax.set_yticklabels(legend_labels)
+    cb.set_label("Force Constants", fontsize=11, fontweight="bold")
 
     # Adjust layout to avoid tight_layout warning
     fig.subplots_adjust(left=0.08, right=0.98, top=0.95, bottom=0.12)
@@ -144,6 +140,4 @@ def plot_phband(
     # Save the plot
     output_file = "phband.svg"
     plt.savefig(output_file, bbox_inches="tight")
-    import typer
-
     typer.echo(f"Phonon band structure plot saved to {output_file}")

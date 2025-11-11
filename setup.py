@@ -2,12 +2,10 @@
 # -*- encoding: utf-8 -*-
 
 import numpy
-
-from setuptools import setup, find_packages
-from setuptools.extension import Extension
-
 from Cython.Build import cythonize
 from Cython.Compiler import Options
+from setuptools import find_packages, setup
+from setuptools.extension import Extension
 
 # Increase Cython dimension limit from 7 to 100
 Options.buffer_max_dims = 10

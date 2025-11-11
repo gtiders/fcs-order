@@ -110,7 +110,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     natoms=len(poscar["types"])
     ntot=len(sposcar["types"])
     if is_sparse:
-        typer.print("using sparse method with dok sparse matrix !")
+        typer.echo("using sparse method with dok sparse matrix !")
         vnruter=sparse.zeros((3, 3, 3, natoms, ntot, ntot), format="dok")
     else:
         vnruter = np.zeros((3, 3, 3, natoms, ntot, ntot))
@@ -151,7 +151,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
     nrows=ntotalindependent
     ncols=natoms*ntot*27
 
-    typer.print("- Storing the coefficients in a sparse matrix")
+    typer.echo("- Storing the coefficients in a sparse matrix")
     i=[]
     j=[]
     v=[]
@@ -174,7 +174,7 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar,is_sparse):
                                                         vind2[ii,jj,kk],ix])
                         tribasisindex+=1
                         colindex+=1
-    typer.print("- \t Density: {0:.2g}%".format(100.*len(i)/float(nrows*ncols)))
+    typer.echo("- \t Density: {0:.2g}%".format(100.*len(i)/float(nrows*ncols)))
     aa=sp.sparse.coo_matrix((v,(i,j)),(nrows,ncols)).tocsr()
     D=sp.sparse.spdiags(aphilist,[0,],aphilist.size,aphilist.size,
                            format="csr")

@@ -27,8 +27,8 @@ try:
 except NameError:
     xrange = range
 
-import re
 import ast
+import re
 
 import thirdorder_core
 from thirdorder_common import *

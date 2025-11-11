@@ -5,151 +5,72 @@ Force constants calculation toolkit built on ASE and Typer. Compute 2nd/3rd/4th-
 
 Repo: https://github.com/gtiders/fcs-order
 
-## Features
+## User Guide
 
-- 2nd-order force constants (phonopy-compatible)
-- 3rd- and 4th-order force constants (ShengBTE/ShengBTE-like formats)
-- SCPH (Self-Consistent Phonon) workflow
-- Multiple ML calculators: NEP, DeepMD, PolyMLP, MTP; and Hiphive
-- Handy sow/reap utilities for VASP workflows
+fcs-order is a CLI toolkit for computing interatomic force constants (2nd/3rd/4th order) and running SCPH workflows using ASE‑readable structures and various ML/physics backends.
 
-## Installation
+### Installation
 
-- Python 3.9+
-- Recommended: create a fresh virtual environment
+Requirements: Python 3.10–3.13 recommended.
 
 ```bash
 pip install git+https://github.com/gtiders/fcs-order.git
 ```
 
-Optional dependencies per backend (install only what you need):
-
+Optional backends (install as needed):
 - NEP: `pip install calorine`
 - DeepMD: `pip install deepmd-kit`
 - PolyMLP: `pip install pypolymlp`
 - Hiphive: `pip install hiphive`
-- MTP: external `mlp` binary (Moment Tensor Potential), make sure it’s on PATH
+- MTP: external `mlp` binary in PATH
 
-## CLI Overview
+### I/O and formats
 
-The main entry is a Typer App with subcommands:
+- Structures: any ASE‑readable file (POSCAR/CONTCAR, CIF, XYZ/extxyz, …)
+- Forces: any ASE‑readable file with forces (vasprun.xml/OUTCAR, extxyz, …)
+- All structure reads go through the internal I/O abstraction to keep behavior consistent.
 
-- Top-level utilities
-  - `sow3` / `sow4`: generate displaced POSCARs
-  - `reap3` / `reap4`: collect forces (from VASP) and build IFCs
-  - `plot_phband`: plot phonon band structures from FORCE_CONSTANTS files
-  - `phonon_sow`: rattle utility (from utils)
-- Sub-apps for ML potentials and SCPH
-  - `mlp2`: 2nd-order IFCs via ML calculators (nep/dp/ploymp/mtp)
-  - `mlp3`: 3rd-order IFCs via ML calculators (nep/dp/ploymp/mtp)
-  - `mlp4`: 4th-order IFCs via ML calculators (nep/dp/ploymp/mtp)
-  - `scph`: SCPH workflow via ML calculators (nep/dp/ploymp/hiphive/mtp)
+### Supercell specification
 
-Run `python -m fcsorder --help` for the full tree.
+- 3 integers for diagonal expansion (na nb nc), or 9 integers for a full 3×3 matrix (flattened).
+- Used by mlp2/scph; mlp3/mlp4 use na nb nc positional arguments.
 
-## Commands
+### Common short options
 
-### sow3
-Generate 3rd-order displacement structures.
+- `--poscar, -p` Structure path (default: POSCAR)
+- `--cutoff, -c` Cutoff distance/value (semantics by command)
+- `--potential, -P` Backend potential/model path
+- `--temperatures, -T` e.g., "100,200,300"
+- See more in the quick reference: `docs/cli_usage_en.md`.
 
-```bash
-python -m fcsorder sow3 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
-```
-
-### sow4
-Generate 4th-order displacement structures.
+### Quick start
 
 ```bash
-python -m fcsorder sow4 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
+# sow (3rd‑order) with CIF input and XYZ outputs
+fcsorder sow 2 2 2 -c -6 -p prim.cif -f xyz -o out_dir
+
+# reap (3rd‑order) with extxyz forces
+fcsorder reap 2 2 2 -c -6 pos/disp_*.xyz -p prim.cif
+
+# mlp3 with NEP backend
+fcsorder mlp3 nep 2 2 2 -c -6 -P nep.txt -p POSCAR
+
+# scph with DP backend
+fcsorder scph dp 2 2 2 -p prim.cif -T "100,200,300" -c 4.5 -P graph.pb -A
 ```
 
-### reap3
-Collect VASP results and build 3rd-order IFCs.
+### Commands overview
 
-```bash
-python -m fcsorder reap3 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN1.xml VASPRUN2.xml ...
-```
+- sow: generate displaced structures for IFC calculations (order 3/4 via `-r`)
+- reap: reconstruct IFCs from forces in ASE‑readable files
+- mlp2: compute 2nd‑order IFCs (subcommands: nep/dp/ploymp/mtp), supercell matrix input
+- mlp3: compute 3rd‑order IFCs (subcommands: nep/dp/ploymp/mtp), uses na nb nc
+- mlp4: compute 4th‑order IFCs (subcommands: nep/dp/ploymp/mtp), uses na nb nc
+- scph: run self‑consistent phonon workflow (subcommands: nep/dp/hiphive/ploymp/mtp)
+- plot_phband: plot phonon band structure from FORCE_CONSTANTS
+  - Single colorbar on the right; each dataset has a tick label; `--labels` optional
 
-### reap4
-Collect VASP results and build 4th-order IFCs.
-
-```bash
-python -m fcsorder reap4 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN*.xml
-```
-
-### mlp2 (2nd-order)
-Subcommands: `nep`, `dp`, `ploymp`, `mtp`
-
-Matrix input for supercell: either 3 diagonal ints or 9 ints for a full 3x3 matrix.
-
-- NEP
-```bash
-python -m fcsorder mlp2 nep 2 2 2 --potential nep.txt --poscar POSCAR --outfile FORCE_CONSTANTS_2ND [--is-gpu]
-```
-- DeepMD
-```bash
-python -m fcsorder mlp2 dp 2 2 2 --potential model.pb --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
-```
-- PolyMLP
-```bash
-python -m fcsorder mlp2 ploymp 2 2 2 --potential polymlp.pot --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
-```
-- MTP (Moment Tensor Potential, requires `mlp` executable)
-```bash
-python -m fcsorder mlp2 mtp 2 2 2 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] --outfile FORCE_CONSTANTS_2ND
-```
-Note: For MTP, the code automatically detects unique elements from the POSCAR via ASE; you do not need to pass them.
-
-### mlp3 (3rd-order)
-Subcommands: `nep`, `dp`, `ploymp`, `mtp`
-
-```bash
-# Example with MTP
-python -m fcsorder mlp3 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
-```
-
-Other backends follow the same pattern as `mlp2`, with `--cutoff` required.
-
-### mlp4 (4th-order)
-Subcommands: `nep`, `dp`, `ploymp`, `mtp`
-
-```bash
-python -m fcsorder mlp4 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
-```
-
-### scph
-Subcommands: `nep`, `dp`, `hiphive`, `ploymp`, `mtp`
-
-Common arguments:
-
-- `primcell`: path to primitive cell (e.g. POSCAR)
-- `supercell_matrix`: 3 or 9 ints
-- `temperatures`: e.g. "100,200,300"
-- `cutoff`: cluster space cutoff (backend-specific meaning)
-
-Examples:
-
-- NEP
-```bash
-python -m fcsorder scph nep POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential nep.txt [--is-gpu]
-```
-- DP
-```bash
-python -m fcsorder scph dp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential graph.pb
-```
-- Hiphive
-```bash
-python -m fcsorder scph hiphive POSCAR 2 2 2 --temperatures 300 --cutoff 3.0 --potential model.fcp
-```
-- PolyMLP
-```bash
-python -m fcsorder scph ploymp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential polymlp.pot
-```
-- MTP
-```bash
-python -m fcsorder scph mtp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential pot.mtp [--mtp-exe mlp]
-```
-Note: For MTP, unique elements are obtained from the provided `primcell` via ASE.
+Run `fcsorder --help` or `fcsorder <subapp> --help` for full details.
 
 ## MTP Notes
 
@@ -162,6 +83,7 @@ Note: For MTP, unique elements are obtained from the provided `primcell` via ASE
 - Run formatting and basic lint if desired
 - Contribute via PRs on GitHub: https://github.com/gtiders/fcs-order
 
+
 ## License
 
-TBD.
+GPL-3.0-or-later

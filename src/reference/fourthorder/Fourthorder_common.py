@@ -20,12 +20,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
-import os.path
+import contextlib
 import copy
 import itertools
-import contextlib
+import os
+import os.path
+import sys
 
 try:
     import cStringIO as StringIO
@@ -38,11 +38,9 @@ try:
 except ImportError:
     hashes = False
 import numpy as np
-import scipy as sp
 import scipy.linalg
 import scipy.spatial
 import scipy.spatial.distance
-
 
 H = 1e-3  # Magnitude of the finite displacements, in nm.
 SYMPREC = 1e-5  # Tolerance for symmetry search
