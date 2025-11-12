@@ -12,7 +12,10 @@ from .io_abstraction import parse_supercell_matrix, read as io_read
 
 
 def plot_phband(
-    supercell: List[int], poscar: str, fcs_orders: List[str], labels: List[str] | None = None
+    supercell: List[int],
+    poscar: str,
+    fcs_orders: List[str],
+    labels: List[str] | None = None,
 ) -> None:
     """
     Plot phonon band structure from multiple FORCE_CONSTANTS files.
@@ -27,7 +30,6 @@ def plot_phband(
     labels: Optional list of legend labels. If provided, its length must equal the number of FORCE_CONSTANTS files.
             If not provided, defaults to the basenames of the files in fcs_orders.
     """
-
 
     poscar = io_read(poscar)
 
@@ -75,9 +77,7 @@ def plot_phband(
 
     # Process each FORCE_CONSTANTS file
     for i, fcs_order in enumerate(fcs_orders):
-        phonon = Phonopy(
-            ase_to_phonopy(poscar), supercell_matrix=supercell_matrix
-        )
+        phonon = Phonopy(ase_to_phonopy(poscar), supercell_matrix=supercell_matrix)
         phonon.force_constants = parse_FORCE_CONSTANTS(fcs_order)
 
         # Calculate the band structure
@@ -123,8 +123,9 @@ def plot_phband(
     for xp in tick_positions:
         ax_band.axvline(xp, color="0.6", linestyle="-", linewidth=0.8, alpha=0.7)
 
-
-    legend_labels = labels if labels is not None else [os.path.basename(fcs) for fcs in fcs_orders]
+    legend_labels = (
+        labels if labels is not None else [os.path.basename(fcs) for fcs in fcs_orders]
+    )
     cmap = mcolors.ListedColormap(colors)
     bounds = np.arange(-0.5, len(fcs_orders) + 0.5, 1)
     norm = mcolors.BoundaryNorm(bounds, cmap.N)

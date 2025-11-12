@@ -5,8 +5,8 @@ import numpy as np
 import typer
 
 from ..core import (
-    fourthorder_core,  # type: ignore
-    thirdorder_core,  # type: ignore
+    fourthorder_core_py as fourthorder_core,
+    thirdorder_core_py as thirdorder_core,
 )
 from ..utils.order_common import (
     H,

@@ -10,11 +10,13 @@ from typing import List
 import typer
 
 # Local imports
-from ..core.secondorder_core import build_supercell_from_matrix
-from ..core.self_consistent_phonons import analyze_scph_convergence, run_scph
+
 from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
 from ..utils.io_abstraction import read as io_read
-from ..utils.plotting import plot_phband
+
+from .core.self_consistent_phonons import analyze_scph_convergence, run_scph
+from .core.secondorder_core import build_supercell_from_matrix
+from .tools.plotting import plot_phband
 
 
 def parse_temperatures(s: str) -> List[float]:
@@ -48,21 +50,41 @@ def nep(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g., 'nep.txt')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="NEP potential file path (e.g., 'nep.txt')",
     ),
-    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    alpha: float = typer.Option(
+        0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"
+    ),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     is_gpu: bool = typer.Option(
         False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
@@ -127,8 +149,8 @@ def nep(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
@@ -146,13 +168,24 @@ def tace(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     model_path: str = typer.Option(
-        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ...,
+        "--model-path",
+        "-m",
+        exists=True,
+        help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)",
     ),
-    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option(
+        "cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"
+    ),
     dtype: str = typer.Option(
         "float32",
         "--dtype",
@@ -160,15 +193,26 @@ def tace(
         help="Tensor dtype: 'float32' | 'float64' | None (string 'None' to disable)",
     ),
     level: int = typer.Option(0, "--level", "-l", help="Fidelity level for TACE model"),
-    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    alpha: float = typer.Option(
+        0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"
+    ),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     analyze_convergence: bool = typer.Option(
         True,
@@ -219,8 +263,8 @@ def tace(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
@@ -238,21 +282,41 @@ def dp(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="DeepMD model file path (e.g., 'graph.pb')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="DeepMD model file path (e.g., 'graph.pb')",
     ),
-    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    alpha: float = typer.Option(
+        0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"
+    ),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     analyze_convergence: bool = typer.Option(
         True,
@@ -310,8 +374,8 @@ def dp(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
@@ -329,21 +393,41 @@ def hiphive(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="Hiphive model file path (e.g., 'model.fcp')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="Hiphive model file path (e.g., 'model.fcp')",
     ),
-    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    alpha: float = typer.Option(
+        0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"
+    ),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     analyze_convergence: bool = typer.Option(
         True,
@@ -407,8 +491,8 @@ def hiphive(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
@@ -426,21 +510,41 @@ def ploymp(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="Ploymp potential file path (e.g., 'model.mp')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="Ploymp potential file path (e.g., 'model.mp')",
     ),
-    alpha: float = typer.Option(0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    alpha: float = typer.Option(
+        0.2, "--alpha", "-a", help="Mixing parameter for SCPH iterations"
+    ),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     analyze_convergence: bool = typer.Option(
         True,
@@ -501,8 +605,8 @@ def ploymp(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)
 
 
@@ -520,21 +624,39 @@ def mtp2(
         exists=True,
     ),
     temperatures: str = typer.Option(
-        ..., "--temperatures", "-T", help="Temperatures for calculation, e.g., '100,200,300'"
+        ...,
+        "--temperatures",
+        "-T",
+        help="Temperatures for calculation, e.g., '100,200,300'",
     ),
-    cutoff: float = typer.Option(..., "--cutoff", "-c", help="Cutoff radius for the cluster space"),
+    cutoff: float = typer.Option(
+        ..., "--cutoff", "-c", help="Cutoff radius for the cluster space"
+    ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g., 'pot.mtp')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="MTP potential file path (e.g., 'pot.mtp')",
     ),
     alpha: float = typer.Option(0.2, help="Mixing parameter for SCPH iterations"),
-    n_iterations: int = typer.Option(100, "--n-iterations", "-i", help="Number of iterations for SCPH"),
-    n_structures: int = typer.Option(50, "--n-structures", "-n", help="Number of structures to generate"),
+    n_iterations: int = typer.Option(
+        100, "--n-iterations", "-i", help="Number of iterations for SCPH"
+    ),
+    n_structures: int = typer.Option(
+        50, "--n-structures", "-n", help="Number of structures to generate"
+    ),
     fcs_2nd: str = typer.Option(
         None, "--fcs-2nd", "-F", help="Path to the FCS2 file for initial parameters"
     ),
-    is_qm: bool = typer.Option(True, "--is-qm", "-q", help="Whether to use quantum statistics"),
+    is_qm: bool = typer.Option(
+        True, "--is-qm", "-q", help="Whether to use quantum statistics"
+    ),
     imag_freq_factor: float = typer.Option(
-        1.0, "--imag-freq-factor", "-I", help="Factor for handling imaginary frequencies"
+        1.0,
+        "--imag-freq-factor",
+        "-I",
+        help="Factor for handling imaginary frequencies",
     ),
     mtp_exe: str = typer.Option(
         "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
@@ -600,6 +722,6 @@ def mtp2(
     # Analyze convergence if requested
     if analyze_convergence:
         analyze_scph_convergence(T)
-        fcs_list=[f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels=[f"{T}K" for T in T]
+        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
+        labels = [f"{T}K" for T in T]
         plot_phband(supercell_matrix, poscar, fcs_list, labels)

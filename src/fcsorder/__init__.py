@@ -25,7 +25,9 @@ def sow_command(
         "-c",
         help="Cutoff distance (negative for nearest neighbors, positive for distance in nm)",
     ),
-    order: int = typer.Option(3, "--order", "-r", help="Order of IFCs to generate: 3 or 4"),
+    order: int = typer.Option(
+        3, "--order", "-r", help="Order of IFCs to generate: 3 or 4"
+    ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
@@ -68,7 +70,18 @@ def sow_command(
     """
     Generate displaced POSCAR files for 3-phonon (order=3) or 4-phonon (order=4) calculations.
     """
-    sow(na, nb, nc, cutoff, order, poscar, out_format, out_dir, name_template or None, undisplaced_name or None)
+    sow(
+        na,
+        nb,
+        nc,
+        cutoff,
+        order,
+        poscar,
+        out_format,
+        out_dir,
+        name_template or None,
+        undisplaced_name or None,
+    )
 
 
 @cli.command(name="reap")
@@ -95,7 +108,9 @@ def reap_command(
             "Order must match the displaced structure sequence."
         ),
     ),
-    order: int = typer.Option(3, "--order", "-r", help="Order of IFCs to extract: 3 or 4"),
+    order: int = typer.Option(
+        3, "--order", "-r", help="Order of IFCs to extract: 3 or 4"
+    ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
@@ -112,10 +127,23 @@ def reap_command(
 
 @cli.command(name="plot_phband")
 def plot_phband_command(
-    supercell: list[int] = typer.Argument(..., help="Supercell specification as 3 or 9 integers (diagonal or full 3x3)"),
-    poscar: str = typer.Option("POSCAR", "--poscar", "-p", help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'", exists=True),
+    supercell: list[int] = typer.Argument(
+        ..., help="Supercell specification as 3 or 9 integers (diagonal or full 3x3)"
+    ),
+    poscar: str = typer.Option(
+        "POSCAR",
+        "--poscar",
+        "-p",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
+    ),
     fcs_orders: list[str] = typer.Argument(..., help="Paths to FORCE_CONSTANTS files"),
-    labels: list[str] = typer.Option(None, "--labels", "-l", help="Optional labels for datasets; length must equal number of FORCE_CONSTANTS files"),
+    labels: list[str] = typer.Option(
+        None,
+        "--labels",
+        "-l",
+        help="Optional labels for datasets; length must equal number of FORCE_CONSTANTS files",
+    ),
 ):
     """
     Plot phonon band structure from multiple FORCE_CONSTANTS files.
@@ -124,6 +152,7 @@ def plot_phband_command(
     """
 
     from typing import Optional
+
     plot_phband(supercell, poscar, fcs_orders, labels if labels else None)
 
 
