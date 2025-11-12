@@ -1,7 +1,3 @@
-# Include Cython source files
-include src/fcsorder/core/thirdorder_core.pyx
-include src/fcsorder/core/fourthorder_core.pyx
-
 # Include all Python files
 recursive-include src *.py
 
@@ -10,4 +6,3 @@ include README.md
 include README_zh.md
 include LICENSE
 include pyproject.toml
-include setup.py

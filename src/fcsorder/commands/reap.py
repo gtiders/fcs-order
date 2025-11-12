@@ -4,18 +4,18 @@
 import numpy as np
 import typer
 
-from ..core import (
-    fourthorder_core_py as fourthorder_core,
-    thirdorder_core_py as thirdorder_core,
-)
-from ..utils.order_common import (
+from fcsorder.core import thirdorder_core,fourthorder_core
+from fcsorder.core.thirdorder_core import  prepare_calculation3
+from fcsorder.core.fourthorder_core import  prepare_calculation4
+
+from fcsorder.core.domain.common import (
     H,
     build_unpermutation,
-    read_forces,
     write_ifcs3,
     write_ifcs4,
 )
-from ..utils.prepare_calculation import prepare_calculation3, prepare_calculation4
+
+from fcsorder.io.io_abstraction import read_atoms
 
 
 def reap(
@@ -65,7 +65,7 @@ def reap(
         p = build_unpermutation(sposcar)
         forces = []
         for fpath in vaspruns:
-            forces.append(read_forces(fpath)[p, :])
+            forces.append(read_atoms(fpath).get_forces()[p, :])
             typer.echo(f"- {fpath} read successfully")
             res = forces[-1].mean(axis=0)
             typer.echo("- \t Average force:")

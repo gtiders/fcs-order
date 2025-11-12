@@ -11,17 +11,18 @@ import typer
 from rich.progress import track
 
 # Local imports
-from ..core import thirdorder_core_py as thirdorder_core
-from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
-from ..utils.io_abstraction import get_atoms, read_atoms
-from ..utils.order_common import (
+from fcsorder.core import thirdorder_core
+from fcsorder.core.thirdorder_core import  prepare_calculation3
+
+from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.io.io_abstraction import get_atoms, read_atoms
+from fcsorder.core.domain.common import (
     H,
     build_unpermutation,
     move_two_atoms,
     normalize_SPOSCAR,
     write_ifcs3,
 )
-from ..utils.prepare_calculation import prepare_calculation3
 
 
 def calculate_phonon_force_constants(

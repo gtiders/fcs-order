@@ -295,14 +295,12 @@ version = "3.1"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
-    { name = "calorine" },
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "setuptools" },
     { name = "sparse" },
     { name = "spglib" },
     { name = "typer" },
@@ -328,15 +326,9 @@ mlp = [
     { name = "pypolymlp" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "fcs-order" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.22.1" },
-    { name = "calorine", specifier = ">=3.2" },
     { name = "calorine", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "calorine", marker = "extra == 'calorine'", specifier = ">=1.0" },
     { name = "deepmd-kit", marker = "extra == 'all'", specifier = ">=2.2.0" },
@@ -349,15 +341,11 @@ requires-dist = [
     { name = "pypolymlp", marker = "extra == 'all'", specifier = ">=0.15" },
     { name = "pypolymlp", marker = "extra == 'mlp'", specifier = ">=0.15" },
     { name = "scipy", specifier = ">=1.7.3" },
-    { name = "setuptools", specifier = ">=80.9.0" },
     { name = "sparse", specifier = ">=0.15.5" },
     { name = "spglib", specifier = ">=2.2.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 provides-extras = ["calorine", "deepmd", "hiphive", "mlp", "all"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "fcs-order", editable = "." }]
 
 [[package]]
 name = "fonttools"
@@ -1461,15 +1449,6 @@ wheels = [
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/ab/f2/b31d75cb9b5fa4dd39a0a931ee9b33e7f6f36f23be5ef560bf72e0f92f32/scipy-1.16.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:e7efa2681ea410b10dde31a52b18b0154d66f2485328830e45fdf183af5aefc6", size = 38796678, upload-time = "2025-10-28T17:35:26.354Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/b4/1e/b3723d8ff64ab548c38d87055483714fefe6ee20e0189b62352b5e015bb1/scipy-1.16.3-cp313-cp313t-win_amd64.whl", hash = "sha256:2d1ae2cf0c350e7705168ff2429962a89ad90c2d49d1dd300686d8b2a5af22fc", size = 38640178, upload-time = "2025-10-28T17:35:35.304Z" },
     { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/8e/f3/d854ff38789aca9b0cc23008d607ced9de4f7ab14fa1ca4329f86b3758ca/scipy-1.16.3-cp313-cp313t-win_arm64.whl", hash = "sha256:0c623a54f7b79dd88ef56da19bc2873afec9673a48f3b85b18e4d402bdd29a5a", size = 25803246, upload-time = "2025-10-28T17:35:42.155Z" },
-]
-
-[[package]]
-name = "setuptools"
-version = "80.9.0"
-source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
-wheels = [
-    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
 ]
 
 [[package]]

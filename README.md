@@ -5,6 +5,8 @@ Force constants calculation toolkit built on ASE and Typer. Compute 2nd/3rd/4th-
 
 Repo: https://github.com/gtiders/fcs-order
 
+准备去掉稠密实现直接是稀疏实现
+
 ## User Guide
 
 fcs-order is a CLI toolkit for computing interatomic force constants (2nd/3rd/4th order) and running SCPH workflows using ASE‑readable structures and various ML/physics backends.

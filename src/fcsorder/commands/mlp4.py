@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Standard library imports
-
 # Third-party imports
 import numpy as np
 import typer
 from rich.progress import track
 
 # Local imports
-from ..core import fourthorder_core_py as fourthorder_core
-from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
-from ..utils.io_abstraction import get_atoms, read_atoms
-from ..utils.order_common import (
+from fcsorder.core import fourthorder_core
+from fcsorder.core.fourthorder_core import  prepare_calculation4
+from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.io.io_abstraction import get_atoms, read_atoms
+from fcsorder.core.domain.common import (
     H,
     build_unpermutation,
     move_three_atoms,
     normalize_SPOSCAR,
     write_ifcs4,
 )
-from ..utils.prepare_calculation import prepare_calculation4
 
 
 def calculate_phonon_force_constants_4th(

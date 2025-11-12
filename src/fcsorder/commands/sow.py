@@ -2,21 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import os
-
 import typer
 
-from ..core import (
-    fourthorder_core_py as fourthorder_core,
-    thirdorder_core_py as thirdorder_core,
-)
-from ..utils.io_abstraction import write_structure
-from ..utils.order_common import (
+from fcsorder.core import thirdorder_core,fourthorder_core
+from fcsorder.core.thirdorder_core import  prepare_calculation3
+from fcsorder.core.fourthorder_core import  prepare_calculation4
+from fcsorder.io.io_abstraction import write_structure
+from fcsorder.core.domain.common import (
     H,
     move_three_atoms,
     move_two_atoms,
     normalize_SPOSCAR,
 )
-from ..utils.prepare_calculation import prepare_calculation3, prepare_calculation4
 
 
 def sow(
