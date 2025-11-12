@@ -3,9 +3,6 @@
 
 from typing import Optional, Sequence
 
-# Third-party imports are optional and imported lazily in factory functions
-
-
 def make_nep(potential: str, is_gpu: bool = False):
     """Create a NEP calculator via calorine (CPU/GPU)."""
     try:
@@ -43,7 +40,7 @@ def make_mtp(
     """Create an internal MTP calculator wrapper consistent with existing usage."""
     try:
         # Local import to avoid hard dependency for users who don't need MTP
-        from .unofficial_ase.mtp2ase import MTP 
+        from fcsorder.calc.mtp2calc import MTP 
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
     return MTP(

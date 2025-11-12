@@ -11,7 +11,7 @@ import typer
 from ase import Atoms
 from ase.io import write
 
-from ..utils.io_abstraction import read as io_read
+from fcsorder.io.io_abstraction import read_atoms
 
 # ==========================
 # Core helpers (moved here)
@@ -306,7 +306,7 @@ def generate_phonon_rattled_structures(
     """
     Generate phonon rattled structures with filtering based on displacement and distance criteria.
     """
-    sposcar = io_read(sposcar)
+    sposcar = read_atoms(sposcar)
     ref_pos = sposcar.positions.copy()
     natoms = len(sposcar)
     fc2 = parse_FORCE_CONSTANTS(fc2, natoms)

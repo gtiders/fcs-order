@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .io_abstraction import parse_supercell_matrix, read as io_read
+from fcsorder.io.io_abstraction import parse_supercell_matrix, read_atoms
 
 
 def plot_phband(
@@ -31,7 +31,7 @@ def plot_phband(
             If not provided, defaults to the basenames of the files in fcs_orders.
     """
 
-    poscar = io_read(poscar)
+    poscar = read_atoms(poscar)
 
     # Initialize Phonopy object
     try:

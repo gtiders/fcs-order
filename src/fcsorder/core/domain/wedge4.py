@@ -38,9 +38,8 @@ permutations = np.array(
     dtype=np.intc,
 )
 
-from .symmetry import SymmetryOperations  # for interface parity
-from .gaussian import gaussian
-
+from fcsorder.core.domain.symmetry import SymmetryOperations
+from fcsorder.core.domain.gaussian import gaussian
 
 @jit(nopython=True)
 def _ind2id(icell, ispecies, ngrid, nspecies):
@@ -604,7 +603,6 @@ class Wedge:
                         v_nindependentbasis[self.nlist - 1] = independent.shape[0]
                         for ll in range(independent.shape[0]):
                             v_independentbasis[ll, self.nlist - 1] = independent[ll]
-        print("Reducing the transformation matrix.")
         v_transformationarray[:, :, :, :] = 0.0
         _build_transformationarray(
             v_transformation,
@@ -614,7 +612,6 @@ class Wedge:
             self.nlist,
             v_transformationarray,
         )
-        print("Done.")
 
     def build_list4(self):
         """

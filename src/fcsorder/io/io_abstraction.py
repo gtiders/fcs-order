@@ -115,12 +115,6 @@ def read_atoms(path: str, in_format: str = "auto") -> Atoms:
     return ase_read(path, format=fmt)
 
 
-# Alias for ergonomics: provide a read() similar to ase.io.read that returns ASE Atoms
-def read(path: str, format: str | None = None):  # type: ignore[override]
-    fmt = None if format in (None, "auto") else format
-    return ase_read(path, format=fmt)
-
-
 def get_atoms(poscar: dict, calc: Optional[object] = None) -> Atoms:
     """
     Construct ASE Atoms from an internal dict; optional calculator attachment.

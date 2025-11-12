@@ -14,9 +14,6 @@ import scipy.linalg
 import scipy.spatial
 import scipy.spatial.distance
 
-# Third-party imports
-from ase.io import read
-
 # Constants
 H = 1e-3  # Magnitude of the finite displacements, in nm.
 SYMPREC = 1e-5  # Tolerance for symmetry search
@@ -194,12 +191,6 @@ def move_three_atoms(poscar, iat, icoord, ih, jat, jcoord, jh, kat, kcoord, kh):
     disp[:] = 0.0
     disp[kcoord] = kh
     nruter["positions"][:, kat] += scipy.linalg.solve(nruter["lattvec"], disp)
-    return nruter
-
-
-def read_forces(filename):
-    atoms = read(filename)
-    nruter = atoms.get_forces()
     return nruter
 
 

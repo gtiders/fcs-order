@@ -12,8 +12,8 @@ permutations = np.array(
     [[0, 1, 2], [1, 0, 2], [2, 1, 0], [0, 2, 1], [1, 2, 0], [2, 0, 1]], dtype=np.intc
 )
 
-from .symmetry import SymmetryOperations
-from .gaussian import gaussian
+from fcsorder.core.domain.symmetry import SymmetryOperations
+from fcsorder.core.domain.gaussian import gaussian
 
 
 @jit(nopython=True)

@@ -9,9 +9,9 @@ import typer
 from ase.calculators.calculator import Calculator
 
 # Local imports
-from ..core.secondorder_core import get_force_constants
-from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
-from ..utils.io_abstraction import parse_supercell_matrix, read_atoms
+from fcsorder.phonon.domain.secondorder_core import get_force_constants
+from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.io.io_abstraction import parse_supercell_matrix, read_atoms
 
 
 def calculate_phonon_force_constants_2nd(

@@ -1,15 +1,19 @@
 import typer
 
-from .commands.generate_phonon_rattled_structures import (
+from fcsorder.phonon.generate_phonon_rattled_structures import (
     generate_phonon_rattled_structures,
 )
-from .commands.mlp2 import app as mlp2_app
-from .commands.mlp3 import app as mlp3_app
-from .commands.mlp4 import app as mlp4_app
-from .commands.reap import reap
-from .commands.scph import app as scph_app
-from .commands.sow import sow
-from .utils.plotting import plot_phband
+from fcsorder.phonon.mlp2 import app as mlp2_app
+from fcsorder.phonon.scph import app as scph_app
+from fcsorder.phonon.domain.plotting import plot_phband
+
+
+from fcsorder.commands.sow import sow
+from fcsorder.commands.reap import reap
+
+from fcsorder.commands.mlp3 import app as mlp3_app
+from fcsorder.commands.mlp4 import app as mlp4_app
+
 
 cli = typer.Typer(help="Force constants calculation tool for VASP")
 

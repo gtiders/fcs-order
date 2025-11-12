@@ -11,12 +11,12 @@ import typer
 
 # Local imports
 
-from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
-from ..utils.io_abstraction import read as io_read
+from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.io.io_abstraction import  read_atoms
 
-from .core.self_consistent_phonons import analyze_scph_convergence, run_scph
-from .core.secondorder_core import build_supercell_from_matrix
-from .tools.plotting import plot_phband
+from fcsorder.phonon.domain.self_consistent_phonons import analyze_scph_convergence, run_scph
+from fcsorder.phonon.domain.secondorder_core import build_supercell_from_matrix
+from fcsorder.phonon.domain.plotting import plot_phband
 
 
 def parse_temperatures(s: str) -> List[float]:
@@ -128,7 +128,7 @@ def nep(
         sys.exit(1)
 
     # Read primitive cell and build supercell from matrix
-    poscar = io_read(poscar)
+    poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -242,7 +242,7 @@ def tace(
         raise typer.Exit(code=1)
 
     # Read primitive cell and build supercell
-    poscar = io_read(poscar)
+    poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -353,7 +353,7 @@ def dp(
         sys.exit(1)
 
     # Read primitive cell and build supercell from matrix
-    poscar = io_read(poscar)
+    poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Run SCPH calculation
@@ -456,7 +456,7 @@ def hiphive(
     T = parse_temperatures(temperatures)
 
     # Read primitive cell and build supercell from matrix
-    poscar = io_read(poscar)
+    poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
 
     # Hiphive calculator initialization
