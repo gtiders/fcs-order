@@ -1,5 +1,5 @@
 [project]
-name = "fcs-order"
+name = "fcsorder"
 version = "3.5"
 description = "2，3，4阶力常数提取通过任意机器学习势函数，并兼容原thirdorder和fourthorder的sow与reap命令"
 readme = "README.md"
