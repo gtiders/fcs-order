@@ -11,7 +11,7 @@ import typer
 from rich.progress import track
 
 # Local imports
-from ..core import thirdorder_core  # type: ignore
+from ..core import thirdorder_core_py as thirdorder_core
 from ..utils.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
 from ..utils.io_abstraction import get_atoms, read_atoms
 from ..utils.order_common import (
@@ -113,7 +113,11 @@ def nep(
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g. 'nep.txt')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="NEP potential file path (e.g. 'nep.txt')",
     ),
     is_write: bool = typer.Option(
         False,
@@ -122,7 +126,10 @@ def nep(
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
+        False,
+        "--is-sparse",
+        "-s",
+        help="Use sparse tensor method for memory efficiency",
     ),
     is_gpu: bool = typer.Option(
         False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
@@ -174,7 +181,11 @@ def tace(
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     model_path: str = typer.Option(
-        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ...,
+        "--model-path",
+        "-m",
+        exists=True,
+        help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)",
     ),
     is_write: bool = typer.Option(
         False,
@@ -183,9 +194,14 @@ def tace(
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
+        False,
+        "--is-sparse",
+        "-s",
+        help="Use sparse tensor method for memory efficiency",
     ),
-    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option(
+        "cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"
+    ),
     dtype: str = typer.Option(
         "float32",
         "--dtype",
@@ -236,7 +252,11 @@ def dp(
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="DeepMD potential file path (e.g. 'model.pb')",
     ),
     is_write: bool = typer.Option(
         False,
@@ -245,7 +265,10 @@ def dp(
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
+        False,
+        "--is-sparse",
+        "-s",
+        help="Use sparse tensor method for memory efficiency",
     ),
     poscar: str = typer.Option(
         "POSCAR",
@@ -323,7 +346,9 @@ def ploymp(
         "-c",
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
-    potential: str = typer.Option(..., "--potential", "-P", exists=True, help="PolyMLP potential file path"),
+    potential: str = typer.Option(
+        ..., "--potential", "-P", exists=True, help="PolyMLP potential file path"
+    ),
     is_write: bool = typer.Option(
         False,
         "--is-write",
@@ -331,7 +356,10 @@ def ploymp(
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
+        False,
+        "--is-sparse",
+        "-s",
+        help="Use sparse tensor method for memory efficiency",
     ),
     poscar: str = typer.Option(
         "POSCAR",
@@ -377,7 +405,11 @@ def mtp2(
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="MTP potential file path (e.g. 'pot.mtp')",
     ),
     is_write: bool = typer.Option(
         False,
@@ -386,7 +418,10 @@ def mtp2(
         help="Whether to save intermediate files during the calculation process",
     ),
     is_sparse: bool = typer.Option(
-        False, "--is-sparse", "-s", help="Use sparse tensor method for memory efficiency"
+        False,
+        "--is-sparse",
+        "-s",
+        help="Use sparse tensor method for memory efficiency",
     ),
     mtp_exe: str = typer.Option(
         "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"

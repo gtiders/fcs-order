@@ -59,7 +59,11 @@ def nep(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="NEP potential file path (e.g. 'nep.txt')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="NEP potential file path (e.g. 'nep.txt')",
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
@@ -117,7 +121,11 @@ def tace(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     model_path: str = typer.Option(
-        ..., "--model-path", "-m", exists=True, help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)"
+        ...,
+        "--model-path",
+        "-m",
+        exists=True,
+        help="Path to the TACE model checkpoint (.pt/.pth/.ckpt)",
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
@@ -125,7 +133,9 @@ def tace(
         "-o",
         help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
     ),
-    device: str = typer.Option("cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"),
+    device: str = typer.Option(
+        "cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"
+    ),
     dtype: str = typer.Option(
         "float64",
         "--dtype",
@@ -178,7 +188,11 @@ def dp(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="DeepMD potential file path (e.g. 'model.pb')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="DeepMD potential file path (e.g. 'model.pb')",
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
@@ -261,7 +275,9 @@ def ploymp(
         ...,
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
-    potential: str = typer.Option(..., "--potential", "-P", exists=True, help="PolyMLP potential file path"),
+    potential: str = typer.Option(
+        ..., "--potential", "-P", exists=True, help="PolyMLP potential file path"
+    ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
         "--outfile",
@@ -311,7 +327,11 @@ def mtp2(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="MTP potential file path (e.g. 'pot.mtp')"
+        ...,
+        "--potential",
+        "-P",
+        exists=True,
+        help="MTP potential file path (e.g. 'pot.mtp')",
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",

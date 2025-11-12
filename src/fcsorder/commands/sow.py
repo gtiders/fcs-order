@@ -6,8 +6,8 @@ import os
 import typer
 
 from ..core import (
-    fourthorder_core,  # type: ignore
-    thirdorder_core,  # type: ignore
+    fourthorder_core_py as fourthorder_core,
+    thirdorder_core_py as thirdorder_core,
 )
 from ..utils.io_abstraction import write_structure
 from ..utils.order_common import (
@@ -71,15 +71,23 @@ def sow(
             }
             filename = undisplaced_name.format(**ctx)
             filepath = os.path.join(out_dir, filename)
-            typer.echo(f"Writing undisplaced coordinates to {os.path.basename(filepath)}")
+            typer.echo(
+                f"Writing undisplaced coordinates to {os.path.basename(filepath)}"
+            )
             write_structure(normalize_SPOSCAR(sposcar), filepath, ofmt)
         else:
             if is_vasp:
                 typer.echo("Writing undisplaced coordinates to 3RD.SPOSCAR")
-                write_structure(normalize_SPOSCAR(sposcar), os.path.join(out_dir, "3RD.SPOSCAR"), ofmt)
+                write_structure(
+                    normalize_SPOSCAR(sposcar),
+                    os.path.join(out_dir, "3RD.SPOSCAR"),
+                    ofmt,
+                )
             else:
                 undisplaced = os.path.join(out_dir, f"3RD.structure.{ext}")
-                typer.echo(f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}")
+                typer.echo(
+                    f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}"
+                )
                 write_structure(normalize_SPOSCAR(sposcar), undisplaced, ofmt)
         width = len(str(4 * (len(list4) + 1)))
         if name_template:
@@ -144,15 +152,23 @@ def sow(
             }
             filename = undisplaced_name.format(**ctx)
             filepath = os.path.join(out_dir, filename)
-            typer.echo(f"Writing undisplaced coordinates to {os.path.basename(filepath)}")
+            typer.echo(
+                f"Writing undisplaced coordinates to {os.path.basename(filepath)}"
+            )
             write_structure(normalize_SPOSCAR(sposcar), filepath, ofmt)
         else:
             if is_vasp:
                 typer.echo("Writing undisplaced coordinates to 4TH.SPOSCAR")
-                write_structure(normalize_SPOSCAR(sposcar), os.path.join(out_dir, "4TH.SPOSCAR"), ofmt)
+                write_structure(
+                    normalize_SPOSCAR(sposcar),
+                    os.path.join(out_dir, "4TH.SPOSCAR"),
+                    ofmt,
+                )
             else:
                 undisplaced = os.path.join(out_dir, f"4TH.structure.{ext}")
-                typer.echo(f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}")
+                typer.echo(
+                    f"Writing undisplaced coordinates to {os.path.basename(undisplaced)}"
+                )
                 write_structure(normalize_SPOSCAR(sposcar), undisplaced, ofmt)
         width = len(str(8 * (len(list6) + 1)))
         if name_template:

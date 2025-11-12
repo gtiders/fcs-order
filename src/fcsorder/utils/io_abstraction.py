@@ -49,7 +49,9 @@ def to_internal(atoms: Atoms) -> dict:
     positions = atoms.get_scaled_positions()
     nruter["positions"] = np.asarray(positions).T
 
-    nruter["types"] = np.repeat(range(len(nruter["numbers"])), nruter["numbers"]).tolist()
+    nruter["types"] = np.repeat(
+        range(len(nruter["numbers"])), nruter["numbers"]
+    ).tolist()
 
     return nruter
 

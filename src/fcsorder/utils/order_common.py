@@ -8,6 +8,7 @@ import itertools
 import sys
 
 import click
+import typer
 import numpy as np
 import scipy.linalg
 import scipy.spatial
@@ -43,9 +44,6 @@ def _parse_cutoff(cutoff):
         if frange == 0.0:
             raise click.BadParameter("invalid cutoff")
         return None, frange
-
-
-
 
 
 def gen_SPOSCAR(poscar, na, nb, nc):
@@ -153,8 +151,10 @@ def calc_frange(poscar, sposcar, n, dmin):
             tonth.append(0.5 * (u[n] + u[n + 1]))
         except IndexError:
             if not warned:
-                sys.stderr.write(
-                    "Warning: supercell too small to find n-th neighbours\n"
+                typer.secho(
+                    "Warning: supercell too small to find n-th neighbours",
+                    fg=typer.colors.RED,
+                    err=True,
                 )
                 warned = True
             tonth.append(1.1 * max(u))
@@ -195,8 +195,6 @@ def move_three_atoms(poscar, iat, icoord, ih, jat, jcoord, jh, kat, kcoord, kh):
     disp[kcoord] = kh
     nruter["positions"][:, kat] += scipy.linalg.solve(nruter["lattvec"], disp)
     return nruter
-
-
 
 
 def read_forces(filename):

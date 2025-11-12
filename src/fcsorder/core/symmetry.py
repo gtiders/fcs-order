@@ -58,12 +58,12 @@ class SymmetryOperations:
         if dataset is None:
             raise MemoryError()
 
-        self.symbol = dataset["international"].strip()
-        self.__shift = np.array(dataset["origin_shift"], dtype=np.double)
-        self.__transform = np.array(dataset["transformation_matrix"], dtype=np.double)
-        self.nsyms = len(dataset["rotations"])
-        self.__rotations = np.array(dataset["rotations"], dtype=np.double)
-        self.__translations = np.array(dataset["translations"], dtype=np.double)
+        self.symbol = dataset.international.strip()
+        self.__shift = np.array(dataset.origin_shift, dtype=np.double)
+        self.__transform = np.array(dataset.transformation_matrix, dtype=np.double)
+        self.nsyms = len(dataset.rotations)
+        self.__rotations = np.array(dataset.rotations, dtype=np.double)
+        self.__translations = np.array(dataset.translations, dtype=np.double)
 
         self.__crotations = np.empty_like(self.__rotations)
         self.__ctranslations = np.empty_like(self.__translations)

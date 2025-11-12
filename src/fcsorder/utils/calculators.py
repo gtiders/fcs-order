@@ -43,15 +43,13 @@ def make_mtp(
     """Create an internal MTP calculator wrapper consistent with existing usage."""
     try:
         # Local import to avoid hard dependency for users who don't need MTP
-        from .unofficial_ase.mtp2ase import MTP  # type: ignore
+        from .unofficial_ase.mtp2ase import MTP 
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
     return MTP(
         mtp_path=potential, mtp_exe=mtp_exe, unique_elements=list(unique_elements or [])
     )
 
-
-# hiphive usage varies across commands, so we expose helpers but keep flexibility
 
 
 def make_hiphive_force_constant_calculator_from_supercell(
