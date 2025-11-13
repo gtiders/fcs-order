@@ -1,6 +1,6 @@
 [project]
 name = "fcs-order"
-version = "4.0.0"
+version = "4.0.1"
 description = "Extract 2nd-, 3rd-, and 4th-order force constants using arbitrary machine-learning potentials; compatible with the original thirdorder and fourthorder sow and reap commands"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
@@ -25,17 +25,9 @@ url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
 [project.optional-dependencies]
-calorine = ["calorine"]
-deepmd = ["deepmd-kit"]
-hiphive = ["hiphive"]
-mlp = ["pypolymlp"]
-tace = ["tace"]
-all = [
-    "calorine",
-    "deepmd-kit",
-    "hiphive",
-    "pypolymlp",
-    "tace"
+phonon = [
+    "phonopy",
+    "hiphive"
 ]
 
 [build-system]
