@@ -10,7 +10,13 @@ from ase.calculators.calculator import Calculator
 
 # Local imports
 from fcsorder.phonon.domain.secondorder_core import get_force_constants
-from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.calc.calculators import (
+    make_dp,
+    make_mtp,
+    make_nep,
+    make_polymp,
+    make_tace,
+)
 from fcsorder.io.io_abstraction import parse_supercell_matrix, read_atoms
 
 
@@ -61,7 +67,7 @@ def nep(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="NEP potential file path (e.g. 'nep.txt')",
     ),
@@ -77,7 +83,6 @@ def nep(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -146,7 +151,6 @@ def tace(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -190,7 +194,7 @@ def dp(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="DeepMD potential file path (e.g. 'model.pb')",
     ),
@@ -203,7 +207,6 @@ def dp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -276,7 +279,7 @@ def ploymp(
         help="Supercell expansion matrix, either 3 numbers (diagonal) or 9 numbers (3x3 matrix)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="PolyMLP potential file path"
+        ..., "--potential", "-p", exists=True, help="PolyMLP potential file path"
     ),
     outfile: str = typer.Option(
         "FORCE_CONSTANTS_2ND",
@@ -287,7 +290,6 @@ def ploymp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -329,7 +331,7 @@ def mtp2(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="MTP potential file path (e.g. 'pot.mtp')",
     ),
@@ -345,7 +347,6 @@ def mtp2(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),

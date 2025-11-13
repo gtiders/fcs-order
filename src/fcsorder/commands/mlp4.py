@@ -8,8 +8,14 @@ from rich.progress import track
 
 # Local imports
 from fcsorder.core import fourthorder_core
-from fcsorder.core.fourthorder_core import  prepare_calculation4
-from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
+from fcsorder.core.fourthorder_core import prepare_calculation4
+from fcsorder.calc.calculators import (
+    make_dp,
+    make_mtp,
+    make_nep,
+    make_polymp,
+    make_tace,
+)
 from fcsorder.io.io_abstraction import get_atoms, read_atoms
 from fcsorder.core.domain.common import (
     H,
@@ -27,7 +33,6 @@ def calculate_phonon_force_constants_4th(
     cutoff: str,
     calculation,
     is_write: bool = False,
-    is_sparse: bool = False,
     poscar_path: str = "POSCAR",
 ):
     """
@@ -38,7 +43,6 @@ def calculate_phonon_force_constants_4th(
         cutoff: Cutoff value
         calculation: Calculator object for force calculations
         is_write: Whether to save intermediate files
-        is_sparse: Use sparse tensor method
 
     Returns:
         None (writes FORCE_CONSTANTS_4TH file)
@@ -95,7 +99,7 @@ def calculate_phonon_force_constants_4th(
     phipart /= 8000.0 * H * H * H
     typer.echo("Reconstructing the full array")
     phifull = fourthorder_core.reconstruct_ifcs(
-        phipart, wedge, list6, poscar, sposcar, is_sparse
+        phipart, wedge, list6, poscar, sposcar
     )
     typer.echo("Writing the constants to FORCE_CONSTANTS_4TH")
     write_ifcs4(
@@ -123,7 +127,7 @@ def nep(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="NEP potential file path (e.g. 'nep.txt')",
     ),
@@ -133,19 +137,12 @@ def nep(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     is_gpu: bool = typer.Option(
         False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -158,7 +155,6 @@ def nep(
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
         potential: NEP potential file path
         is_write: Whether to save intermediate files
-        is_sparse: Use sparse tensor method for memory efficiency
         is_gpu: Use GPU calculator for faster computation
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
@@ -173,7 +169,7 @@ def nep(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )
 
 
@@ -194,9 +190,6 @@ def tace(
         "--is-write",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False, "--is-sparse", help="Use sparse tensor method for memory efficiency"
-    ),
     device: str = typer.Option(
         "cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"
     ),
@@ -210,7 +203,6 @@ def tace(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -234,7 +226,7 @@ def tace(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )
 
 
@@ -252,7 +244,7 @@ def dp(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="DeepMD potential file path (e.g. 'model.pb')",
     ),
@@ -262,16 +254,9 @@ def dp(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -284,7 +269,6 @@ def dp(
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
         potential: Deep Potential model file path
         is_write: Whether to save intermediate files
-        is_sparse: Use sparse tensor method for memory efficiency
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # DP calculator initialization
@@ -296,7 +280,7 @@ def dp(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )
 
 
@@ -320,16 +304,9 @@ def hiphive(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -344,7 +321,6 @@ def hiphive(
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
         potential: Hiphive potential file path
         is_write: Whether to save intermediate files
-        is_sparse: Use sparse tensor method for memory efficiency
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # Hiphive calculator initialization
@@ -366,7 +342,7 @@ def hiphive(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )
 
 
@@ -382,7 +358,7 @@ def ploymp(
         help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
     ),
     potential: str = typer.Option(
-        ..., "--potential", "-P", exists=True, help="PolyMLP potential file path"
+        ..., "--potential", "-p", exists=True, help="PolyMLP potential file path"
     ),
     is_write: bool = typer.Option(
         False,
@@ -390,16 +366,9 @@ def ploymp(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -412,7 +381,6 @@ def ploymp(
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)
         potential: PolyMLP potential file path
         is_write: Whether to save intermediate files
-        is_sparse: Use sparse tensor method for memory efficiency
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'
     """
     # PolyMLP calculator initialization
@@ -424,7 +392,7 @@ def ploymp(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )
 
 
@@ -442,7 +410,7 @@ def mtp2(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="MTP potential file path (e.g. 'pot.mtp')",
     ),
@@ -452,19 +420,12 @@ def mtp2(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     mtp_exe: str = typer.Option(
         "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
     ),
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -477,7 +438,6 @@ def mtp2(
         cutoff: Cutoff distance, negative values for nearest neighbors, positive values for distance (in nm)\n
         potential: MTP potential file path\n
         is_write: Whether to save intermediate files\n
-        is_sparse: Use sparse tensor method for memory efficiency\n
         mtp_exe: Path to MLP executable\n
         poscar: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'\n
     """
@@ -495,5 +455,5 @@ def mtp2(
         raise typer.Exit(code=1)
 
     calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, is_sparse, poscar
+        na, nb, nc, cutoff, calc, is_write, poscar
     )

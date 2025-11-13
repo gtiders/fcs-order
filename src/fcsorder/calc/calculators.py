@@ -3,6 +3,7 @@
 
 from typing import Optional, Sequence
 
+
 def make_nep(potential: str, is_gpu: bool = False):
     """Create a NEP calculator via calorine (CPU/GPU)."""
     try:
@@ -40,13 +41,12 @@ def make_mtp(
     """Create an internal MTP calculator wrapper consistent with existing usage."""
     try:
         # Local import to avoid hard dependency for users who don't need MTP
-        from fcsorder.calc.mtp2calc import MTP 
+        from fcsorder.calc.mtp2calc import MTP
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
     return MTP(
         mtp_path=potential, mtp_exe=mtp_exe, unique_elements=list(unique_elements or [])
     )
-
 
 
 def make_hiphive_force_constant_calculator_from_supercell(

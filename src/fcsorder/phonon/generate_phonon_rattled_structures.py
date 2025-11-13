@@ -13,9 +13,6 @@ from ase.io import write
 
 from fcsorder.io.io_abstraction import read_atoms
 
-# ==========================
-# Core helpers (moved here)
-# ==========================
 
 
 def _n_BE(T, w_s):

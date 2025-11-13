@@ -7,6 +7,8 @@ __pycache__/
 *.so
 *.c
 
+test/
+
 # Distribution / packaging
 .Python
 build/

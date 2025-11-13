@@ -1,155 +1,277 @@
-# fcs-order
+# fcs-order （中文指南）
 
-基于 ASE 与 Typer 的声子力常数计算工具。支持计算二、三、四阶相互作用力常数，并提供基于多种机器学习势（NEP、DeepMD、PolyMLP、MTP）或 Hiphive 的 SCPH 自洽声子流程。
+提示：如果本项目对你有帮助，请为仓库点一个 Star。请先完整阅读本 README；如发现问题或有建议，请在 Issues 中提交反馈（建议附上复现步骤与环境信息）。
 
-仓库地址：https://github.com/gtiders/fcs-order
+建议：命令行帮助会随版本更新，使用 `fcs-order --help` 与 `fcs-order <子命令> --help` 可获得更准确、最新的参数说明与示例。
 
-## 功能特性
+说明：本项目的 `sow` 与 `reap` 命令与传统的 `thirdorder`/`fourthorder` 工具兼容，只是参数与 I/O 命名略有调整以实现更统一的接口。
 
-- 二阶力常数（兼容 phonopy）
+基于 ASE 与 Typer 的力常数计算与自洽声子（SCPH）工具箱。支持计算二、三、四阶相互作用力常数，并可使用多种机器学习势（NEP、DeepMD、PolyMLP、MTP、TACE）或 Hiphive 作为计算后端。
+
+仓库：https://github.com/gtiders/fcs-order
+
+---
+
+## 特性概览
+- 二阶力常数（与 Phonopy FORCE_CONSTANTS 兼容）
 - 三、四阶力常数（ShengBTE/文本格式）
-- SCPH（自洽声子）流程
-- 多种后端：NEP、DeepMD、PolyMLP、MTP 以及 Hiphive
-- 面向 VASP 的 sow/reap 工具链
+- SCPH（自洽声子）工作流
+- 多后端：NEP、DeepMD、PolyMLP、MTP、TACE，以及 Hiphive
+- 面向 VASP 流程的结构生成（sow）与力常数重建（reap）
+- 理论上也可配合任何 ASE 支持的第一性原理软件进行 sow/reap，只需按需调整参数与 I/O 设置（文件格式、路径顺序等）
+
+---
 
 ## 安装
+- Python 版本：>= 3.9, < 3.14
+- 基础依赖在安装包中自动安装。按需安装后端依赖：
+  - NEP: `pip install calorine`
+  - DeepMD: `pip install deepmd-kit`
+  - PolyMLP: `pip install pypolymlp`
+  - Hiphive: `pip install hiphive`
+  - TACE: `pip install tace`
 
-- Python 3.9+
-- 建议使用全新虚拟环境
+提示：
+- 若要计算二阶力常数（Phonopy 兼容的 `FORCE_CONSTANTS_2ND`），需要安装 Phonopy：`pip install phonopy`。
+- 若要运行 SCPH 工作流，需要安装 Phonopy 与 Hiphive：`pip install phonopy hiphive`。
 
+优先推荐通过 PyPI 安装：
+```bash
+pip install fcs-order
+```
+
+安装本项目（从 GitHub）：
 ```bash
 pip install git+https://github.com/gtiders/fcs-order.git
 ```
 
-按需安装可选依赖（根据所用后端选择）：
-
-- NEP: `pip install calorine`
-- DeepMD: `pip install deepmd-kit`
-- PolyMLP: `pip install pypolymlp`
-- Hiphive: `pip install hiphive`
-- MTP: 外部 `mlp` 二进制（Moment Tensor Potential），确保在 PATH 中
-
-## 命令行概览
-
-主入口为 Typer 应用，包含以下子命令组：
-
-- 顶层工具
-  - `sow3` / `sow4`：生成三/四阶位移结构
-  - `reap3` / `reap4`：收集 VASP 力并构建力常数
-  - `plot_phband`：从多个 FORCE_CONSTANTS 绘制声子能带
-  - `phonon_sow`：结构扰动工具
-- 机器学习势与 SCPH 子应用
-  - `mlp2`：使用 ML 势计算二阶力常数（子命令：`nep`/`dp`/`ploymp`/`mtp`）
-  - `mlp3`：使用 ML 势计算三阶力常数（子命令：同上）
-  - `mlp4`：使用 ML 势计算四阶力常数（子命令：同上）
-  - `scph`：SCPH 工作流（子命令：`nep`/`dp`/`hiphive`/`ploymp`/`mtp`）
-
-查看完整帮助：
-
+命令入口：`fcs-order`（或通过 Python 运行模块入口）
 ```bash
-python -m fcsorder --help
+fcs-order --help
 ```
 
-## 常用命令
+---
 
-### sow3（三阶位移）
+## I/O 与基本约定
+- 结构文件：任意 ASE 可读取格式（POSCAR/CONTCAR, CIF, XYZ/extxyz 等）；默认 `POSCAR`。
+- 超胞规格：
+  - mlp2/scph：使用 3 个整数（对角）或 9 个整数（3×3 矩阵）指定超胞矩阵；
+  - sow/reap、mlp3、mlp4：使用三个位置参数 `na nb nc` 指定超胞重复数。
+- 截断 `--cutoff/-c`：负数表示“按最近邻层数”；正数表示“按距离（nm）”。
+
+---
+
+## 快速上手（典型工作流）
+1) 使用 sow 生成三阶/四阶位移结构与未位移结构：
 ```bash
-python -m fcsorder sow3 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
+# 以三阶为例（order=3），超胞 2×2×2，负号表示按近邻层数，输出为 VASP POSCAR
+fcs-order sow 2 2 2 -c -6 -r 3 -p POSCAR -f poscar -o disps
+# 生成：disps/3RD.SPOSCAR 与 disps/3RD.POSCAR.0001 ...
 ```
 
-### sow4（四阶位移）
+2) 用所选后端计算位移结构的受力，生成可被 ASE 读取的力文件（如 vasprun.xml/OUTCAR、extxyz 等）。确保文件顺序与 sow 生成的位移结构顺序一致。
+
+3) 使用 reap 从受力文件重建三阶/四阶力常数：
 ```bash
-python -m fcsorder sow4 NA NB NC --cutoff <CUTOFF> --poscar POSCAR
+# 三阶示例（order=3），列出所有受力文件，顺序必须一致
+fcs-order reap 2 2 2 -c -6 -r 3 -p POSCAR disps/vasprun_*.xml
+# 输出：FORCE_CONSTANTS_3RD
 ```
 
-### reap3（收集并生成三阶力常数）
+4) 二阶力常数可通过 mlp2 直接计算并输出 Phonopy 兼容的 `FORCE_CONSTANTS_2ND`。
+
+5) 若需要进行 SCPH，自备二阶力常数或由后端在循环中评估，然后运行 `scph <backend>`。
+
+---
+
+## sow：生成位移结构
+命令：`fcs-order sow na nb nc --cutoff <CUTOFF> [--order 3|4] [--poscar POSCAR] [--out-format poscar|vasp|cif|xyz] [--out-dir DIR] [--name-template ...] [--undisplaced-name ...]`
+
+- 主要选项：
+  - `-r/--order`：3（三阶）或 4（四阶），默认 3。
+  - `-c/--cutoff`：负数=近邻层；正数=半径（nm）。
+  - `-p/--poscar`：原胞结构文件，默认 POSCAR。
+  - `-f/--out-format`：输出格式（默认 poscar）。
+  - `-o/--out-dir`：输出目录。
+  - 模板：`--name-template` 与 `--undisplaced-name` 支持占位符 `{order}`, `{phase}`, `{index}`, `{index_padded}`, `{width}`, `{ext}`。
+
+输出示例（VASP 格式）：
+- 未位移：`3RD.SPOSCAR` 或 `4TH.SPOSCAR`
+- 位移：`3RD.POSCAR.0001`、`4TH.POSCAR.0001` 等
+
+---
+
+## reap：从受力文件重建力常数
+命令：`fcs-order reap na nb nc --cutoff <CUTOFF> [--order 3|4] [--poscar POSCAR] VASP_RUN_FILES...`
+
+- 受力文件需为 ASE 可读取格式（vasprun.xml/OUTCAR、extxyz 等）。
+- 文件数量必须等于所需运行次数：
+  - 三阶：`4 * N_irred`
+  - 四阶：`8 * N_irred`
+- 输出：`FORCE_CONSTANTS_3RD` 或 `FORCE_CONSTANTS_4TH`
+
+---
+
+## mlp2：二阶力常数（Phonopy 兼容）
+命令组：`fcs-order mlp2 <backend>`，其中 `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- 通用参数（不同子命令的名称一致或相近）：
+  - `supercell_matrix`：3 或 9 个整数（位置参数）。
+  - `--poscar`：原胞结构文件，默认 POSCAR。
+  - `--outfile/-o`：输出文件名，默认 `FORCE_CONSTANTS_2ND`。
+
+- NEP（二阶）示例（可选 GPU）：
 ```bash
-python -m fcsorder reap3 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN1.xml VASPRUN2.xml ...
+fcs-order mlp2 nep 2 2 2 -p nep.txt -g -o FORCE_CONSTANTS_2ND
+```
+- DP（二阶）：
+```bash
+fcs-order mlp2 dp 2 2 2 -p model.pb -o FORCE_CONSTANTS_2ND
+```
+- PolyMLP（二阶）：
+```bash
+fcs-order mlp2 ploymp 2 2 2 -p polymlp.pot -o FORCE_CONSTANTS_2ND
+```
+- MTP（二阶）（子命令名为 `mtp2`，需可用的 `mlp` 可执行程序）：
+```bash
+fcs-order mlp2 mtp2 2 2 2 -p pot.mtp --mtp-exe mlp -o FORCE_CONSTANTS_2ND
+```
+- TACE（二阶）（可选 `--device/--dtype/--level`）：
+```bash
+fcs-order mlp2 tace 2 2 2 -m model.ckpt -o FORCE_CONSTANTS_2ND --device cuda --dtype float64 --level 0
+```
+- Hiphive（二阶，从 fcp 输出到 Phonopy 文本）：
+```bash
+fcs-order mlp2 hiphive 2 2 2 -p potential.fcp
 ```
 
-### reap4（收集并生成四阶力常数）
+---
+
+## mlp3：三阶力常数
+命令组：`fcs-order mlp3 <backend>`，其中 `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- 通用参数：`na nb nc`、`--cutoff/-c`、`--poscar`（默认 POSCAR）、`--is-write`（保存中间位移结构/力）。
+
+- NEP（三阶）：
 ```bash
-python -m fcsorder reap4 NA NB NC --cutoff <CUTOFF> [--is-sparse] --poscar POSCAR VASPRUN*.xml
+fcs-order mlp3 nep 2 2 2 -c -6 -p nep.txt --is-write --is-gpu
+```
+- DP（三阶）：
+```bash
+fcs-order mlp3 dp 2 2 2 -c -6 -p model.pb
+```
+- PolyMLP（三阶）：
+```bash
+fcs-order mlp3 ploymp 2 2 2 -c -6 -p polymlp.pot
+```
+- MTP（三阶）（子命令名为 `mtp2`，需 `mlp`）：
+```bash
+fcs-order mlp3 mtp2 2 2 2 -c -6 -p pot.mtp --mtp-exe mlp --is-write
+```
+- TACE（三阶）：
+```bash
+fcs-order mlp3 tace 2 2 2 -c -6 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive（三阶，从 fcp 直接导出到 ShengBTE 格式）：
+```bash
+fcs-order mlp3 hiphive 2 2 2 -p potential.fcp
+```
+输出：`FORCE_CONSTANTS_3RD`
+
+---
+
+## mlp4：四阶力常数
+命令组：`fcs-order mlp4 <backend>`，其中 `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- 通用参数：`na nb nc`、`--cutoff/-c`、`--poscar`（默认 POSCAR）、`--is-write`。
+
+提示：尽管进行了算法与实现优化，四阶计算仍可能占用较大的内存，建议在高内存环境中运行
+
+- NEP（四阶）：
+```bash
+fcs-order mlp4 nep 2 2 2 -c -6 -p nep.txt --is-gpu
+```
+- DP（四阶）：
+```bash
+fcs-order mlp4 dp 2 2 2 -c -6 -p model.pb
+```
+- PolyMLP（四阶）：
+```bash
+fcs-order mlp4 ploymp 2 2 2 -c -6 -p polymlp.pot
+```
+- MTP（四阶）（子命令名为 `mtp2`）：
+```bash
+fcs-order mlp4 mtp2 2 2 2 -c -6 -p pot.mtp --mtp-exe mlp --is-write
+```
+- TACE（四阶，支持 `--device/--dtype/--level`）：
+```bash
+fcs-order mlp4 tace 2 2 2 -c -6 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive（四阶，使用 fcp 与 supercell 求力常数）：
+```bash
+fcs-order mlp4 hiphive 2 2 2 -c -6 -p potential.fcp
+```
+输出：`FORCE_CONSTANTS_4TH`
+
+---
+
+## scph：自洽声子（SCPH）
+命令组：`fcs-order scph <backend>`，其中 `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- 通用参数：
+  - `supercell_matrix`：3 或 9 个整数（位置参数）。
+  - `--poscar/-\\-poscar`：原胞结构文件，默认 POSCAR。
+  - `--temperatures/-T`：如 "100,200,300"。
+  - `--cutoff/-c`：簇空间截断半径。
+  - `--alpha/-a`：SCPH 混合参数，默认 0.2。
+  - `--n-iterations/-i`：迭代次数，默认 100。
+  - `--n-structures/-n`：生成结构数，默认 50。
+  - `--fcs-2nd/-F`：初始二阶力常数（可选）。
+  - `--is-qm/-q`：是否使用量子统计（默认 True）。
+  - `--imag-freq-factor/-I`：处理虚频的因子，默认 1.0。
+
+> 说明：本项目的 SCPH 功能集成并调用了 Hiphive 的相关能力，更多信息参考 Hiphive 文档：https://hiphive.materialsmodeling.org/
+
+- NEP（可选 GPU）：
+```bash
+fcs-order scph nep 2 2 2 -T 100,200,300 -c 4.5 -p nep.txt --poscar POSCAR --is-gpu
+```
+- DP：
+```bash
+fcs-order scph dp 2 2 2 -T 100,200,300 -c 4.5 -p graph.pb --poscar POSCAR
+```
+- TACE（可选 `--device/--dtype/--level`）：
+```bash
+fcs-order scph tace 2 2 2 -T 300 -c 4.5 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive（使用 fcp）
+```bash
+fcs-order scph hiphive 2 2 2 -T 100,200,300 -c 4.5 -p model.fcp --poscar POSCAR
+```
+- PolyMLP（ploymp）：
+```bash
+fcs-order scph ploymp 2 2 2 -T 100,200,300 -c 4.5 -p polymlp.pot --poscar POSCAR
+```
+- MTP（子命令名为 `mtp2`，需 `mlp`）：
+```bash
+fcs-order scph mtp2 2 2 2 -T 100,200,300 -c 4.5 -p pot.mtp --poscar POSCAR --mtp-exe mlp
 ```
 
-### mlp2（二阶）
-子命令：`nep`、`dp`、`ploymp`、`mtp`
+运行时会写出 `scph_SPOSCAR`，并在循环中评估力/力常数，随后进行收敛分析与导出。
 
-超胞矩阵参数支持 3 个对角元素或 9 个元素（3x3 矩阵）。
+---
 
-- NEP
-```bash
-python -m fcsorder mlp2 nep 2 2 2 --potential nep.txt --poscar POSCAR --outfile FORCE_CONSTANTS_2ND [--is-gpu]
-```
-- DeepMD
-```bash
-python -m fcsorder mlp2 dp 2 2 2 --potential model.pb --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
-```
-- PolyMLP
-```bash
-python -m fcsorder mlp2 ploymp 2 2 2 --potential polymlp.pot --poscar POSCAR --outfile FORCE_CONSTANTS_2ND
-```
-- MTP（需要 `mlp` 可执行文件）
-```bash
-python -m fcsorder mlp2 mtp 2 2 2 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] --outfile FORCE_CONSTANTS_2ND
-```
-说明：MTP 后端会自动从 ASE 的 Atoms 中获取元素种类，无需手动传入。
+## 常见问题（FAQ）
+- 截断的单位与含义？
+  - 负数：按最近邻层数；正数：按空间距离（单位：nm）。
+- 受力文件顺序错乱如何处理？
+  - `reap` 要求文件顺序与 `sow` 生成的位移结构顺序对应；建议程序内生成受力文件时保留编号。
+- MTP 子命令为何命名为 `mtp2`？
+  - 当前实现中 MTP 子命令名即为 `mtp2`，用于二阶/三阶/四阶与 SCPH 命令组；调用示例见上。
+- Hiphive 使用注意事项？
+  - 需要可读取的 fcp 文件，超胞尺寸需不小于 fcp 训练使用的超胞。
 
-### mlp3（三阶）
-```bash
-python -m fcsorder mlp3 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
-```
-其他后端与 `mlp2` 类似，但需要提供 `--cutoff`。
-
-### mlp4（四阶）
-```bash
-python -m fcsorder mlp4 mtp 2 2 2 --cutoff 3.0 --potential pot.mtp --poscar POSCAR [--mtp-exe mlp] [--is-write] [--is-sparse]
-```
-
-### scph（自洽声子）
-子命令：`nep`、`dp`、`hiphive`、`ploymp`、`mtp`
-
-通用参数：
-
-- `primcell`：原胞结构文件（如 POSCAR）
-- `supercell_matrix`：3 或 9 个整数
-- `temperatures`：如 "100,200,300"
-- `cutoff`：簇空间截断（不同后端含义可能不同）
-
-示例：
-
-- NEP
-```bash
-python -m fcsorder scph nep POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential nep.txt [--is-gpu]
-```
-- DP
-```bash
-python -m fcsorder scph dp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential graph.pb
-```
-- Hiphive
-```bash
-python -m fcsorder scph hiphive POSCAR 2 2 2 --temperatures 300 --cutoff 3.0 --potential model.fcp
-```
-- PolyMLP
-```bash
-python -m fcsorder scph ploymp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential polymlp.pot
-```
-- MTP
-```bash
-python -m fcsorder scph mtp POSCAR 2 2 2 --temperatures 100,200,300 --cutoff 3.0 --potential pot.mtp [--mtp-exe mlp]
-```
-说明：MTP 会从 `primcell` 的 Atoms 自动识别元素集合。
-
-## MTP 注意事项
-
-- 需要系统中可用的 `mlp` 可执行文件，或通过 `--mtp-exe` 指定路径。
-- 临时文件默认写入系统临时目录。
-- 计算中元素集合由传入的 ASE Atoms 自动提取。
-
-## 开发
-
-- 欢迎在 GitHub 发起 PR：https://github.com/gtiders/fcs-order
+---
 
 ## 许可证
-
-TBD。
+本项目采用 Apache-2.0 许可。详见 `LICENSE`。

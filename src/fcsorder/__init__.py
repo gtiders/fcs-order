@@ -5,7 +5,6 @@ from fcsorder.phonon.generate_phonon_rattled_structures import (
 )
 from fcsorder.phonon.mlp2 import app as mlp2_app
 from fcsorder.phonon.scph import app as scph_app
-from fcsorder.phonon.domain.plotting import plot_phband
 
 
 from fcsorder.commands.sow import sow
@@ -99,12 +98,6 @@ def reap_command(
         "-c",
         help="Cutoff distance (negative for nearest neighbors, positive for distance in nm)",
     ),
-    is_sparse: bool = typer.Option(
-        False,
-        "--is-sparse",
-        "-s",
-        help="Use sparse tensor method for memory efficiency",
-    ),
     vaspruns: list[str] = typer.Argument(
         ...,
         help=(
@@ -128,36 +121,6 @@ def reap_command(
     """
     return reap(na, nb, nc, cutoff, vaspruns, is_sparse, order, poscar)
 
-
-@cli.command(name="plot_phband")
-def plot_phband_command(
-    supercell: list[int] = typer.Argument(
-        ..., help="Supercell specification as 3 or 9 integers (diagonal or full 3x3)"
-    ),
-    poscar: str = typer.Option(
-        "POSCAR",
-        "--poscar",
-        "-p",
-        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
-        exists=True,
-    ),
-    fcs_orders: list[str] = typer.Argument(..., help="Paths to FORCE_CONSTANTS files"),
-    labels: list[str] = typer.Option(
-        None,
-        "--labels",
-        "-l",
-        help="Optional labels for datasets; length must equal number of FORCE_CONSTANTS files",
-    ),
-):
-    """
-    Plot phonon band structure from multiple FORCE_CONSTANTS files.
-
-    Implementation is in utils.plotting.plot_phband.
-    """
-
-    from typing import Optional
-
-    plot_phband(supercell, poscar, fcs_orders, labels if labels else None)
 
 
 # Add mlp2 as a subcommand group

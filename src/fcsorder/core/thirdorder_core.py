@@ -5,7 +5,7 @@ from rich.progress import track
 import typer
 
 from fcsorder.core.domain.symmetry import SymmetryOperations
-from fcsorder.core.domain.wedge3 import  Wedge
+from fcsorder.core.domain.wedge3 import Wedge
 from fcsorder.core.domain.gaussian import gaussian
 
 
@@ -76,67 +76,6 @@ def _build_ijv_thirdorder(
     return i, j, v
 
 
-@jit(nopython=True)
-def _build_sparse_coords_thirdorder(
-    Tarray,
-    nindependentbasis,
-    nequi,
-    naccumindependent,
-    aphilist,
-    vequilist,
-):
-    nlist = nindependentbasis.shape[0]
-    EPSVAL = 1e-10
-
-    nnz = 0
-    for ii in range(nlist):
-        nind = nindependentbasis[ii]
-        ne = nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        for jj in range(ne):
-            for a in range(27):
-                s = 0.0
-                for k in range(nind):
-                    s += Tarray[a, k, jj, ii] * aphilist[offset + k]
-                if s != 0.0 and abs(s) > EPSVAL:
-                    nnz += 1
-
-    coords = np.empty((6, nnz), dtype=np.intp)
-    data = np.empty(nnz, dtype=np.double)
-
-    p = 0
-    for ii in range(nlist):
-        nind = nindependentbasis[ii]
-        ne = nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        for jj in range(ne):
-            e0 = vequilist[0, jj, ii]
-            e1 = vequilist[1, jj, ii]
-            e2 = vequilist[2, jj, ii]
-            for a in range(27):
-                s = 0.0
-                for k in range(nind):
-                    s += Tarray[a, k, jj, ii] * aphilist[offset + k]
-                if s != 0.0 and abs(s) > EPSVAL:
-                    ll = a // 9
-                    rem = a % 9
-                    mm = rem // 3
-                    nn = rem % 3
-                    coords[0, p] = ll
-                    coords[1, p] = mm
-                    coords[2, p] = nn
-                    coords[3, p] = e0
-                    coords[4, p] = e1
-                    coords[5, p] = e2
-                    data[p] = s
-                    p += 1
-
-    return coords, data
-
 def prepare_calculation3(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     _validate_cutoff(na, nb, nc)
     nneigh, frange = _parse_cutoff(cutoff)
@@ -162,7 +101,7 @@ def prepare_calculation3(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh
 
 
-def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
+def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     """
     Recover the full anharmonic IFC set from the irreducible set of
     force constants and the information contained in a wedge object.
@@ -170,11 +109,10 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
     nlist = wedge.nlist
     natoms = len(poscar["types"])
     ntot = len(sposcar["types"])
-    if is_sparse:
-        typer.echo("using sparse method with dok sparse matrix !")
-        vnruter = sparse.zeros((3, 3, 3, natoms, ntot, ntot), format="dok")
-    else:
-        vnruter = np.zeros((3, 3, 3, natoms, ntot, ntot))
+
+    typer.echo("using sparse method with dok sparse matrix !")
+    vnruter = sparse.zeros((3, 3, 3, natoms, ntot, ntot), format="dok")
+
     naccumindependent = np.insert(
         np.cumsum(wedge.nindependentbasis[:nlist], dtype=np.intc),
         0,
@@ -242,20 +180,28 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
 
     aphilist += compensation
 
-    if is_sparse:
-        coords, data = _build_sparse_coords_thirdorder(
-            vtrans,
-            wedge.nindependentbasis,
-            wedge.nequi,
-            naccumindependent,
-            aphilist,
-            vequilist,
-        )
-        vnruter = sparse.COO(coords, data, shape=(3, 3, 3, natoms, ntot, ntot))
-    else:
-        vnruter = np.zeros((3, 3, 3, natoms, ntot, ntot), dtype=np.double)
-
-    for ii in track(range(nlist), description="Building final IFCs"):
+    nnz = 0
+    EPSVAL = 1e-10
+    for ii in range(nlist):
+        nind = wedge.nindependentbasis[ii]
+        ne = wedge.nequi[ii]
+        if nind == 0 or ne == 0:
+            continue
+        offset = naccumindependent[ii]
+        phi = aphilist[offset : offset + nind]
+        T = wedge.transformationarray[:, :nind, :ne, ii]
+        out = np.tensordot(T, phi, axes=([1], [0]))
+        for jj in range(ne):
+            block = out[:, jj].reshape(3, 3, 3)
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        if block[ll, mm, nn] != 0.0 and abs(block[ll, mm, nn]) > EPSVAL:
+                            nnz += 1
+    coords = np.empty((6, nnz), dtype=np.intp)
+    data = np.empty(nnz, dtype=np.double)
+    p = 0
+    for ii in range(nlist):
         nind = wedge.nindependentbasis[ii]
         ne = wedge.nequi[ii]
         if nind == 0 or ne == 0:
@@ -269,11 +215,19 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
             e1 = vequilist[1, jj, ii]
             e2 = vequilist[2, jj, ii]
             block = out[:, jj].reshape(3, 3, 3)
-            if not is_sparse:
-                for ll in range(3):
-                    for mm in range(3):
-                        for nn in range(3):
-                            val = block[ll, mm, nn]
-                            if val != 0.0:
-                                vnruter[ll, mm, nn, e0, e1, e2] += val
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        val = block[ll, mm, nn]
+                        if val != 0.0 and abs(val) > EPSVAL:
+                            coords[0, p] = ll
+                            coords[1, p] = mm
+                            coords[2, p] = nn
+                            coords[3, p] = e0
+                            coords[4, p] = e1
+                            coords[5, p] = e2
+                            data[p] = val
+                            p += 1
+    vnruter = sparse.COO(coords, data, shape=(3, 3, 3, natoms, ntot, ntot))
+
     return vnruter
