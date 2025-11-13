@@ -1,91 +1,281 @@
-The fcs-order project is currently under active development. If you want to experience and use the project, you can install it via Git with the command `pip install git+https://github.com/gtiders/fcs-order.git`. After installation, run `fcsorder --help` to view detailed help information for each command, so that you can better understand and use the project's features.
-# fcs-order
+# [中文文档 | Chinese README](README_zh.md)
 
-Force constants calculation toolkit built on ASE and Typer. Compute 2nd/3rd/4th-order interatomic force constants and run SCPH workflows using various machine-learning potentials (NEP, DeepMD, PolyMLP, MTP) or Hiphive.
+# fcs-order (English Guide)
+
+Tip: If this project helps you, please star the repo. Please read this README first; if you still have issues or suggestions, open an Issue with reproduction steps and environment info.
+
+Note: CLI help evolves with versions. Use `fcs-order --help` and `fcs-order <subcommand> --help` for the most accurate, up‑to‑date options and examples.
+
+Note: The `sow` and `reap` commands are compatible with traditional `thirdorder`/`fourthorder` tools; argument names and I/O conventions are slightly adjusted for a unified interface.
+
+Force-constants and SCPH toolkit built on ASE and Typer. Compute 2nd/3rd/4th-order interatomic force constants and run SCPH workflows using various ML potentials (NEP, DeepMD, PolyMLP, MTP, TACE) or Hiphive.
 
 Repo: https://github.com/gtiders/fcs-order
 
-准备去掉稠密实现直接是稀疏实现
+---
 
-## User Guide
+## Features
+- 2nd-order force constants (compatible with Phonopy `FORCE_CONSTANTS`)
+- 3rd/4th-order force constants (ShengBTE/text formats)
+- SCPH (self-consistent phonon) workflows
+- Multiple backends: NEP, DeepMD, PolyMLP, MTP, TACE, and Hiphive
+- VASP-oriented sow (generate displacements) and reap (reconstruct IFCs)
+- In principle, sow/reap can work with any ab initio code supported by ASE by adjusting parameters and I/O (file format, file ordering, paths, etc.)
 
-fcs-order is a CLI toolkit for computing interatomic force constants (2nd/3rd/4th order) and running SCPH workflows using ASE‑readable structures and various ML/physics backends.
+---
 
-### Installation
+## Installation
+- Python: >= 3.9, < 3.14
+- Optional backends (install as needed):
+  - NEP: `pip install calorine`
+  - DeepMD: `pip install deepmd-kit`
+  - PolyMLP: `pip install pypolymlp`
+  - Hiphive: `pip install hiphive`
+  - TACE: `pip install tace`
 
-Requirements: Python 3.10–3.13 recommended.
-
+Recommended (PyPI):
+```bash
+pip install fcs-order
+```
+From GitHub:
 ```bash
 pip install git+https://github.com/gtiders/fcs-order.git
 ```
 
-Optional backends (install as needed):
-- NEP: `pip install calorine`
-- DeepMD: `pip install deepmd-kit`
-- PolyMLP: `pip install pypolymlp`
-- Hiphive: `pip install hiphive`
-- MTP: external `mlp` binary in PATH
+Notes:
+- To compute 2nd-order force constants (Phonopy-compatible `FORCE_CONSTANTS_2ND`), install Phonopy: `pip install phonopy`.
+- To run SCPH workflows, install Phonopy and Hiphive: `pip install phonopy hiphive`.
 
-### I/O and formats
+---
 
-- Structures: any ASE‑readable file (POSCAR/CONTCAR, CIF, XYZ/extxyz, …)
-- Forces: any ASE‑readable file with forces (vasprun.xml/OUTCAR, extxyz, …)
-- All structure reads go through the internal I/O abstraction to keep behavior consistent.
+## I/O and conventions
+- Structures: any ASE-readable format (POSCAR/CONTCAR, CIF, XYZ/extxyz, …). Default: `POSCAR`.
+- Supercell specification:
+  - mlp2/scph: 3 integers (diagonal) or 9 integers (3×3 matrix) as a positional argument list.
+  - sow/reap, mlp3, mlp4: three positional integers `na nb nc`.
+- Cutoff `--cutoff/-c`:
+  - Negative values: by nearest-neighbor shells.
+  - Positive values: by real-space distance in nm.
 
-### Supercell specification
+---
 
-- 3 integers for diagonal expansion (na nb nc), or 9 integers for a full 3×3 matrix (flattened).
-- Used by mlp2/scph; mlp3/mlp4 use na nb nc positional arguments.
-
-### Common short options
-
-- `--poscar, -p` Structure path (default: POSCAR)
-- `--cutoff, -c` Cutoff distance/value (semantics by command)
-- `--potential, -P` Backend potential/model path
-- `--temperatures, -T` e.g., "100,200,300"
-- See more in the quick reference: `docs/cli_usage_en.md`.
-
-### Quick start
-
+## Quick start (typical workflow)
+1) Generate displaced and undisplaced structures with sow:
 ```bash
-# sow (3rd‑order) with CIF input and XYZ outputs
-fcsorder sow 2 2 2 -c -6 -p prim.cif -f xyz -o out_dir
+# Example for 3rd order (order=3), 2×2×2 supercell; negative cutoff means NN shells; VASP output
+fcs-order sow 2 2 2 -c -6 -r 3 -p POSCAR -f poscar -o disps
+# Output: disps/3RD.SPOSCAR and disps/3RD.POSCAR.0001 ...
+```
+2) Compute forces with your chosen backend and produce ASE-readable force files (vasprun.xml/OUTCAR, extxyz, …). Keep the file order identical to sow’s displaced structure order.
 
-# reap (3rd‑order) with extxyz forces
-fcsorder reap 2 2 2 -c -6 pos/disp_*.xyz -p prim.cif
+3) Reconstruct 3rd/4th-order IFCs with reap:
+```bash
+# 3rd order (order=3). The file sequence MUST match the displaced structure sequence
+fcs-order reap 2 2 2 -c -6 -r 3 -p POSCAR disps/vasprun_*.xml
+# Output: FORCE_CONSTANTS_3RD
+```
+4) For 2nd-order IFCs, use mlp2 to write Phonopy-compatible `FORCE_CONSTANTS_2ND`.
 
-# mlp3 with NEP backend
-fcsorder mlp3 nep 2 2 2 -c -6 -P nep.txt -p POSCAR
+5) For SCPH, supply initial 2nd-order IFCs (optional) or have the backend evaluate within iterations, then run `scph <backend>`.
 
-# scph with DP backend
-fcsorder scph dp 2 2 2 -p prim.cif -T "100,200,300" -c 4.5 -P graph.pb -A
+---
+
+## sow: generate displaced structures
+Command:
+```
+fcs-order sow na nb nc --cutoff <CUTOFF> [--order 3|4] [--poscar POSCAR] \
+  [--out-format poscar|vasp|cif|xyz] [--out-dir DIR] [--name-template ...] [--undisplaced-name ...]
+```
+- Key options:
+  - `-r/--order`: 3 (third order) or 4 (fourth order), default 3.
+  - `-c/--cutoff`: negative=shells; positive=radius (nm).
+  - `-p/--poscar`: input structure; default POSCAR.
+  - `-f/--out-format`: output format; default poscar.
+  - `-o/--out-dir`: output directory.
+  - Templates: placeholders `{order}`, `{phase}`, `{index}`, `{index_padded}`, `{width}`, `{ext}` for `--name-template` / `--undisplaced-name`.
+- VASP-style outputs:
+  - Undisplaced: `3RD.SPOSCAR` or `4TH.SPOSCAR`
+  - Displaced: `3RD.POSCAR.0001`, `4TH.POSCAR.0001`, …
+
+---
+
+## reap: reconstruct IFCs from force files
+Command:
+```
+fcs-order reap na nb nc --cutoff <CUTOFF> [--order 3|4] [--poscar POSCAR] VASP_RUN_FILES...
+```
+- Force files must be ASE-readable (vasprun.xml/OUTCAR, extxyz, etc.).
+- Number of files must match required runs:
+  - 3rd order: `4 * N_irred`
+  - 4th order: `8 * N_irred`
+- Output: `FORCE_CONSTANTS_3RD` or `FORCE_CONSTANTS_4TH`
+
+---
+
+## mlp2: 2nd-order IFCs (Phonopy-compatible)
+Command group: `fcs-order mlp2 <backend>`, where `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- Common parameters:
+  - `supercell_matrix`: 3 or 9 integers (positional).
+  - `--poscar`: primitive cell; default POSCAR.
+  - `--outfile/-o`: output filename; default `FORCE_CONSTANTS_2ND`.
+
+Examples:
+- NEP (GPU optional):
+```bash
+fcs-order mlp2 nep 2 2 2 -p nep.txt -g -o FORCE_CONSTANTS_2ND
+```
+- DP:
+```bash
+fcs-order mlp2 dp 2 2 2 -p model.pb -o FORCE_CONSTANTS_2ND
+```
+- PolyMLP:
+```bash
+fcs-order mlp2 ploymp 2 2 2 -p polymlp.pot -o FORCE_CONSTANTS_2ND
+```
+- MTP (subcommand name is `mtp2`; requires external `mlp` executable):
+```bash
+fcs-order mlp2 mtp2 2 2 2 -p pot.mtp --mtp-exe mlp -o FORCE_CONSTANTS_2ND
+```
+- TACE (supports `--device/--dtype/--level`):
+```bash
+fcs-order mlp2 tace 2 2 2 -m model.ckpt -o FORCE_CONSTANTS_2ND --device cuda --dtype float64 --level 0
+```
+- Hiphive (write to Phonopy text):
+```bash
+fcs-order mlp2 hiphive 2 2 2 -p potential.fcp
 ```
 
-### Commands overview
+---
 
-- sow: generate displaced structures for IFC calculations (order 3/4 via `-r`)
-- reap: reconstruct IFCs from forces in ASE‑readable files
-- mlp2: compute 2nd‑order IFCs (subcommands: nep/dp/ploymp/mtp), supercell matrix input
-- mlp3: compute 3rd‑order IFCs (subcommands: nep/dp/ploymp/mtp), uses na nb nc
-- mlp4: compute 4th‑order IFCs (subcommands: nep/dp/ploymp/mtp), uses na nb nc
-- scph: run self‑consistent phonon workflow (subcommands: nep/dp/hiphive/ploymp/mtp)
-- plot_phband: plot phonon band structure from FORCE_CONSTANTS
-  - Single colorbar on the right; each dataset has a tick label; `--labels` optional
+## mlp3: 3rd-order IFCs
+Command group: `fcs-order mlp3 <backend>`, where `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
 
-Run `fcsorder --help` or `fcsorder <subapp> --help` for full details.
+- Common parameters: `na nb nc`, `--cutoff/-c`, `--poscar` (default POSCAR), `--is-write`.
 
-## MTP Notes
+Examples:
+- NEP:
+```bash
+fcs-order mlp3 nep 2 2 2 -c -6 -p nep.txt --is-write --is-gpu
+```
+- DP:
+```bash
+fcs-order mlp3 dp 2 2 2 -c -6 -p model.pb
+```
+- PolyMLP:
+```bash
+fcs-order mlp3 ploymp 2 2 2 -c -6 -p polymlp.pot
+```
+- MTP (subcommand name `mtp2`; requires `mlp`):
+```bash
+fcs-order mlp3 mtp2 2 2 2 -c -6 -p pot.mtp --mtp-exe mlp --is-write
+```
+- TACE:
+```bash
+fcs-order mlp3 tace 2 2 2 -c -6 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive (export directly to ShengBTE format from fcp):
+```bash
+fcs-order mlp3 hiphive 2 2 2 -p potential.fcp
+```
+Output: `FORCE_CONSTANTS_3RD`
 
-- Requires `mlp` binary accessible via `PATH` or specify `--mtp-exe`.
-- Temporary files are written under the system temp directory by default.
-- In calculations, unique chemical symbols are collected from the ASE Atoms object automatically.
+---
 
-## Development
+## mlp4: 4th-order IFCs
+Command group: `fcs-order mlp4 <backend>`, where `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
 
-- Run formatting and basic lint if desired
-- Contribute via PRs on GitHub: https://github.com/gtiders/fcs-order
+- Common parameters: `na nb nc`, `--cutoff/-c`, `--poscar` (default POSCAR), `--is-write`.
 
+Note: Despite algorithmic and implementation optimizations, 4th-order calculations may still be memory intensive; prefer high-memory environments.
+
+Examples:
+- NEP:
+```bash
+fcs-order mlp4 nep 2 2 2 -c -6 -p nep.txt --is-gpu
+```
+- DP:
+```bash
+fcs-order mlp4 dp 2 2 2 -c -6 -p model.pb
+```
+- PolyMLP:
+```bash
+fcs-order mlp4 ploymp 2 2 2 -c -6 -p polymlp.pot
+```
+- MTP (subcommand `mtp2`):
+```bash
+fcs-order mlp4 mtp2 2 2 2 -c -6 -p pot.mtp --mtp-exe mlp --is-write
+```
+- TACE (supports `--device/--dtype/--level`):
+```bash
+fcs-order mlp4 tace 2 2 2 -c -6 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive (use fcp and supercell to obtain force constants):
+```bash
+fcs-order mlp4 hiphive 2 2 2 -c -6 -p potential.fcp
+```
+Output: `FORCE_CONSTANTS_4TH`
+
+---
+
+## scph: self-consistent phonons (SCPH)
+Command group: `fcs-order scph <backend>`, where `<backend>` ∈ {`nep`, `dp`, `ploymp`, `mtp2`, `tace`, `hiphive`}
+
+- Common parameters:
+  - `supercell_matrix`: 3 or 9 integers (positional).
+  - `--poscar`: primitive cell; default POSCAR.
+  - `--temperatures/-T`: e.g., "100,200,300".
+  - `--cutoff/-c`: cluster-space cutoff radius.
+  - `--alpha/-a`: mixing parameter; default 0.2.
+  - `--n-iterations/-i`: iterations; default 100.
+  - `--n-structures/-n`: structures per iteration; default 50.
+  - `--fcs-2nd/-F`: initial 2nd-order IFCs (optional).
+  - `--is-qm/-q`: use quantum statistics (default True).
+  - `--imag-freq-factor/-I`: factor for handling imaginary frequencies (default 1.0).
+
+Note: SCPH in this project integrates and calls capabilities from Hiphive. See the Hiphive docs: https://hiphive.materialsmodeling.org/
+
+Examples:
+- NEP (GPU optional):
+```bash
+fcs-order scph nep 2 2 2 -T 100,200,300 -c 4.5 -p nep.txt --poscar POSCAR --is-gpu
+```
+- DP:
+```bash
+fcs-order scph dp 2 2 2 -T 100,200,300 -c 4.5 -p graph.pb --poscar POSCAR
+```
+- TACE (supports `--device/--dtype/--level`):
+```bash
+fcs-order scph tace 2 2 2 -T 300 -c 4.5 -m model.ckpt --device cuda --dtype float32 --level 0
+```
+- Hiphive:
+```bash
+fcs-order scph hiphive 2 2 2 -T 100,200,300 -c 4.5 -p model.fcp --poscar POSCAR
+```
+- PolyMLP (ploymp):
+```bash
+fcs-order scph ploymp 2 2 2 -T 100,200,300 -c 4.5 -p polymlp.pot --poscar POSCAR
+```
+- MTP (subcommand `mtp2`; requires `mlp`):
+```bash
+fcs-order scph mtp2 2 2 2 -T 100,200,300 -c 4.5 -p pot.mtp --poscar POSCAR --mtp-exe mlp
+```
+
+During the run, `scph_SPOSCAR` is written; forces/IFCs are evaluated iteratively with convergence analysis and outputs afterward.
+
+---
+
+## FAQ
+- What does the cutoff sign mean?
+  - Negative: by nearest-neighbor shells; Positive: real-space distance (nm).
+- File order for reap?
+  - The force files must follow the sow displaced-structure order; preserve numbering when generating outputs.
+- Why is the MTP subcommand named `mtp2`?
+  - In the current implementation the MTP subcommand is `mtp2` (used across mlp2/3/4 and scph groups); see examples above.
+- Hiphive notes?
+  - Requires a readable fcp file; supercell size should be no smaller than that used when training the fcp.
+
+---
 
 ## License
-
-GPL-3.0-or-later
+Apache-2.0. See `LICENSE`.

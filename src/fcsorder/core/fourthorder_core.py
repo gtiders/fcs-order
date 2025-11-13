@@ -5,7 +5,7 @@ import typer
 from rich.progress import track
 
 from fcsorder.core.domain.symmetry import SymmetryOperations
-from fcsorder.core.domain.wedge4 import  Wedge
+from fcsorder.core.domain.wedge4 import Wedge
 from fcsorder.core.domain.gaussian import gaussian
 
 from fcsorder.io.io_abstraction import read_structure
@@ -79,73 +79,6 @@ def _build_ijv_fourthorder(
     return i, j, v
 
 
-@jit(nopython=True)
-def _build_sparse_coords_fourthorder(
-    Tarray,
-    nindependentbasis,
-    nequi,
-    naccumindependent,
-    aphilist,
-    vequilist,
-):
-    nlist = nindependentbasis.shape[0]
-    EPSVAL = 1e-10
-
-    nnz = 0
-    for ii in range(nlist):
-        nind = nindependentbasis[ii]
-        ne = nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        for jj in range(ne):
-            for a in range(81):
-                # compute out[a] = sum_k T[a,k,jj,ii]*phi[k]
-                s = 0.0
-                for k in range(nind):
-                    s += Tarray[a, k, jj, ii] * aphilist[offset + k]
-                if s != 0.0 and abs(s) > EPSVAL:
-                    nnz += 1
-
-    coords = np.empty((8, nnz), dtype=np.intp)
-    data = np.empty(nnz, dtype=np.double)
-
-    p = 0
-    for ii in range(nlist):
-        nind = nindependentbasis[ii]
-        ne = nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        for jj in range(ne):
-            e0 = vequilist[0, jj, ii]
-            e1 = vequilist[1, jj, ii]
-            e2 = vequilist[2, jj, ii]
-            e3 = vequilist[3, jj, ii]
-            for a in range(81):
-                s = 0.0
-                for k in range(nind):
-                    s += Tarray[a, k, jj, ii] * aphilist[offset + k]
-                if s != 0.0 and abs(s) > EPSVAL:
-                    ll = a // 27
-                    rem = a % 27
-                    mm = rem // 9
-                    rem2 = rem % 9
-                    nn = rem2 // 3
-                    aa1 = rem2 % 3
-                    coords[0, p] = ll
-                    coords[1, p] = mm
-                    coords[2, p] = nn
-                    coords[3, p] = aa1
-                    coords[4, p] = e0
-                    coords[5, p] = e1
-                    coords[6, p] = e2
-                    coords[7, p] = e3
-                    data[p] = s
-                    p += 1
-
-    return coords, data
-
 def prepare_calculation4(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     """
     Validate the input parameters and prepare the calculation.
@@ -174,7 +107,7 @@ def prepare_calculation4(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
     return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh
 
 
-def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
+def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     """
     Recover the full fourth-order IFC set from the irreducible set of
     force constants and the information contained in a wedge object.
@@ -183,11 +116,8 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
     natoms = len(poscar["types"])
     ntot = len(sposcar["types"])
 
-    if is_sparse:
-        typer.echo("using sparse method with dok sparse matrix !")
-        vnruter = sparse.zeros((3, 3, 3, 3, natoms, ntot, ntot, ntot), format="dok")
-    else:
-        vnruter = np.zeros((3, 3, 3, 3, natoms, ntot, ntot, ntot), dtype=np.double)
+    typer.echo("using sparse method with dok sparse matrix !")
+    vnruter = sparse.zeros((3, 3, 3, 3, natoms, ntot, ntot, ntot), format="dok")
 
     naccumindependent = np.insert(
         np.cumsum(wedge.nindependentbasis[:nlist], dtype=np.intc),
@@ -263,21 +193,31 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
     compensation = D.dot(bbs.dot(multiplier))
     aphilist += compensation
 
-    if is_sparse:
-        coords, data = _build_sparse_coords_fourthorder(
-            vtrans,
-            wedge.nindependentbasis,
-            wedge.nequi,
-            naccumindependent,
-            aphilist,
-            vequilist,
-        )
-        vnruter = sparse.COO(coords, data, shape=(3, 3, 3, 3, natoms, ntot, ntot, ntot))
-    else:
-        vnruter = np.zeros((3, 3, 3, 3, natoms, ntot, ntot, ntot), dtype=np.double)
-
-    # Build final (fourth-order) IFCs
-    for ii in track(range(nlist), description="Building final IFCs"):
+    # Two-pass COO construction
+    nnz = 0
+    EPSVAL = 1e-15
+    for ii in range(nlist):
+        nind = wedge.nindependentbasis[ii]
+        ne = wedge.nequi[ii]
+        if nind == 0 or ne == 0:
+            continue
+        offset = naccumindependent[ii]
+        phi = aphilist[offset : offset + nind]
+        T = wedge.transformationarray[:, :nind, :ne, ii]  # (81, nind, ne)
+        out = np.tensordot(T, phi, axes=([1], [0]))  # (81, ne)
+        for jj in range(ne):
+            block = out[:, jj].reshape(3, 3, 3, 3)
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        for aa1 in range(3):
+                            val = block[ll, mm, nn, aa1]
+                            if val != 0.0 and abs(val) > EPSVAL:
+                                nnz += 1
+    coords = np.empty((8, nnz), dtype=np.intp)
+    data = np.empty(nnz, dtype=np.double)
+    p = 0
+    for ii in range(nlist):
         nind = wedge.nindependentbasis[ii]
         ne = wedge.nequi[ii]
         if nind == 0 or ne == 0:
@@ -292,13 +232,22 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar, is_sparse):
             e2 = vequilist[2, jj, ii]
             e3 = vequilist[3, jj, ii]
             block = out[:, jj].reshape(3, 3, 3, 3)
-            if not is_sparse:
-                for ll in range(3):
-                    for mm in range(3):
-                        for nn in range(3):
-                            for aa1 in range(3):
-                                val = block[ll, mm, nn, aa1]
-                                if val != 0.0:
-                                    vnruter[ll, mm, nn, aa1, e0, e1, e2, e3] += val
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        for aa1 in range(3):
+                            val = block[ll, mm, nn, aa1]
+                            if val != 0.0 and abs(val) > EPSVAL:
+                                coords[0, p] = ll
+                                coords[1, p] = mm
+                                coords[2, p] = nn
+                                coords[3, p] = aa1
+                                coords[4, p] = e0
+                                coords[5, p] = e1
+                                coords[6, p] = e2
+                                coords[7, p] = e3
+                                data[p] = val
+                                p += 1
+    vnruter = sparse.COO(coords, data, shape=(3, 3, 3, 3, natoms, ntot, ntot, ntot))
 
     return vnruter

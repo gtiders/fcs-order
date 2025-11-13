@@ -1,49 +1,47 @@
 [project]
-name = "fcsorder"
-version = "3.5"
-description = "2，3，4阶力常数提取通过任意机器学习势函数，并兼容原thirdorder和fourthorder的sow与reap命令"
+name = "fcs-order"
+version = "4.0.0"
+description = "Extract 2nd-, 3rd-, and 4th-order force constants using arbitrary machine-learning potentials; compatible with the original thirdorder and fourthorder sow and reap commands"
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.9,<3.14"
 dependencies = [
-    "ase>=3.22.1",
-    "matplotlib>=3.9.4",
-    "numba>=0.62.1",
-    "numpy>=1.21.6",
-    "scipy>=1.7.3",
-    "sparse>=0.15.5",
-    "spglib>=2.2.0",
-    "typer>=0.20.0",
+    "ase",
+    "matplotlib",
+    "numba",
+    "numpy",
+    "scipy",
+    "sparse",
+    "spglib",
+    "typer",
 ]
 
-[project.license]
-file = "LICENSE"
+license = "Apache-2.0"
 
 [project.scripts]
-fcsorder = "fcsorder.__init__:cli"
+fcs-order = "fcsorder.__init__:cli"
 
 [[tool.uv.index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
-
 [project.optional-dependencies]
-calorine = ["calorine>=1.0"]
-deepmd = ["deepmd-kit>=2.2.0"]
-hiphive = ["hiphive>=0.6"]
-mlp = ["pypolymlp>=0.15"]
+calorine = ["calorine"]
+deepmd = ["deepmd-kit"]
+hiphive = ["hiphive"]
+mlp = ["pypolymlp"]
+tace = ["tace"]
 all = [
-    "calorine>=1.0",
-    "deepmd-kit>=2.2.0",
-    "hiphive>=0.6",
-    "pypolymlp>=0.15",
+    "calorine",
+    "deepmd-kit",
+    "hiphive",
+    "pypolymlp",
+    "tace"
 ]
 
 [build-system]
 requires = [
     "setuptools>=45",
     "wheel",
-    "numpy>=1.21.6",
-    "spglib>=2.2.0",
 ]
 build-backend = "setuptools.build_meta"
 

@@ -82,9 +82,16 @@ def get_force_constants(
 
 
 def ase_to_phonopy(atoms, **kwargs):
-    return PhonopyAtoms(
-        numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions, **kwargs
-    )
+    if phonopy_exists:
+        return PhonopyAtoms(
+            numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions, **kwargs
+        )
+    else:
+        raise ModuleNotFoundError(
+            "phonopy (https://pypi.org/project/phonopy/) is "
+            "required in order to use the functionality "
+            "in the phonons module."
+        )  # pragma: no cover
 
 
 def phonopy_to_ase(atoms, **kwargs):

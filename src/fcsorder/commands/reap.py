@@ -4,9 +4,9 @@
 import numpy as np
 import typer
 
-from fcsorder.core import thirdorder_core,fourthorder_core
-from fcsorder.core.thirdorder_core import  prepare_calculation3
-from fcsorder.core.fourthorder_core import  prepare_calculation4
+from fcsorder.core import thirdorder_core, fourthorder_core
+from fcsorder.core.thirdorder_core import prepare_calculation3
+from fcsorder.core.fourthorder_core import prepare_calculation4
 
 from fcsorder.core.domain.common import (
     H,
@@ -24,7 +24,6 @@ def reap(
     nc: int,
     cutoff: str,
     vaspruns: list[str],
-    is_sparse: bool = False,
     order: int = 3,
     poscar_path: str = "POSCAR",
 ) -> None:
@@ -37,7 +36,6 @@ def reap(
         na, nb, nc: Supercell dimensions along a, b, c directions
         cutoff: Cutoff distance (negative for nearest neighbors, positive for distance in nm)
         vaspruns: Paths to force files readable by ASE (vasprun.xml/OUTCAR, extxyz, etc.), in order
-        is_sparse: Use sparse tensor method for memory efficiency
         order: 3 or 4
         poscar_path: Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ)
     """
@@ -81,7 +79,7 @@ def reap(
         phipart /= 400.0 * H * H
         typer.echo("Reconstructing the full array")
         phifull = thirdorder_core.reconstruct_ifcs(
-            phipart, wedge, list4, poscar, sposcar, is_sparse
+            phipart, wedge, list4, poscar, sposcar
         )
         typer.echo("Writing the constants to FORCE_CONSTANTS_3RD")
         write_ifcs3(
@@ -128,7 +126,7 @@ def reap(
         phipart /= 8000.0 * H * H * H
         typer.echo("Reconstructing the full array")
         phifull = fourthorder_core.reconstruct_ifcs(
-            phipart, wedge, list6, poscar, sposcar, is_sparse
+            phipart, wedge, list6, poscar, sposcar
         )
         typer.echo("Writing the constants to FORCE_CONSTANTS_4TH")
         write_ifcs4(

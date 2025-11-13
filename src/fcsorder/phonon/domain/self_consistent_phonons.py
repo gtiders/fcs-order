@@ -108,65 +108,47 @@ def run_scph(
 
         fcp_scph.write(f"fcps/scph_T{T}.fcp")
         np.savetxt(f"scph_trajs/scph_parameters_T{T}", np.array(parameters_traj))
+        analyze_scph_convergence(T)
 
 
-def analyze_scph_convergence(temperatures: list[float]):
+def analyze_scph_convergence(T: float):
     """Analyze the convergence of SCPH parameters.
-
-    This function should be called after run_scph to analyze the convergence
-    of the self-consistent phonon calculation parameters.
-
-    Args:
-        temperatures (list[float]): List of temperatures for which to analyze convergence.
-
     Returns:
-        None: Plots are saved to 'scph_parameter_convergence_T{T}.svg' for each temperature.
+        None: Plots are saved to 'scph_trajs/scph_parameter_T{T}.png'.
     """
-    # read parameter trajs for each temperature
-    parameter_trajs_dict = {}
-    delta_parameters_dict = {}
 
-    for T in temperatures:
-        # read parameter trajs
-        parameter_trajs = np.loadtxt(f"scph_trajs/scph_parameters_T{T}")
-        parameter_trajs_dict[T] = parameter_trajs
+    # read parameter trajs
+    parameter_trajs = np.loadtxt(f"scph_trajs/scph_parameters_T{T}")
 
-        # calculate parameter differences between iterations
-        delta_parameters = [
-            np.linalg.norm(p - p2)
-            for p, p2 in zip(parameter_trajs, parameter_trajs[1:])
-        ]
-        delta_parameters_dict[T] = delta_parameters
+    # calculate parameter differences between iterations
+    delta_parameters = [
+        np.linalg.norm(p - p2) for p, p2 in zip(parameter_trajs, parameter_trajs[1:])
+    ]
 
-    # create a separate plot for each temperature
-    for T in temperatures:
-        # setup plot
-        fig = plt.figure(figsize=(8, 3.5))
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
+    # setup plot
+    fig = plt.figure(figsize=(8, 3.5))
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
 
-        parameter_trajs = parameter_trajs_dict[T]
-        delta_parameters = delta_parameters_dict[T]
+    # plot parameters
+    ax1.plot(parameter_trajs)
 
-        # plot parameters
-        ax1.plot(parameter_trajs)
+    # plot parameter differences
+    ax2.plot(delta_parameters)
 
-        # plot parameter differences
-        ax2.plot(delta_parameters)
+    # set labels and limits for parameter plot
+    ax1.set_xlabel(f"SCPH iteration {T} K")
+    ax1.set_ylabel("Parameters")
+    ax1.set_xlim([0, len(parameter_trajs)])
 
-        # set labels and limits for parameter plot
-        ax1.set_xlabel(f"SCPH iteration {T} K")
-        ax1.set_ylabel("Parameters")
-        ax1.set_xlim([0, len(parameter_trajs)])
+    # set labels and limits for parameter difference plot
+    ax2.set_xlabel(f"SCPH iteration {T} K")
+    ax2.set_ylabel("$\\Delta$ Parameters")
+    ax2.set_xlim([0, len(delta_parameters)])
+    ax2.set_ylim(bottom=0.0)
 
-        # set labels and limits for parameter difference plot
-        ax2.set_xlabel(f"SCPH iteration {T} K")
-        ax2.set_ylabel("$\\Delta$ Parameters")
-        ax2.set_xlim([0, len(delta_parameters)])
-        ax2.set_ylim(bottom=0.0)
-
-        fig.tight_layout()
-        fig.savefig(f"scph_parameter_convergence_T{T}.svg")
-        typer.echo(
-            f"SCPH parameter convergence plot for T={T} K saved to 'scph_parameter_convergence_T{T}.svg'"
-        )
+    fig.tight_layout()
+    fig.savefig(f"scph_trajs/scph_parameter_T{T}.png")
+    typer.echo(
+        f"SCPH parameter convergence plot for T={T} K saved to 'scph_trajs/scph_parameter_T{T}.png'"
+    )

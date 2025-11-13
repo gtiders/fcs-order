@@ -4,9 +4,9 @@
 import os
 import typer
 
-from fcsorder.core import thirdorder_core,fourthorder_core
-from fcsorder.core.thirdorder_core import  prepare_calculation3
-from fcsorder.core.fourthorder_core import  prepare_calculation4
+from fcsorder.core import thirdorder_core, fourthorder_core
+from fcsorder.core.thirdorder_core import prepare_calculation3
+from fcsorder.core.fourthorder_core import prepare_calculation4
 from fcsorder.io.io_abstraction import write_structure
 from fcsorder.core.domain.common import (
     H,

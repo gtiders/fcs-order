@@ -41,6 +41,7 @@ permutations = np.array(
 from fcsorder.core.domain.symmetry import SymmetryOperations
 from fcsorder.core.domain.gaussian import gaussian
 
+
 @jit(nopython=True)
 def _ind2id(icell, ispecies, ngrid, nspecies):
     """

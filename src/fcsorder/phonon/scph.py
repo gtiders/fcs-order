@@ -11,12 +11,20 @@ import typer
 
 # Local imports
 
-from fcsorder.calc.calculators import make_dp, make_mtp, make_nep, make_polymp, make_tace
-from fcsorder.io.io_abstraction import  read_atoms
+from fcsorder.calc.calculators import (
+    make_dp,
+    make_mtp,
+    make_nep,
+    make_polymp,
+    make_tace,
+)
+from fcsorder.io.io_abstraction import read_atoms
 
-from fcsorder.phonon.domain.self_consistent_phonons import analyze_scph_convergence, run_scph
+from fcsorder.phonon.domain.self_consistent_phonons import (
+    analyze_scph_convergence,
+    run_scph,
+)
 from fcsorder.phonon.domain.secondorder_core import build_supercell_from_matrix
-from fcsorder.phonon.domain.plotting import plot_phband
 
 
 def parse_temperatures(s: str) -> List[float]:
@@ -45,7 +53,6 @@ def nep(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -61,7 +68,7 @@ def nep(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="NEP potential file path (e.g., 'nep.txt')",
     ),
@@ -88,12 +95,6 @@ def nep(
     ),
     is_gpu: bool = typer.Option(
         False, "--is-gpu", "-g", help="Use GPU calculator for faster computation"
-    ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
     """
@@ -130,6 +131,7 @@ def nep(
     # Read primitive cell and build supercell from matrix
     poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Run SCPH calculation
     run_scph(
@@ -146,13 +148,6 @@ def nep(
         imag_freq_factor=imag_freq_factor,
     )
 
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
-
 
 @app.command()
 def tace(
@@ -163,7 +158,6 @@ def tace(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -214,12 +208,6 @@ def tace(
         "-I",
         help="Factor for handling imaginary frequencies",
     ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
-    ),
 ):
     """
     Run self-consistent phonon calculation using TACE model.
@@ -244,6 +232,7 @@ def tace(
     # Read primitive cell and build supercell
     poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Run SCPH calculation
     run_scph(
@@ -260,13 +249,6 @@ def tace(
         imag_freq_factor=imag_freq_factor,
     )
 
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
-
 
 @app.command()
 def dp(
@@ -277,7 +259,6 @@ def dp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -293,7 +274,7 @@ def dp(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="DeepMD model file path (e.g., 'graph.pb')",
     ),
@@ -317,12 +298,6 @@ def dp(
         "--imag-freq-factor",
         "-I",
         help="Factor for handling imaginary frequencies",
-    ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
     """
@@ -355,6 +330,7 @@ def dp(
     # Read primitive cell and build supercell from matrix
     poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Run SCPH calculation
     run_scph(
@@ -371,13 +347,6 @@ def dp(
         imag_freq_factor=imag_freq_factor,
     )
 
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
-
 
 @app.command()
 def hiphive(
@@ -388,7 +357,6 @@ def hiphive(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -404,7 +372,7 @@ def hiphive(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="Hiphive model file path (e.g., 'model.fcp')",
     ),
@@ -429,12 +397,6 @@ def hiphive(
         "-I",
         help="Factor for handling imaginary frequencies",
     ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
-    ),
 ):
     """
     Run self-consistent phonon calculation using Hiphive potential model.
@@ -458,6 +420,7 @@ def hiphive(
     # Read primitive cell and build supercell from matrix
     poscar = read_atoms(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Hiphive calculator initialization
     typer.echo(f"Initializing Hiphive calculator with potential: {potential}")
@@ -488,13 +451,6 @@ def hiphive(
         imag_freq_factor=imag_freq_factor,
     )
 
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
-
 
 @app.command()
 def ploymp(
@@ -505,7 +461,6 @@ def ploymp(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -521,7 +476,7 @@ def ploymp(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="Ploymp potential file path (e.g., 'model.mp')",
     ),
@@ -545,12 +500,6 @@ def ploymp(
         "--imag-freq-factor",
         "-I",
         help="Factor for handling imaginary frequencies",
-    ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
     ),
 ):
     """
@@ -583,6 +532,7 @@ def ploymp(
     # Read primitive cell and build supercell from matrix
     poscar = read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Create output directories
     os.makedirs("fcps/", exist_ok=True)
@@ -602,13 +552,6 @@ def ploymp(
         imag_freq_factor=imag_freq_factor,
     )
 
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
-
 
 @app.command()
 def mtp2(
@@ -619,7 +562,6 @@ def mtp2(
     poscar: str = typer.Option(
         "POSCAR",
         "--poscar",
-        "-p",
         help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
         exists=True,
     ),
@@ -635,7 +577,7 @@ def mtp2(
     potential: str = typer.Option(
         ...,
         "--potential",
-        "-P",
+        "-p",
         exists=True,
         help="MTP potential file path (e.g., 'pot.mtp')",
     ),
@@ -661,12 +603,6 @@ def mtp2(
     mtp_exe: str = typer.Option(
         "mlp", "--mtp-exe", "-x", help="Path to MLP executable, default is 'mlp'"
     ),
-    analyze_convergence: bool = typer.Option(
-        True,
-        "--analyze-convergence",
-        "-A",
-        help="Analyze SCPH parameter convergence after calculation",
-    ),
 ):
     """
     Run self-consistent phonon calculation using MTP (Moment Tensor Potential) model.
@@ -691,6 +627,7 @@ def mtp2(
     # Read primitive cell and build supercell from matrix
     poscar = read(poscar)
     supercell = build_supercell_from_matrix(poscar, supercell_matrix)
+    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
 
     # Get unique elements from primitive cell
     unique_elements = sorted(set(poscar.get_chemical_symbols()))
@@ -718,10 +655,3 @@ def mtp2(
         is_qm=is_qm,
         imag_freq_factor=imag_freq_factor,
     )
-
-    # Analyze convergence if requested
-    if analyze_convergence:
-        analyze_scph_convergence(T)
-        fcs_list = [f"fcps/{T}_FORCE_CONSTANTS" for T in T]
-        labels = [f"{T}K" for T in T]
-        plot_phband(supercell_matrix, poscar, fcs_list, labels)
