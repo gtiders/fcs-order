@@ -195,7 +195,7 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
 
     # Two-pass COO construction
     nnz = 0
-    EPSVAL = 1e-15
+    EPSVAL = 1e-10
     for ii in range(nlist):
         nind = wedge.nindependentbasis[ii]
         ne = wedge.nequi[ii]
