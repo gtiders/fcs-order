@@ -17,6 +17,83 @@ from fcsorder.core.domain.gaussian import gaussian
 
 
 @jit(nopython=True)
+def _compute_triplet_min_distance(
+    jj, kk, ii,
+    n2equi, n3equi,
+    shifts, shifts27,
+    lattvec, coordall
+):
+    """
+    Numba-accelerated function to compute minimum distance for a triplet.
+    
+    Returns:
+    - d2_min: minimum squared distance between atoms jj and kk
+    """
+    shift2all = np.empty((3, 27), dtype=np.intc)
+    shift3all = np.empty((3, 27), dtype=np.intc)
+    
+    for idx in range(n2equi):
+        shift2all[:, idx] = shifts27[shifts[ii, jj, idx], :]
+    for idx in range(n3equi):
+        shift3all[:, idx] = shifts27[shifts[ii, kk, idx], :]
+    
+    d2_min = np.inf
+    
+    for iaux in range(n2equi):
+        # car2: cartesian coordinate for jj image
+        car2_0 = (
+            shift2all[0, iaux] * lattvec[0, 0]
+            + shift2all[1, iaux] * lattvec[0, 1]
+            + shift2all[2, iaux] * lattvec[0, 2]
+            + coordall[0, jj]
+        )
+        car2_1 = (
+            shift2all[0, iaux] * lattvec[1, 0]
+            + shift2all[1, iaux] * lattvec[1, 1]
+            + shift2all[2, iaux] * lattvec[1, 2]
+            + coordall[1, jj]
+        )
+        car2_2 = (
+            shift2all[0, iaux] * lattvec[2, 0]
+            + shift2all[1, iaux] * lattvec[2, 1]
+            + shift2all[2, iaux] * lattvec[2, 2]
+            + coordall[2, jj]
+        )
+        
+        for jaux in range(n3equi):
+            # car3: cartesian coordinate for kk image
+            car3_0 = (
+                shift3all[0, jaux] * lattvec[0, 0]
+                + shift3all[1, jaux] * lattvec[0, 1]
+                + shift3all[2, jaux] * lattvec[0, 2]
+                + coordall[0, kk]
+            )
+            car3_1 = (
+                shift3all[0, jaux] * lattvec[1, 0]
+                + shift3all[1, jaux] * lattvec[1, 1]
+                + shift3all[2, jaux] * lattvec[1, 2]
+                + coordall[1, kk]
+            )
+            car3_2 = (
+                shift3all[0, jaux] * lattvec[2, 0]
+                + shift3all[1, jaux] * lattvec[2, 1]
+                + shift3all[2, jaux] * lattvec[2, 2]
+                + coordall[2, kk]
+            )
+        
+        # distance
+        d2 = (
+            (car3_0 - car2_0) ** 2
+            + (car3_1 - car2_1) ** 2
+            + (car3_2 - car2_2) ** 2
+        )
+        if d2 < d2_min:
+            d2_min = d2
+    
+    return d2_min
+
+
+@jit(nopython=True)
 def _ind2id(icell, ispecies, ngrid, nspecies):
     """
     Merge a set of cell+atom indices into a single index into a supercell.
@@ -261,8 +338,6 @@ class Wedge:
         triplet = np.empty(3, dtype=np.intc)
         triplet_perm = np.empty(3, dtype=np.intc)
         triplet_sym = np.empty(3, dtype=np.intc)
-        shift2all = np.empty((3, 27), dtype=np.intc)
-        shift3all = np.empty((3, 27), dtype=np.intc)
         equilist = np.empty((3, nsym * 6), dtype=np.intc)
         coeffi = np.empty((6 * nsym * 27, 27), dtype=np.double)
         id_equi = self.symops.map_supercell(self.sposcar)
@@ -312,63 +387,18 @@ class Wedge:
                 if dist >= self.frange:
                     continue
                 n2equi = self.nequis[ii, jj]
-                for kk in range(n2equi):
-                    shift2all[:, kk] = shifts27[self.shifts[ii, jj, kk], :]
                 for kk in range(ntot):
                     dist = self.dmin[ii, kk]
                     if dist >= self.frange:
                         continue
                     n3equi = self.nequis[ii, kk]
-                    for ll in range(n3equi):
-                        shift3all[:, ll] = shifts27[self.shifts[ii, kk, ll], :]
-                    d2_min = np.inf
-                    for iaux in range(n2equi):
-                        # car2: cartesian coordinate for jj image
-                        car2_0 = (
-                            shift2all[0, iaux] * lattvec[0, 0]
-                            + shift2all[1, iaux] * lattvec[0, 1]
-                            + shift2all[2, iaux] * lattvec[0, 2]
-                            + coordall[0, jj]
-                        )
-                        car2_1 = (
-                            shift2all[0, iaux] * lattvec[1, 0]
-                            + shift2all[1, iaux] * lattvec[1, 1]
-                            + shift2all[2, iaux] * lattvec[1, 2]
-                            + coordall[1, jj]
-                        )
-                        car2_2 = (
-                            shift2all[0, iaux] * lattvec[2, 0]
-                            + shift2all[1, iaux] * lattvec[2, 1]
-                            + shift2all[2, iaux] * lattvec[2, 2]
-                            + coordall[2, jj]
-                        )
-                        for jaux in range(n3equi):
-                            # car3: cartesian coordinate for kk image
-                            car3_0 = (
-                                shift3all[0, jaux] * lattvec[0, 0]
-                                + shift3all[1, jaux] * lattvec[0, 1]
-                                + shift3all[2, jaux] * lattvec[0, 2]
-                                + coordall[0, kk]
-                            )
-                            car3_1 = (
-                                shift3all[0, jaux] * lattvec[1, 0]
-                                + shift3all[1, jaux] * lattvec[1, 1]
-                                + shift3all[2, jaux] * lattvec[1, 2]
-                                + coordall[1, kk]
-                            )
-                            car3_2 = (
-                                shift3all[0, jaux] * lattvec[2, 0]
-                                + shift3all[1, jaux] * lattvec[2, 1]
-                                + shift3all[2, jaux] * lattvec[2, 2]
-                                + coordall[2, kk]
-                            )
-                        d2 = (
-                            (car3_0 - car2_0) ** 2
-                            + (car3_1 - car2_1) ** 2
-                            + (car3_2 - car2_2) ** 2
-                        )
-                        if d2 < d2_min:
-                            d2_min = d2
+                    # Use numba-accelerated function for distance computation
+                    d2_min = _compute_triplet_min_distance(
+                        jj, kk, ii,
+                        n2equi, n3equi,
+                        self.shifts, shifts27,
+                        lattvec, coordall
+                    )
                     if d2_min >= frange2:
                         continue
                     # This point is only reached if there is a choice of periodic images of

@@ -5,7 +5,7 @@ import typer
 from rich.progress import track
 from math import fabs
 
-from numba import jit
+from numba import jit, prange
 
 # Permutations of 4 elements listed in the same order as in the old Fortran code.
 permutations = np.array(
@@ -40,6 +40,198 @@ permutations = np.array(
 
 from fcsorder.core.domain.symmetry import SymmetryOperations
 from fcsorder.core.domain.gaussian import gaussian
+
+
+@jit(nopython=True)
+def _compute_quartet_min_distances(
+    jj, kk, mm, ii,
+    n2equi, n3equi, n4equi,
+    shifts, shifts27,
+    lattvec, coordall
+):
+    """
+    Numba-accelerated function to compute minimum distances for a quartet.
+    
+    Returns:
+    - d2_min1: minimum squared distance between atoms 2 and 3
+    - d2_min2: minimum squared distance between atoms 2 and 4
+    - d2_min3: minimum squared distance between atoms 3 and 4
+    """
+    shift2all = np.empty((3, 27), dtype=np.intc)
+    shift3all = np.empty((3, 27), dtype=np.intc)
+    shift4all = np.empty((3, 27), dtype=np.intc)
+    
+    for idx in range(n2equi):
+        shift2all[:, idx] = shifts27[shifts[ii, jj, idx], :]
+    for idx in range(n3equi):
+        shift3all[:, idx] = shifts27[shifts[ii, kk, idx], :]
+    for idx in range(n4equi):
+        shift4all[:, idx] = shifts27[shifts[ii, mm, idx], :]
+    
+    d2_min1 = np.inf
+    d2_min2 = np.inf
+    d2_min3 = np.inf
+    
+    for iaux in range(n2equi):
+        # car2 for jj image
+        car2_0 = (
+            shift2all[0, iaux] * lattvec[0, 0]
+            + shift2all[1, iaux] * lattvec[0, 1]
+            + shift2all[2, iaux] * lattvec[0, 2]
+            + coordall[0, jj]
+        )
+        car2_1 = (
+            shift2all[0, iaux] * lattvec[1, 0]
+            + shift2all[1, iaux] * lattvec[1, 1]
+            + shift2all[2, iaux] * lattvec[1, 2]
+            + coordall[1, jj]
+        )
+        car2_2 = (
+            shift2all[0, iaux] * lattvec[2, 0]
+            + shift2all[1, iaux] * lattvec[2, 1]
+            + shift2all[2, iaux] * lattvec[2, 2]
+            + coordall[2, jj]
+        )
+        
+        for jaux in range(n3equi):
+            # car3 for kk image
+            car3_0 = (
+                shift3all[0, jaux] * lattvec[0, 0]
+                + shift3all[1, jaux] * lattvec[0, 1]
+                + shift3all[2, jaux] * lattvec[0, 2]
+                + coordall[0, kk]
+            )
+            car3_1 = (
+                shift3all[0, jaux] * lattvec[1, 0]
+                + shift3all[1, jaux] * lattvec[1, 1]
+                + shift3all[2, jaux] * lattvec[1, 2]
+                + coordall[1, kk]
+            )
+            car3_2 = (
+                shift3all[0, jaux] * lattvec[2, 0]
+                + shift3all[1, jaux] * lattvec[2, 1]
+                + shift3all[2, jaux] * lattvec[2, 2]
+                + coordall[2, kk]
+            )
+            
+            for kaux in range(n4equi):
+                # car4 for mm image
+                car4_0 = (
+                    shift4all[0, kaux] * lattvec[0, 0]
+                    + shift4all[1, kaux] * lattvec[0, 1]
+                    + shift4all[2, kaux] * lattvec[0, 2]
+                    + coordall[0, mm]
+                )
+                car4_1 = (
+                    shift4all[0, kaux] * lattvec[1, 0]
+                    + shift4all[1, kaux] * lattvec[1, 1]
+                    + shift4all[2, kaux] * lattvec[1, 2]
+                    + coordall[1, mm]
+                )
+                car4_2 = (
+                    shift4all[0, kaux] * lattvec[2, 0]
+                    + shift4all[1, kaux] * lattvec[2, 1]
+                    + shift4all[2, kaux] * lattvec[2, 2]
+                    + coordall[2, mm]
+                )
+            
+            # distances
+            d2_31 = (
+                (car3_0 - car2_0) ** 2
+                + (car3_1 - car2_1) ** 2
+                + (car3_2 - car2_2) ** 2
+            )
+            if d2_31 < d2_min1:
+                d2_min1 = d2_31
+            d2_42 = (
+                (car4_0 - car2_0) ** 2
+                + (car4_1 - car2_1) ** 2
+                + (car4_2 - car2_2) ** 2
+            )
+            if d2_42 < d2_min2:
+                d2_min2 = d2_42
+            d2_43 = (
+                (car4_0 - car3_0) ** 2
+                + (car4_1 - car3_1) ** 2
+                + (car4_2 - car3_2) ** 2
+            )
+            if d2_43 < d2_min3:
+                d2_min3 = d2_43
+    
+    return d2_min1, d2_min2, d2_min3
+
+
+@jit(nopython=True, parallel=True)
+def _scan_valid_quartets_parallel(
+    natoms, ntot, frange, frange2,
+    dmin, nequis, shifts, shifts27,
+    lattvec, coordall
+):
+    """
+    Parallel scan of valid quartets using numba prange.
+    Returns arrays of valid quartet indices.
+    """
+    # Estimate maximum possible quartets per atom
+    max_per_atom = ntot * ntot * ntot // 10
+    
+    # Thread-local storage for each ii
+    candidates_per_atom = np.zeros((natoms, 4, max_per_atom), dtype=np.intc)
+    counts_per_atom = np.zeros(natoms, dtype=np.intc)
+    
+    # Parallel loop over first atom index
+    for ii in prange(natoms):
+        local_count = 0
+        for jj in range(ntot):
+            dist = dmin[ii, jj]
+            if dist >= frange:
+                continue
+            n2equi = nequis[ii, jj]
+            
+            for kk in range(ntot):
+                dist = dmin[ii, kk]
+                if dist >= frange:
+                    continue
+                n3equi = nequis[ii, kk]
+                
+                for mm in range(ntot):
+                    dist = dmin[ii, mm]
+                    if dist >= frange:
+                        continue
+                    n4equi = nequis[ii, mm]
+                    
+                    # Compute distances
+                    d2_min1, d2_min2, d2_min3 = _compute_quartet_min_distances(
+                        jj, kk, mm, ii,
+                        n2equi, n3equi, n4equi,
+                        shifts, shifts27,
+                        lattvec, coordall
+                    )
+                    
+                    if d2_min1 >= frange2 or d2_min2 >= frange2:
+                        continue
+                    
+                    # Valid quartet found
+                    if local_count < max_per_atom:
+                        candidates_per_atom[ii, 0, local_count] = ii
+                        candidates_per_atom[ii, 1, local_count] = jj
+                        candidates_per_atom[ii, 2, local_count] = kk
+                        candidates_per_atom[ii, 3, local_count] = mm
+                        local_count += 1
+        
+        counts_per_atom[ii] = local_count
+    
+    # Consolidate results
+    total_count = np.sum(counts_per_atom)
+    result = np.empty((4, total_count), dtype=np.intc)
+    
+    offset = 0
+    for ii in range(natoms):
+        count = counts_per_atom[ii]
+        if count > 0:
+            result[:, offset:offset+count] = candidates_per_atom[ii, :, :count]
+            offset += count
+    
+    return result
 
 
 @jit(nopython=True)
@@ -280,9 +472,6 @@ class Wedge:
         quartet = np.empty(4, dtype=np.intc)
         quartet_perm = np.empty(4, dtype=np.intc)
         quartet_sym = np.empty(4, dtype=np.intc)
-        shift2all = np.empty((3, 27), dtype=np.intc)
-        shift3all = np.empty((3, 27), dtype=np.intc)
-        shift4all = np.empty((3, 27), dtype=np.intc)
         equilist = np.empty((4, nsym * 24), dtype=np.intc)
         coeffi = np.empty((24 * nsym * 81, 81), dtype=np.double)
         id_equi = self.symops.map_supercell(self.sposcar)
@@ -357,253 +546,158 @@ class Wedge:
                             rot2[iperm, isym, indexijklprime, indexijkl] = 0.0
 
         # Scan all atom quartets (ii,jj,kk,mm) in the supercell.
-        for ii in range(natoms):
-            for jj in range(ntot):
-                dist = self.dmin[ii, jj]
-                if dist >= self.frange:
-                    continue
-                n2equi = self.nequis[ii, jj]
-                for kk in range(n2equi):
-                    shift2all[:, kk] = shifts27[self.shifts[ii, jj, kk], :]
-                for kk in range(ntot):
-                    dist = self.dmin[ii, kk]
-                    if dist >= self.frange:
-                        continue
-                    n3equi = self.nequis[ii, kk]
-                    for ll in range(n3equi):
-                        shift3all[:, ll] = shifts27[self.shifts[ii, kk, ll], :]
-                    for mm in range(ntot):
-                        dist = self.dmin[ii, mm]
-                        if dist >= self.frange:
-                            continue
-                        n4equi = self.nequis[ii, mm]
-                        for nn in range(n4equi):
-                            shift4all[:, nn] = shifts27[self.shifts[ii, mm, nn], :]
-                        d2_min1 = np.inf
-                        d2_min2 = np.inf
-                        d2_min3 = np.inf
-                        for iaux in range(n2equi):
-                            # car2 for jj image
-                            car2_0 = (
-                                shift2all[0, iaux] * lattvec[0, 0]
-                                + shift2all[1, iaux] * lattvec[0, 1]
-                                + shift2all[2, iaux] * lattvec[0, 2]
-                                + coordall[0, jj]
-                            )
-                            car2_1 = (
-                                shift2all[0, iaux] * lattvec[1, 0]
-                                + shift2all[1, iaux] * lattvec[1, 1]
-                                + shift2all[2, iaux] * lattvec[1, 2]
-                                + coordall[1, jj]
-                            )
-                            car2_2 = (
-                                shift2all[0, iaux] * lattvec[2, 0]
-                                + shift2all[1, iaux] * lattvec[2, 1]
-                                + shift2all[2, iaux] * lattvec[2, 2]
-                                + coordall[2, jj]
-                            )
-                            for jaux in range(n3equi):
-                                # car3 for kk image
-                                car3_0 = (
-                                    shift3all[0, jaux] * lattvec[0, 0]
-                                    + shift3all[1, jaux] * lattvec[0, 1]
-                                    + shift3all[2, jaux] * lattvec[0, 2]
-                                    + coordall[0, kk]
-                                )
-                                car3_1 = (
-                                    shift3all[0, jaux] * lattvec[1, 0]
-                                    + shift3all[1, jaux] * lattvec[1, 1]
-                                    + shift3all[2, jaux] * lattvec[1, 2]
-                                    + coordall[1, kk]
-                                )
-                                car3_2 = (
-                                    shift3all[0, jaux] * lattvec[2, 0]
-                                    + shift3all[1, jaux] * lattvec[2, 1]
-                                    + shift3all[2, jaux] * lattvec[2, 2]
-                                    + coordall[2, kk]
-                                )
-                                for kaux in range(n4equi):
-                                    # car4 for mm image
-                                    car4_0 = (
-                                        shift4all[0, kaux] * lattvec[0, 0]
-                                        + shift4all[1, kaux] * lattvec[0, 1]
-                                        + shift4all[2, kaux] * lattvec[0, 2]
-                                        + coordall[0, mm]
-                                    )
-                                    car4_1 = (
-                                        shift4all[0, kaux] * lattvec[1, 0]
-                                        + shift4all[1, kaux] * lattvec[1, 1]
-                                        + shift4all[2, kaux] * lattvec[1, 2]
-                                        + coordall[1, mm]
-                                    )
-                                    car4_2 = (
-                                        shift4all[0, kaux] * lattvec[2, 0]
-                                        + shift4all[1, kaux] * lattvec[2, 1]
-                                        + shift4all[2, kaux] * lattvec[2, 2]
-                                        + coordall[2, mm]
-                                    )
-                                # distances
-                                d2_31 = (
-                                    (car3_0 - car2_0) ** 2
-                                    + (car3_1 - car2_1) ** 2
-                                    + (car3_2 - car2_2) ** 2
-                                )
-                                if d2_31 < d2_min1:
-                                    d2_min1 = d2_31
-                                d2_42 = (
-                                    (car4_0 - car2_0) ** 2
-                                    + (car4_1 - car2_1) ** 2
-                                    + (car4_2 - car2_2) ** 2
-                                )
-                                if d2_42 < d2_min2:
-                                    d2_min2 = d2_42
-                                d2_43 = (
-                                    (car4_0 - car3_0) ** 2
-                                    + (car4_1 - car3_1) ** 2
-                                    + (car4_2 - car3_2) ** 2
-                                )
-                                if d2_43 < d2_min3:
-                                    d2_min3 = d2_43
-                        if d2_min1 >= frange2:
-                            continue
-                        if d2_min2 >= frange2:
-                            continue
-                        quartet[0] = ii
-                        quartet[1] = jj
-                        quartet[2] = kk
-                        quartet[3] = mm
-                        if _quartet_in_list(quartet, v_alllist, self.nalllist):
-                            continue
-                        self.nlist += 1
-                        if self.nlist == self.allocsize:
-                            self._expandlist()
-                            v_nequi = self.nequi
-                            v_allequilist = self.allequilist
-                            v_transformation = self.transformation
-                            v_transformationarray = self.transformationarray
-                            v_transformationaux = self.transformationaux
-                            v_nindependentbasis = self.nindependentbasis
-                            v_independentbasis = self.independentbasis
-                            v_llist = self.llist
-                        v_llist[0, self.nlist - 1] = ii
-                        v_llist[1, self.nlist - 1] = jj
-                        v_llist[2, self.nlist - 1] = kk
-                        v_llist[3, self.nlist - 1] = mm
-                        v_nequi[self.nlist - 1] = 0
-                        coeffi[:, :] = 0.0
-                        nnonzero = 0
-                        # 24 permutations
-                        for iperm in range(24):
-                            quartet_perm[0] = quartet[permutations[iperm, 0]]
-                            quartet_perm[1] = quartet[permutations[iperm, 1]]
-                            quartet_perm[2] = quartet[permutations[iperm, 2]]
-                            quartet_perm[3] = quartet[permutations[iperm, 3]]
-                            # apply all sym ops
-                            for isym in range(nsym):
-                                quartet_sym[0] = id_equi[isym, quartet_perm[0]]
-                                quartet_sym[1] = id_equi[isym, quartet_perm[1]]
-                                quartet_sym[2] = id_equi[isym, quartet_perm[2]]
-                                quartet_sym[3] = id_equi[isym, quartet_perm[3]]
-                                vec1 = ind_cell[
-                                    :, id_equi[isym, quartet_perm[0]]
-                                ].copy()
-                                vec2 = ind_cell[
-                                    :, id_equi[isym, quartet_perm[1]]
-                                ].copy()
-                                vec3 = ind_cell[
-                                    :, id_equi[isym, quartet_perm[2]]
-                                ].copy()
-                                vec4 = ind_cell[
-                                    :, id_equi[isym, quartet_perm[3]]
-                                ].copy()
-                                # ensure atom 0 in first cell
-                                if not (vec1[0] == 0 and vec1[1] == 0 and vec1[2] == 0):
-                                    vec4 = (vec4 - vec1) % ngrid
-                                    vec3 = (vec3 - vec1) % ngrid
-                                    vec2 = (vec2 - vec1) % ngrid
-                                    vec1[:] = 0
-                                    ispecies1 = ind_species[
-                                        id_equi[isym, quartet_perm[0]]
-                                    ]
-                                    ispecies2 = ind_species[
-                                        id_equi[isym, quartet_perm[1]]
-                                    ]
-                                    ispecies3 = ind_species[
-                                        id_equi[isym, quartet_perm[2]]
-                                    ]
-                                    ispecies4 = ind_species[
-                                        id_equi[isym, quartet_perm[3]]
-                                    ]
-                                    quartet_sym[0] = _ind2id(
-                                        vec1, ispecies1, ngrid, natoms
-                                    )
-                                    quartet_sym[1] = _ind2id(
-                                        vec2, ispecies2, ngrid, natoms
-                                    )
-                                    quartet_sym[2] = _ind2id(
-                                        vec3, ispecies3, ngrid, natoms
-                                    )
-                                    quartet_sym[3] = _ind2id(
-                                        vec4, ispecies4, ngrid, natoms
-                                    )
-                                # new image? add
-                                if (iperm == 0 and isym == 0) or not (
-                                    _quartets_are_equal(quartet_sym, quartet)
-                                    or _quartet_in_list(
-                                        quartet_sym, equilist, v_nequi[self.nlist - 1]
-                                    )
-                                ):
-                                    v_nequi[self.nlist - 1] += 1
-                                    for ll in range(4):
-                                        equilist[ll, v_nequi[self.nlist - 1] - 1] = (
-                                            quartet_sym[ll]
-                                        )
-                                        v_allequilist[
-                                            ll,
-                                            v_nequi[self.nlist - 1] - 1,
-                                            self.nlist - 1,
-                                        ] = quartet_sym[ll]
-                                    self.nalllist += 1
-                                    if self.nalllist == self.allallocsize:
-                                        self._expandalllist()
-                                        v_alllist = self.alllist
-                                    for ll in range(4):
-                                        v_alllist[ll, self.nalllist - 1] = quartet_sym[
-                                            ll
-                                        ]
-                                    for iaux in range(81):
-                                        for jaux in range(81):
-                                            v_transformation[
-                                                iaux,
-                                                jaux,
-                                                v_nequi[self.nlist - 1] - 1,
-                                                self.nlist - 1,
-                                            ] = rot[iperm, isym, iaux, jaux]
-                                # identity? add row to coeffi
-                                if _quartets_are_equal(quartet_sym, quartet):
-                                    for indexijklprime in range(81):
-                                        if nonzero[iperm, isym, indexijklprime]:
-                                            for ll in range(81):
-                                                coeffi[nnonzero, ll] = rot2[
-                                                    iperm, isym, indexijklprime, ll
-                                                ]
-                                            nnonzero += 1
-                        coeffi_reduced = np.zeros(
-                            (max(nnonzero, 81), 81), dtype=np.double
+        # Phase 1: Parallel scan to find valid quartet candidates
+        valid_quartets = _scan_valid_quartets_parallel(
+            natoms, ntot, self.frange, frange2,
+            self.dmin, self.nequis, self.shifts, shifts27,
+            lattvec, coordall
+        )
+        
+        # Phase 2: Serial processing of candidates with symmetry analysis
+        for iquartet in range(valid_quartets.shape[1]):
+            quartet[0] = valid_quartets[0, iquartet]
+            quartet[1] = valid_quartets[1, iquartet]
+            quartet[2] = valid_quartets[2, iquartet]
+            quartet[3] = valid_quartets[3, iquartet]
+            
+            if _quartet_in_list(quartet, v_alllist, self.nalllist):
+                continue
+            
+            ii = quartet[0]
+            jj = quartet[1]
+            kk = quartet[2]
+            mm = quartet[3]
+            
+            self.nlist += 1
+            if self.nlist == self.allocsize:
+                self._expandlist()
+                v_nequi = self.nequi
+                v_allequilist = self.allequilist
+                v_transformation = self.transformation
+                v_transformationarray = self.transformationarray
+                v_transformationaux = self.transformationaux
+                v_nindependentbasis = self.nindependentbasis
+                v_independentbasis = self.independentbasis
+                v_llist = self.llist
+            v_llist[0, self.nlist - 1] = ii
+            v_llist[1, self.nlist - 1] = jj
+            v_llist[2, self.nlist - 1] = kk
+            v_llist[3, self.nlist - 1] = mm
+            v_nequi[self.nlist - 1] = 0
+            coeffi[:, :] = 0.0
+            nnonzero = 0
+            # 24 permutations
+            for iperm in range(24):
+                quartet_perm[0] = quartet[permutations[iperm, 0]]
+                quartet_perm[1] = quartet[permutations[iperm, 1]]
+                quartet_perm[2] = quartet[permutations[iperm, 2]]
+                quartet_perm[3] = quartet[permutations[iperm, 3]]
+                # apply all sym ops
+                for isym in range(nsym):
+                    quartet_sym[0] = id_equi[isym, quartet_perm[0]]
+                    quartet_sym[1] = id_equi[isym, quartet_perm[1]]
+                    quartet_sym[2] = id_equi[isym, quartet_perm[2]]
+                    quartet_sym[3] = id_equi[isym, quartet_perm[3]]
+                    vec1 = ind_cell[
+                        :, id_equi[isym, quartet_perm[0]]
+                    ].copy()
+                    vec2 = ind_cell[
+                        :, id_equi[isym, quartet_perm[1]]
+                    ].copy()
+                    vec3 = ind_cell[
+                        :, id_equi[isym, quartet_perm[2]]
+                    ].copy()
+                    vec4 = ind_cell[
+                        :, id_equi[isym, quartet_perm[3]]
+                    ].copy()
+                    # ensure atom 0 in first cell
+                    if not (vec1[0] == 0 and vec1[1] == 0 and vec1[2] == 0):
+                        vec4 = (vec4 - vec1) % ngrid
+                        vec3 = (vec3 - vec1) % ngrid
+                        vec2 = (vec2 - vec1) % ngrid
+                        vec1[:] = 0
+                        ispecies1 = ind_species[
+                            id_equi[isym, quartet_perm[0]]
+                        ]
+                        ispecies2 = ind_species[
+                            id_equi[isym, quartet_perm[1]]
+                        ]
+                        ispecies3 = ind_species[
+                            id_equi[isym, quartet_perm[2]]
+                        ]
+                        ispecies4 = ind_species[
+                            id_equi[isym, quartet_perm[3]]
+                        ]
+                        quartet_sym[0] = _ind2id(
+                            vec1, ispecies1, ngrid, natoms
                         )
-                        for iaux in range(nnonzero):
-                            for jaux in range(81):
-                                coeffi_reduced[iaux, jaux] = coeffi[iaux, jaux]
-                        # Gaussian independent set
-                        b, independent = gaussian(coeffi_reduced)
+                        quartet_sym[1] = _ind2id(
+                            vec2, ispecies2, ngrid, natoms
+                        )
+                        quartet_sym[2] = _ind2id(
+                            vec3, ispecies3, ngrid, natoms
+                        )
+                        quartet_sym[3] = _ind2id(
+                            vec4, ispecies4, ngrid, natoms
+                        )
+                    # new image? add
+                    if (iperm == 0 and isym == 0) or not (
+                        _quartets_are_equal(quartet_sym, quartet)
+                        or _quartet_in_list(
+                            quartet_sym, equilist, v_nequi[self.nlist - 1]
+                        )
+                    ):
+                        v_nequi[self.nlist - 1] += 1
+                        for ll in range(4):
+                            equilist[ll, v_nequi[self.nlist - 1] - 1] = (
+                                quartet_sym[ll]
+                            )
+                            v_allequilist[
+                                ll,
+                                v_nequi[self.nlist - 1] - 1,
+                                self.nlist - 1,
+                            ] = quartet_sym[ll]
+                        self.nalllist += 1
+                        if self.nalllist == self.allallocsize:
+                            self._expandalllist()
+                            v_alllist = self.alllist
+                        for ll in range(4):
+                            v_alllist[ll, self.nalllist - 1] = quartet_sym[
+                                ll
+                            ]
                         for iaux in range(81):
                             for jaux in range(81):
-                                v_transformationaux[iaux, jaux, self.nlist - 1] = b[
-                                    iaux, jaux
-                                ]
-                        v_nindependentbasis[self.nlist - 1] = independent.shape[0]
-                        for ll in range(independent.shape[0]):
-                            v_independentbasis[ll, self.nlist - 1] = independent[ll]
+                                v_transformation[
+                                    iaux,
+                                    jaux,
+                                    v_nequi[self.nlist - 1] - 1,
+                                    self.nlist - 1,
+                                ] = rot[iperm, isym, iaux, jaux]
+                    # identity? add row to coeffi
+                    if _quartets_are_equal(quartet_sym, quartet):
+                        for indexijklprime in range(81):
+                            if nonzero[iperm, isym, indexijklprime]:
+                                for ll in range(81):
+                                    coeffi[nnonzero, ll] = rot2[
+                                        iperm, isym, indexijklprime, ll
+                                    ]
+                                nnonzero += 1
+            coeffi_reduced = np.zeros(
+                (max(nnonzero, 81), 81), dtype=np.double
+            )
+            for iaux in range(nnonzero):
+                for jaux in range(81):
+                    coeffi_reduced[iaux, jaux] = coeffi[iaux, jaux]
+            # Gaussian independent set
+            b, independent = gaussian(coeffi_reduced)
+            for iaux in range(81):
+                for jaux in range(81):
+                    v_transformationaux[iaux, jaux, self.nlist - 1] = b[
+                        iaux, jaux
+                    ]
+            v_nindependentbasis[self.nlist - 1] = independent.shape[0]
+            for ll in range(independent.shape[0]):
+                v_independentbasis[ll, self.nlist - 1] = independent[ll]
         v_transformationarray[:, :, :, :] = 0.0
         _build_transformationarray(
             v_transformation,

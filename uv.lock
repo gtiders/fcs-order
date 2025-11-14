@@ -28,6 +28,23 @@ wheels = [
 ]
 
 [[package]]
+name = "calorine"
+version = "3.2"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
+dependencies = [
+    { name = "ase" },
+    { name = "matplotlib", version = "3.9.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "matplotlib", version = "3.10.7", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "numpy", version = "2.0.2", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version == '3.10.*'" },
+    { name = "numpy", version = "2.3.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "scikit-learn", version = "1.6.1", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
+]
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/ec/f1/923d8dcf2d54d165bb8eb1f3782ba2aa58a85d7dfd8c43d0173dde836f76/calorine-3.2.tar.gz", hash = "sha256:52888b28d9b03d54bcba1be25cf3100f00da247663d58f33f0f7e11362d1e7d9", size = 5553757, upload-time = "2025-08-27T10:41:48.105Z" }
+
+[[package]]
 name = "click"
 version = "8.1.8"
 source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
@@ -295,6 +312,7 @@ version = "4.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
+    { name = "calorine" },
     { name = "matplotlib", version = "3.9.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
     { name = "matplotlib", version = "3.10.7", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "numba", version = "0.60.0", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
@@ -320,6 +338,7 @@ phonon = [
 [package.metadata]
 requires-dist = [
     { name = "ase" },
+    { name = "calorine", specifier = ">=3.2" },
     { name = "hiphive", marker = "extra == 'phonon'" },
     { name = "matplotlib" },
     { name = "numba" },
