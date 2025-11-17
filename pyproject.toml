@@ -24,17 +24,32 @@ fcs-order = "fcsorder.__init__:cli"
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
+[tool.uv.sources]
+fcs-order = { workspace = true }
+
+
 [project.optional-dependencies]
 phonon = [
     "phonopy",
     "hiphive"
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/fcsorder"]
+
 [build-system]
 requires = [
-    "setuptools>=45",
-    "wheel",
+    "hatchling>=1.0.0",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "fcs-order",
+]
 
