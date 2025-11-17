@@ -317,6 +317,11 @@ phonon = [
     { name = "phonopy" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "fcs-order" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "ase" },
@@ -331,6 +336,9 @@ requires-dist = [
     { name = "typer" },
 ]
 provides-extras = ["phonon"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fcs-order", editable = "." }]
 
 [[package]]
 name = "fonttools"

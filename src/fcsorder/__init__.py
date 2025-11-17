@@ -119,7 +119,7 @@ def reap_command(
     """
     Extract 3-phonon (order=3) or 4-phonon (order=4) force constants from VASP calculation results.
     """
-    return reap(na, nb, nc, cutoff, vaspruns, is_sparse, order, poscar)
+    return reap(na, nb, nc, cutoff, vaspruns, order, poscar)
 
 
 
