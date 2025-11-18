@@ -14,7 +14,6 @@ from ase.io import write
 from fcsorder.io.io_abstraction import read_atoms
 
 
-
 def _n_BE(T, w_s):
     """
     Bose-Einstein distribution function.

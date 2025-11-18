@@ -1,18 +1,24 @@
-import numpy as np
-from ase import Atoms
-import ase.units as aunits
-from hiphive.input_output.logging_tools import logger
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-logger = logger.getChild(__name__)
+import typer
+import ase.units as aunits
+import numpy as np
+
+from ase import Atoms
+from ase.io import write
+
+from fcsorder.io.io_abstraction import read_atoms
+from fcsorder.genstr.tools import plot_distributions
 
 
 def generate_phonon_rattled_structures(
-        atoms: Atoms,
-        fc2: np.ndarray,
-        n_structures: int,
-        temperature: float,
-        QM_statistics: bool = False,
-        imag_freq_factor: float = 1.0,
+    atoms: Atoms,
+    fc2: np.ndarray,
+    n_structures: int,
+    temperature: float,
+    QM_statistics: bool = False,
+    imag_freq_factor: float = 1.0,
 ) -> list[Atoms]:
     r"""
     Returns list of phonon-rattled configurations.
@@ -83,6 +89,29 @@ def generate_phonon_rattled_structures(
     return structures
 
 
+def parse_FORCE_CONSTANTS(filename="FORCE_CONSTANTS", natoms=None):
+    """Parse FORCE_CONSTANTS file to dense (3N,3N) matrix."""
+    with open(filename) as fcfile:
+        idx1 = []
+
+        line = fcfile.readline()
+        idx = [int(x) for x in line.split()]
+        if len(idx) == 1:
+            idx = [idx[0], idx[0]]
+        force_constants = np.zeros((idx[0], idx[1], 3, 3), dtype="double")
+        for i in range(idx[0]):
+            for j in range(idx[1]):
+                s_i = int(fcfile.readline().split()[0]) - 1
+                if s_i not in idx1:
+                    idx1.append(s_i)
+                tensor = []
+                for _ in range(3):
+                    tensor.append([float(x) for x in fcfile.readline().split()])
+                force_constants[i, j] = tensor
+
+        return force_constants.transpose([0, 2, 1, 3]).reshape(natoms * 3, natoms * 3)
+
+
 def _n_BE(T, w_s):
     """
     Bose-Einstein distribution function.
@@ -99,7 +128,7 @@ def _n_BE(T, w_s):
     Bose-Einstein distribution for each energy at a given temperature
     """
 
-    with np.errstate(divide='raise', over='raise'):
+    with np.errstate(divide="raise", over="raise"):
         try:
             n = 1 / (np.exp(w_s / (aunits.kB * T)) - 1)
         except Exception:
@@ -108,7 +137,7 @@ def _n_BE(T, w_s):
 
 
 def _phonon_rattle(m_a, T, w2_s, e_sai, QM_statistics):
-    """ Thermal excitation of phonon modes as described by West and
+    """Thermal excitation of phonon modes as described by West and
     Estreicher, Physical Review Letters  **96**, 115504 (2006).
 
     _s is a mode index
@@ -155,7 +184,8 @@ def _phonon_rattle(m_a, T, w2_s, e_sai, QM_statistics):
     amplitudes_s = np.sqrt(-2 * np.log(1 - np.random.random(n_modes - 3)))
 
     u_ai = prefactor_a * np.tensordot(
-            amplitudes_s * np.cos(phases_s) * frequencyfactor_s, e_sai, (0, 0))
+        amplitudes_s * np.cos(phases_s) * frequencyfactor_s, e_sai, (0, 0)
+    )
     return u_ai  # displacements
 
 
@@ -175,6 +205,7 @@ class _PhononRattler:
         If a squared frequency, w2, is negative then it is set to
         w2 = imag_freq_factor * np.abs(w2)
     """
+
     def __init__(self, masses, force_constants, imag_freq_factor=1.0):
         n_atoms = len(masses)
         if len(force_constants.shape) == 4:  # assume shape = (n_atoms, n_atoms, 3, 3)
@@ -195,11 +226,13 @@ class _PhononRattler:
         argsort = np.argsort(np.abs(w2_s))
         w2_gamma = w2_s[argsort][:3]
         if np.any(np.abs(w2_gamma) > frequency_tol):
-            logger.warning(f'Acoustic sum rules not enforced, squared frequencies: {w2_gamma}')
+            typer.echo(
+                f"Acoustic sum rules not enforced, squared frequencies: {w2_gamma}"
+            )
 
         # warning if any imaginary modes
         if np.any(w2_s < -frequency_tol):
-            logger.warning('Imaginary modes present')
+            typer.echo("Imaginary modes present")
 
         # treat imaginary modes as real
         imag_mask = w2_s < -frequency_tol
@@ -210,7 +243,7 @@ class _PhononRattler:
         self.masses = masses
 
     def __call__(self, atoms, T, QM_statistics):
-        """ rattle atoms by adding displacements
+        """rattle atoms by adding displacements
 
         Parameters
         ----------
@@ -219,6 +252,155 @@ class _PhononRattler:
         T : float
             temperature in Kelvin
         """
-        u_ai = _phonon_rattle(self.masses, T, self.w2_s, self.e_sai,
-                              QM_statistics)
+        u_ai = _phonon_rattle(self.masses, T, self.w2_s, self.e_sai, QM_statistics)
         atoms.positions += u_ai
+
+
+def phonon_rattle_cli(
+    sposcar: str = typer.Argument(..., help="Path to SPOSCAR/POSCAR structure file"),
+    fc2: str = typer.Option(
+        "FORCE_CONSTANTS", "--fc2", help="Path to FORCE_CONSTANTS file"
+    ),
+    n_structures: int = typer.Option(
+        10,
+        "--n-structures",
+        "-n",
+        help="Number of structures to generate per temperature",
+    ),
+    temperatures: list[float] = typer.Option(
+        ..., "--T", "-T", help="Temperatures in Kelvin"
+    ),
+    qm_statistics: bool = typer.Option(
+        False,
+        "--qm-statistics/--no-qm-statistics",
+        help="Use quantum-mechanical statistics for amplitudes",
+    ),
+    imag_freq_factor: float = typer.Option(
+        1.0, "--imag-freq-factor", help="Factor for treating imaginary frequencies"
+    ),
+    output_format: str = typer.Option(
+        "vasp",
+        "--format",
+        "-f",
+        help="Output format: one of vasp, cif, qe, xyz",
+    ),
+    prefix: str | None = typer.Option(
+        None,
+        "--prefix",
+        "-p",
+        help=(
+            "Optional filename prefix. If set, all structures are named "
+            "'<prefix><index>.<ext>' with zero-padded running index "
+            "across all temperatures, and temperature is not included "
+            "in the filename."
+        ),
+    ),
+    min_volume: float | None = typer.Option(
+        0.9,
+        "--min-volume",
+        help=(
+            "Minimum volume ratio for applying volumetric strain when --eps is enabled."
+        ),
+    ),
+    max_volume: float | None = typer.Option(
+        1.05,
+        "--max-volume",
+        help=(
+            "Maximum volume ratio for applying volumetric strain when --eps is enabled."
+        ),
+    ),
+    eps: bool = typer.Option(
+        False,
+        "--eps/--no-eps",
+        help=(
+            "Enable applying a random volumetric strain to each "
+            "generated structure, with volume ratio drawn uniformly "
+            "from [min_volume, max_volume]."
+        ),
+    ),
+):
+    """Generate phonon-rattled structures for one or more temperatures.
+
+    The input structure is read from ``sposcar`` and the second-order
+    force constants are read from ``fc2`` (default: ``FORCE_CONSTANTS``).
+    For each temperature in ``temperatures``, ``n_structures``
+    configurations are generated, written to VASP-format files, and the
+    corresponding distance and displacement distributions are plotted.
+    """
+
+    # normalize and validate output format
+    fmt = output_format.lower()
+    valid_formats = {"vasp", "cif", "qe", "xyz"}
+    if fmt not in valid_formats:
+        raise typer.BadParameter(
+            f"Invalid format '{output_format}'. Must be one of: {', '.join(sorted(valid_formats))}."
+        )
+
+    # map CLI format keyword to ASE writer format string and file extension
+    ase_format_map = {
+        "vasp": ("vasp", "vasp"),
+        "cif": ("cif", "cif"),
+        "qe": ("espresso-in", "in"),
+        "xyz": ("xyz", "xyz"),
+    }
+    ase_format, file_ext = ase_format_map[fmt]
+
+    atoms = read_atoms(sposcar)
+    natoms = len(atoms)
+    fc2_matrix = parse_FORCE_CONSTANTS(fc2, natoms=natoms)
+    reference_positions = atoms.get_positions().copy()
+
+    # validate volumetric strain options
+    if eps:
+        if min_volume is None or max_volume is None:
+            raise typer.BadParameter(
+                "When --eps is enabled you must also specify both --min-volume and --max-volume."
+            )
+        if min_volume <= 0 or max_volume <= 0:
+            raise typer.BadParameter("min_volume and max_volume must be positive.")
+        if min_volume > max_volume:
+            raise typer.BadParameter("min_volume cannot be larger than max_volume.")
+
+    # determine zero-padding width for indices
+    total_structures = len(temperatures) * n_structures
+    if prefix is not None and total_structures > 0:
+        # prefixed case: use global running index over all temperatures
+        idx_width_global = len(str(total_structures))
+        global_index = 1  # 1-based so first file is ...001 when total_structures >= 10
+    else:
+        # default case (no prefix): index per temperature, width from n_structures
+        idx_width_global = None
+        global_index = None
+    if n_structures > 0:
+        idx_width_per_T = len(str(n_structures))
+    else:
+        idx_width_per_T = 1
+
+    for T in temperatures:
+        structures = generate_phonon_rattled_structures(
+            atoms=atoms,
+            fc2=fc2_matrix,
+            n_structures=n_structures,
+            temperature=T,
+            QM_statistics=qm_statistics,
+            imag_freq_factor=imag_freq_factor,
+        )
+
+        for i, structure in enumerate(structures):
+            # apply random volumetric strain if requested
+            if eps:
+                volume_ratio = np.random.uniform(min_volume, max_volume)
+                scale = volume_ratio ** (1.0 / 3.0)
+                structure.set_cell(structure.get_cell() * scale, scale_atoms=True)
+
+            if prefix is not None:
+                # global running index across all temperatures, zero-padded
+                filename = f"{prefix}{global_index:0{idx_width_global}d}.{file_ext}"
+                global_index += 1
+            else:
+                # per-temperature index starting from 1, zero-padded
+                index = i + 1
+                filename = f"phonon_rattle_T{T}_{index:0{idx_width_per_T}d}.{file_ext}"
+            write(filename, structure, format=ase_format)
+
+        plot_distributions(structures, reference_positions, T)

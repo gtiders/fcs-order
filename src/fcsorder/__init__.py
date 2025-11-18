@@ -1,8 +1,6 @@
 import typer
 
-from fcsorder.phonon.generate_phonon_rattled_structures import (
-    generate_phonon_rattled_structures,
-)
+
 from fcsorder.phonon.mlp2 import app as mlp2_app
 from fcsorder.phonon.scph import app as scph_app
 
@@ -12,6 +10,9 @@ from fcsorder.commands.reap import reap
 
 from fcsorder.commands.mlp3 import app as mlp3_app
 from fcsorder.commands.mlp4 import app as mlp4_app
+
+from fcsorder.genstr.phonon_rattle import phonon_rattle_cli
+from fcsorder.genstr.monte_rattle import monte_rattle_cli
 
 
 cli = typer.Typer(help="Force constants calculation tool for VASP")
@@ -122,7 +123,6 @@ def reap_command(
     return reap(na, nb, nc, cutoff, vaspruns, order, poscar)
 
 
-
 # Add mlp2 as a subcommand group
 cli.add_typer(
     mlp2_app,
@@ -147,9 +147,10 @@ cli.add_typer(
     name="scph",
     help="Run self-consistent phonon calculations using machine learning potentials",
 )
-cli.command(name="generate_phonon_rattled_structures")(
-    generate_phonon_rattled_structures
-)
+
+# add structure generation commands
+cli.command(name="phonon_rattle")(phonon_rattle_cli)
+cli.command(name="monte_rattle")(monte_rattle_cli)
 
 
 __all__ = ["cli"]
