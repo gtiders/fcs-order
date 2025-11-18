@@ -98,9 +98,7 @@ def calculate_phonon_force_constants_4th(
                 atoms.write(filename, format="extxyz")
     phipart /= 8000.0 * H * H * H
     typer.echo("Reconstructing the full array")
-    phifull = fourthorder_core.reconstruct_ifcs(
-        phipart, wedge, list6, poscar, sposcar
-    )
+    phifull = fourthorder_core.reconstruct_ifcs(phipart, wedge, list6, poscar, sposcar)
     typer.echo("Writing the constants to FORCE_CONSTANTS_4TH")
     write_ifcs4(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_4TH"
@@ -168,9 +166,7 @@ def nep(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -225,9 +221,7 @@ def tace(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -279,9 +273,7 @@ def dp(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -341,9 +333,7 @@ def hiphive(
         typer.echo("hiphive not found, please install it first")
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -391,9 +381,7 @@ def ploymp(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -454,6 +442,4 @@ def mtp2(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants_4th(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants_4th(na, nb, nc, cutoff, calc, is_write, poscar)

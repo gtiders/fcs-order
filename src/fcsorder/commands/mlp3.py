@@ -91,9 +91,7 @@ def calculate_phonon_force_constants(
                 atoms.write(filename, format="extxyz")
     phipart /= 400.0 * H * H
     typer.echo("Reconstructing the full array")
-    phifull = thirdorder_core.reconstruct_ifcs(
-        phipart, wedge, list4, poscar, sposcar
-    )
+    phifull = thirdorder_core.reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar)
     typer.echo("Writing the constants to FORCE_CONSTANTS_3RD")
     write_ifcs3(
         phifull, poscar, sposcar, dmin, nequi, shifts, frange, "FORCE_CONSTANTS_3RD"
@@ -161,9 +159,7 @@ def nep(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -190,7 +186,6 @@ def tace(
         "-w",
         help="Whether to save intermediate files during the calculation process",
     ),
-
     device: str = typer.Option(
         "cuda", "--device", "-d", help="Compute device, e.g., 'cpu' or 'cuda'"
     ),
@@ -226,9 +221,7 @@ def tace(
         typer.echo(str(e))
         raise typer.Exit(code=1)
 
-    calculate_phonon_force_constants(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -280,9 +273,7 @@ def dp(
         typer.echo(str(e))
         sys.exit(1)
 
-    calculate_phonon_force_constants(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -363,9 +354,7 @@ def ploymp(
         typer.echo(str(e))
         sys.exit(1)
 
-    calculate_phonon_force_constants(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
 
 
 @app.command()
@@ -426,6 +415,4 @@ def mtp2(
         typer.echo(str(e))
         sys.exit(1)
 
-    calculate_phonon_force_constants(
-        na, nb, nc, cutoff, calc, is_write, poscar
-    )
+    calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
