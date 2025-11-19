@@ -19,6 +19,76 @@ from fcsorder.core.domain.common import (
 )
 
 from numba import jit
+from numba.typed import List
+
+
+@jit(nopython=True)
+def _build_ifc4_coords_vals_list(
+    nlist,
+    nequi,
+    nindependentbasis,
+    vequilist,
+    naccumindependent,
+    transformationarray,
+    aphilist,
+):
+    """Build coordinate/value lists for 4th-order IFCs in nopython mode.
+
+    Returns 8 index lists (ll, mm, nn, aa1, e0, e1, e2, e3) and one value list.
+    """
+
+    ifc4_rows0 = List()
+    ifc4_rows1 = List()
+    ifc4_rows2 = List()
+    ifc4_rows3 = List()
+    ifc4_cols0 = List()
+    ifc4_cols1 = List()
+    ifc4_cols2 = List()
+    ifc4_cols3 = List()
+    ifc4_vals = List()
+
+    for ii in range(nlist):
+        ne = nequi[ii]
+        nind = nindependentbasis[ii]
+
+        for jj in range(ne):
+            e0 = vequilist[0, jj, ii]
+            e1 = vequilist[1, jj, ii]
+            e2 = vequilist[2, jj, ii]
+            e3 = vequilist[3, jj, ii]
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        for aa1 in range(3):
+                            tribasisindex = ((ll * 3 + mm) * 3 + nn) * 3 + aa1
+                            for ix in range(nind):
+                                val = (
+                                    transformationarray[tribasisindex, ix, jj, ii]
+                                    * aphilist[naccumindependent[ii] + ix]
+                                )
+                                if val == 0.0:
+                                    continue
+                                ifc4_rows0.append(ll)
+                                ifc4_rows1.append(mm)
+                                ifc4_rows2.append(nn)
+                                ifc4_rows3.append(aa1)
+                                ifc4_cols0.append(e0)
+                                ifc4_cols1.append(e1)
+                                ifc4_cols2.append(e2)
+                                ifc4_cols3.append(e3)
+                                ifc4_vals.append(val)
+
+    return (
+        ifc4_rows0,
+        ifc4_rows1,
+        ifc4_rows2,
+        ifc4_rows3,
+        ifc4_cols0,
+        ifc4_cols1,
+        ifc4_cols2,
+        ifc4_cols3,
+        ifc4_vals,
+    )
 
 
 @jit(nopython=True)
@@ -28,31 +98,14 @@ def _build_ijv_fourthorder(
     naccumindependent,
     natoms,
     ntot,
+    nlist,
     vtrans,
 ):
-    nnz = 0
-    for ii in range(natoms):
-        for jj in range(ntot):
-            tribasisindex = 0
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            for kk in range(ntot):
-                                for bb in range(ntot):
-                                    ix = vind1[ii, jj, kk, bb]
-                                    if ix != -1:
-                                        start = naccumindependent[ix]
-                                        end = naccumindependent[ix + 1]
-                                        nnz += end - start
-                            tribasisindex += 1
-
-    i = np.empty(nnz, dtype=np.intp)
-    j = np.empty(nnz, dtype=np.intp)
-    v = np.empty(nnz, dtype=np.float64)
-
-    p = 0
+    i = List()
+    j = List()
+    v = List()
     colindex = 0
+
     for ii in range(natoms):
         for jj in range(ntot):
             tribasisindex = 0
@@ -62,17 +115,23 @@ def _build_ijv_fourthorder(
                         for aa1 in range(3):
                             for kk in range(ntot):
                                 for bb in range(ntot):
-                                    ix = vind1[ii, jj, kk, bb]
-                                    if ix != -1:
-                                        start = naccumindependent[ix]
-                                        end = naccumindependent[ix + 1]
-                                        row = vind2[ii, jj, kk, bb]
-                                        for ss in range(start, end):
-                                            tt = ss - start
-                                            i[p] = ss
-                                            j[p] = colindex
-                                            v[p] = vtrans[tribasisindex, tt, row, ix]
-                                            p += 1
+                                    for ix in range(nlist):
+                                        if vind1[ii, jj, kk, bb] == ix:
+                                            for ss in range(
+                                                naccumindependent[ix],
+                                                naccumindependent[ix + 1],
+                                            ):
+                                                tt = ss - naccumindependent[ix]
+                                                i.append(ss)
+                                                j.append(colindex)
+                                                v.append(
+                                                    vtrans[
+                                                        tribasisindex,
+                                                        tt,
+                                                        vind2[ii, jj, kk, bb],
+                                                        ix,
+                                                    ]
+                                                )
                             tribasisindex += 1
                             colindex += 1
 
@@ -131,6 +190,7 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     for ii in track(range(nlist6), description="Processing list6"):
         e0, e1, e2, e3, e4, e5 = list4[ii]
         vnruter[e3, e4, e5, :, e0, e1, e2, :] = vphipart[:, ii, :]
+    vnruter=vnruter.to_coo()
 
     philist = []
     for ii in track(range(nlist), description="Building philist"):
@@ -177,14 +237,18 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     ncols = natoms * ntot * 81
 
     typer.echo("Storing the coefficients in a sparse matrix")
-    i, j, v = _build_ijv_fourthorder(
+    i_list, j_list, v_list = _build_ijv_fourthorder(
         vind1,
         vind2,
         naccumindependent,
         natoms,
         ntot,
+        nlist,
         vtrans,
     )
+    i = np.array(i_list, dtype=np.intp)
+    j = np.array(j_list, dtype=np.intp)
+    v = np.array(v_list, dtype=np.float64)
     aaa = sp.sparse.coo_matrix((v, (i, j)), (nrows, ncols)).tocsr()
     D = sp.sparse.spdiags(aphilist, [0], aphilist.size, aphilist.size, format="csr")
     bbs = D.dot(aaa)
@@ -193,61 +257,66 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     compensation = D.dot(bbs.dot(multiplier))
     aphilist += compensation
 
-    # Two-pass COO construction
-    nnz = 0
-    EPSVAL = 1e-10
-    for ii in range(nlist):
-        nind = wedge.nindependentbasis[ii]
-        ne = wedge.nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        phi = aphilist[offset : offset + nind]
-        T = wedge.transformationarray[:, :nind, :ne, ii]  # (81, nind, ne)
-        out = np.tensordot(T, phi, axes=([1], [0]))  # (81, ne)
-        for jj in range(ne):
-            block = out[:, jj].reshape(3, 3, 3, 3)
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            val = block[ll, mm, nn, aa1]
-                            if val != 0.0 and abs(val) > EPSVAL:
-                                nnz += 1
-    coords = np.empty((8, nnz), dtype=np.intp)
-    data = np.empty(nnz, dtype=np.double)
-    p = 0
-    for ii in range(nlist):
-        nind = wedge.nindependentbasis[ii]
-        ne = wedge.nequi[ii]
-        if nind == 0 or ne == 0:
-            continue
-        offset = naccumindependent[ii]
-        phi = aphilist[offset : offset + nind]
-        T = wedge.transformationarray[:, :nind, :ne, ii]
-        out = np.tensordot(T, phi, axes=([1], [0]))
-        for jj in range(ne):
-            e0 = vequilist[0, jj, ii]
-            e1 = vequilist[1, jj, ii]
-            e2 = vequilist[2, jj, ii]
-            e3 = vequilist[3, jj, ii]
-            block = out[:, jj].reshape(3, 3, 3, 3)
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            val = block[ll, mm, nn, aa1]
-                            if val != 0.0 and abs(val) > EPSVAL:
-                                coords[0, p] = ll
-                                coords[1, p] = mm
-                                coords[2, p] = nn
-                                coords[3, p] = aa1
-                                coords[4, p] = e0
-                                coords[5, p] = e1
-                                coords[6, p] = e2
-                                coords[7, p] = e3
-                                data[p] = val
-                                p += 1
-    vnruter = sparse.COO(coords, data, shape=(3, 3, 3, 3, natoms, ntot, ntot, ntot))
+    typer.echo("Build the final, full set of 4th-order IFCs.")
+    (
+        ifc4_rows0_list,
+        ifc4_rows1_list,
+        ifc4_rows2_list,
+        ifc4_rows3_list,
+        ifc4_cols0_list,
+        ifc4_cols1_list,
+        ifc4_cols2_list,
+        ifc4_cols3_list,
+        ifc4_vals_list,
+    ) = _build_ifc4_coords_vals_list(
+        nlist,
+        wedge.nequi,
+        wedge.nindependentbasis,
+        vequilist,
+        naccumindependent,
+        wedge.transformationarray,
+        aphilist,
+    )
+
+    (
+        ifc4_rows0,
+        ifc4_rows1,
+        ifc4_rows2,
+        ifc4_rows3,
+        ifc4_cols0,
+        ifc4_cols1,
+        ifc4_cols2,
+        ifc4_cols3,
+    ) = (
+        np.array(ifc4_rows0_list, dtype=np.intp),
+        np.array(ifc4_rows1_list, dtype=np.intp),
+        np.array(ifc4_rows2_list, dtype=np.intp),
+        np.array(ifc4_rows3_list, dtype=np.intp),
+        np.array(ifc4_cols0_list, dtype=np.intp),
+        np.array(ifc4_cols1_list, dtype=np.intp),
+        np.array(ifc4_cols2_list, dtype=np.intp),
+        np.array(ifc4_cols3_list, dtype=np.intp),
+    )
+    ifc4_vals = np.array(ifc4_vals_list, dtype=np.double)
+
+    ifc4_coords = np.array(
+        [
+            ifc4_rows0,
+            ifc4_rows1,
+            ifc4_rows2,
+            ifc4_rows3,
+            ifc4_cols0,
+            ifc4_cols1,
+            ifc4_cols2,
+            ifc4_cols3,
+        ],
+        dtype=np.intp,
+    )
+    vnruter = sparse.COO(
+        ifc4_coords,
+        ifc4_vals,
+        shape=(3, 3, 3, 3, natoms, ntot, ntot, ntot),
+        has_duplicates=True,
+    )
 
     return vnruter
