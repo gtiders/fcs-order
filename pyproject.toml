@@ -3,10 +3,9 @@ name = "fcs-order"
 version = "4.0.8"
 description = "Extract 2nd-, 3rd-, and 4th-order force constants using arbitrary machine-learning potentials; compatible with the original thirdorder and fourthorder sow and reap commands"
 readme = "README.md"
-requires-python = ">=3.9,<3.14"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "ase",
-    "hiphive>=1.5",
     "matplotlib",
     "numba",
     "numpy",
