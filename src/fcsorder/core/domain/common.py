@@ -5,7 +5,7 @@
 import copy
 import io
 import itertools
-import sys
+import os
 
 import click
 import typer
@@ -15,8 +15,31 @@ import scipy.spatial
 import scipy.spatial.distance
 
 # Constants
-H = 1e-3  # Magnitude of the finite displacements, in nm.
-SYMPREC = 1e-5  # Tolerance for symmetry search
+_H_DEFAULT = 1e-3
+_SYMPREC_DEFAULT = 1e-5
+
+_h_env = os.getenv("FCS_ORDER_H")
+if _h_env is not None:
+    try:
+        H = float(_h_env)
+        typer.echo(f"Using FCS_ORDER_H={H} for finite displacements")
+    except ValueError:
+        H = _H_DEFAULT
+else:
+    H = _H_DEFAULT
+
+_symprec_env = os.getenv("FCS_ORDER_SYMPREC")
+if _symprec_env is not None:
+    try:
+        SYMPREC = float(_symprec_env)
+        typer.echo(f"Using FCS_ORDER_SYMPREC={SYMPREC} for symmetry search")
+    except ValueError:
+        SYMPREC = _SYMPREC_DEFAULT
+else:
+    SYMPREC = _SYMPREC_DEFAULT
+
+H = H  # Magnitude of the finite displacements, in nm.
+SYMPREC = SYMPREC  # Tolerance for symmetry search
 
 
 def _validate_cutoff(na, nb, nc):

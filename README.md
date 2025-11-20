@@ -65,6 +65,22 @@ Notes:
   - Negative values: by nearest-neighbor shells.
   - Positive values: by real-space distance in nm.
 
+Environment variables for internal constants:
+
+- `H` (finite-displacement magnitude, nm) and `SYMPREC` (symmetry tolerance) have built-in defaults:
+  - `H = 1e-3` (nm)
+  - `SYMPREC = 1e-5`
+- You can override them via environment variables (parsed as `float`):
+  - `FCS_ORDER_H` → overrides `H`
+  - `FCS_ORDER_SYMPREC` → overrides `SYMPREC`
+- If an env var is unset or cannot be parsed as a float, the corresponding default is used.
+
+Example:
+
+```bash
+FCS_ORDER_H=0.002 FCS_ORDER_SYMPREC=1e-6 fcs-order sow 2 2 2 -c -6 -r 3 -p POSCAR
+```
+
 ---
 
 ## Quick start (typical workflow)

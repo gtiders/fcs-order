@@ -291,10 +291,11 @@ wheels = [
 
 [[package]]
 name = "fcs-order"
-version = "4.0.5"
+version = "4.0.7"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
+    { name = "hiphive" },
     { name = "matplotlib", version = "3.9.4", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
     { name = "matplotlib", version = "3.10.7", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "numba", version = "0.60.0", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.10'" },
@@ -317,14 +318,10 @@ phonon = [
     { name = "phonopy" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "fcs-order" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "ase" },
+    { name = "hiphive", specifier = ">=1.5" },
     { name = "hiphive", marker = "extra == 'phonon'" },
     { name = "matplotlib" },
     { name = "numba" },
@@ -336,9 +333,6 @@ requires-dist = [
     { name = "typer" },
 ]
 provides-extras = ["phonon"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "fcs-order", editable = "." }]
 
 [[package]]
 name = "fonttools"
