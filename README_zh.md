@@ -67,6 +67,22 @@ fcs-order --help
   - sow/reap、mlp3、mlp4：使用三个位置参数 `na nb nc` 指定超胞重复数。
 - 截断 `--cutoff/-c`：负数表示“按最近邻层数”；正数表示“按距离（nm）”。
 
+环境变量控制内部常量：
+
+- 程序内部用于生成有限位移与寻找对称性的常量有默认值：
+  - `H = 1e-3`（有限位移大小，单位：nm）
+  - `SYMPREC = 1e-5`（对称性搜索公差）
+- 可以通过环境变量直接覆盖：
+  - `FCS_ORDER_H` → 覆盖 `H`
+  - `FCS_ORDER_SYMPREC` → 覆盖 `SYMPREC`
+- 环境变量会被解析为 `float`；若未设置或解析失败，则自动回退到上述默认值。
+
+示例：
+
+```bash
+FCS_ORDER_H=0.002 FCS_ORDER_SYMPREC=1e-6 fcs-order sow 2 2 2 -c -6 -r 3 -p POSCAR
+```
+
 ---
 
 ## 快速上手（典型工作流）

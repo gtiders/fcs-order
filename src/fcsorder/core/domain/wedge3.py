@@ -306,8 +306,8 @@ class Wedge:
                             rot2[iperm, isym, indexijkprime, indexijk] = 0.0
 
         # Scan all atom triplets (ii, jj, kk) in the supercell.
-        for ii in range(natoms):
-            for jj in range(ntot):
+        for ii in track(range(natoms), description="Scaning all atom triplets for atoms"):
+            for jj in track(range(ntot), description=f"Scaning all atom triplets for ntot with atom{ii}"):
                 dist = self.dmin[ii, jj]
                 if dist >= self.frange:
                     continue
