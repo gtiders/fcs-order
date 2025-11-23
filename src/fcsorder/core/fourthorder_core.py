@@ -101,11 +101,31 @@ def _build_ijv_fourthorder(
     nlist,
     vtrans,
 ):
-    i = List()
-    j = List()
-    v = List()
-    colindex = 0
+    # Pass 1: Count total elements
+    total_count = 0
+    for ii in range(natoms):
+        for jj in range(ntot):
+            for ll in range(3):
+                for mm in range(3):
+                    for nn in range(3):
+                        for aa1 in range(3):
+                            for kk in range(ntot):
+                                for bb in range(ntot):
+                                    for ix in range(nlist):
+                                        if vind1[ii, jj, kk, bb] == ix:
+                                            total_count += (
+                                                naccumindependent[ix + 1]
+                                                - naccumindependent[ix]
+                                            )
 
+    # Allocate arrays
+    i = np.empty(total_count, dtype=np.int64)
+    j = np.empty(total_count, dtype=np.int64)
+    v = np.empty(total_count, dtype=np.float64)
+
+    # Pass 2: Fill arrays
+    count = 0
+    colindex = 0
     for ii in range(natoms):
         for jj in range(ntot):
             tribasisindex = 0
@@ -117,21 +137,19 @@ def _build_ijv_fourthorder(
                                 for bb in range(ntot):
                                     for ix in range(nlist):
                                         if vind1[ii, jj, kk, bb] == ix:
-                                            for ss in range(
-                                                naccumindependent[ix],
-                                                naccumindependent[ix + 1],
-                                            ):
-                                                tt = ss - naccumindependent[ix]
-                                                i.append(ss)
-                                                j.append(colindex)
-                                                v.append(
-                                                    vtrans[
-                                                        tribasisindex,
-                                                        tt,
-                                                        vind2[ii, jj, kk, bb],
-                                                        ix,
-                                                    ]
-                                                )
+                                            start = naccumindependent[ix]
+                                            end = naccumindependent[ix + 1]
+                                            for ss in range(start, end):
+                                                tt = ss - start
+                                                i[count] = ss
+                                                j[count] = colindex
+                                                v[count] = vtrans[
+                                                    tribasisindex,
+                                                    tt,
+                                                    vind2[ii, jj, kk, bb],
+                                                    ix,
+                                                ]
+                                                count += 1
                             tribasisindex += 1
                             colindex += 1
 
@@ -237,7 +255,7 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
     ncols = natoms * ntot * 81
 
     typer.echo("Storing the coefficients in a sparse matrix")
-    i_list, j_list, v_list = _build_ijv_fourthorder(
+    i, j, v = _build_ijv_fourthorder(
         vind1,
         vind2,
         naccumindependent,
@@ -246,9 +264,6 @@ def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
         nlist,
         vtrans,
     )
-    i = np.array(i_list, dtype=np.intp)
-    j = np.array(j_list, dtype=np.intp)
-    v = np.array(v_list, dtype=np.float64)
     aaa = sp.sparse.coo_matrix((v, (i, j)), (nrows, ncols)).tocsr()
     D = sp.sparse.spdiags(aphilist, [0], aphilist.size, aphilist.size, format="csr")
     bbs = D.dot(aaa)
