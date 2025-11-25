@@ -24,6 +24,20 @@ wheels = [
 ]
 
 [[package]]
+name = "calorine"
+version = "3.2"
+source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
+dependencies = [
+    { name = "ase" },
+    { name = "matplotlib" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.5", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+]
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/ec/f1/923d8dcf2d54d165bb8eb1f3782ba2aa58a85d7dfd8c43d0173dde836f76/calorine-3.2.tar.gz", hash = "sha256:52888b28d9b03d54bcba1be25cf3100f00da247663d58f33f0f7e11362d1e7d9", size = 5553757, upload-time = "2025-08-27T10:41:48.105Z" }
+
+[[package]]
 name = "click"
 version = "8.3.1"
 source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
@@ -193,10 +207,12 @@ version = "4.0.8"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
+    { name = "calorine" },
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "phonopy" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.3", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sparse" },
@@ -213,10 +229,12 @@ phonon = [
 [package.metadata]
 requires-dist = [
     { name = "ase" },
+    { name = "calorine", specifier = ">=3.2" },
     { name = "hiphive", marker = "extra == 'phonon'" },
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy" },
+    { name = "phonopy", specifier = ">=2.44.0" },
     { name = "phonopy", marker = "extra == 'phonon'" },
     { name = "scipy" },
     { name = "sparse" },

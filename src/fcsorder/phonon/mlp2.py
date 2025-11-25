@@ -245,7 +245,23 @@ def hiphive(
     nb: int,
     nc: int,
     potential: str = typer.Option(
-        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
+        ...,
+        "--potential",
+        "-p",
+        exists=True,
+        help="Hiphive potential file path (e.g. 'potential.fcp')",
+    ),
+    outfile: str = typer.Option(
+        "FORCE_CONSTANTS_2ND",
+        "--outfile",
+        "-o",
+        help="Output file path, default is 'FORCE_CONSTANTS_2ND'",
+    ),
+    poscar: str = typer.Option(
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
 ):
     """
@@ -259,14 +275,25 @@ def hiphive(
     """
     # Hiphive calculator initialization
     typer.echo(f"Using hiphive calculator with potential: {potential}")
+    typer.secho(
+        "Ensure the supercell size is greater than or equal to the one used to train the FCP.",
+        fg=typer.colors.RED,
+    )
+    typer.secho(
+        "Ensure the provided structure file is the same as the one used when training the FCP.",
+        fg=typer.colors.RED,
+    )
     try:
         from hiphive import ForceConstantPotential
-
+        from hiphive.calculators import ForceConstantCalculator
+        
         fcp = ForceConstantPotential.read(potential)
         prim = fcp.primitive_structure
         supercell = prim.repeat((na, nb, nc))
         force_constants = fcp.get_force_constants(supercell)
-        force_constants.write_to_phonopy("FORCE_CONSTANTS_2ND", format="text")
+        calc = ForceConstantCalculator(force_constants)
+        supercell_array = np.array([[na,0,0],[0,nb,0],[0,0,nc]])
+        calculate_phonon_force_constants_2nd(supercell_array, calc, poscar, outfile)
     except ImportError:
         typer.echo("hiphive not found, please install it first")
         raise typer.Exit(code=1)
