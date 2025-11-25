@@ -282,7 +282,29 @@ def hiphive(
     nb: int,
     nc: int,
     potential: str = typer.Option(
-        ..., exists=True, help="Hiphive potential file path (e.g. 'potential.fcp')"
+        ...,
+        "--potential",
+        "-p",
+        exists=True,
+        help="Hiphive potential file path (e.g. 'potential.fcp')",
+    ),
+    cutoff: str = typer.Option(
+        ...,
+        "--cutoff",
+        "-c",
+        help="Cutoff value (negative for nearest neighbors, positive for distance in nm)",
+    ),
+    is_write: bool = typer.Option(
+        False,
+        "--is-write",
+        "-w",
+        help="Whether to save intermediate files during the calculation process",
+    ),
+    poscar: str = typer.Option(
+        "POSCAR",
+        "--poscar",
+        help="Path to a structure file parsable by ASE (e.g., VASP POSCAR, CIF, XYZ). Default: 'POSCAR'",
+        exists=True,
     ),
 ):
     """
@@ -296,14 +318,24 @@ def hiphive(
     """
     # Hiphive calculator initialization
     typer.echo(f"Using hiphive calculator with potential: {potential}")
+    typer.secho(
+        "Ensure the supercell size is greater than or equal to the one used to train the FCP.",
+        fg=typer.colors.RED,
+    )
+    typer.secho(
+        "Ensure the provided structure file is the same as the one used when training the FCP.",
+        fg=typer.colors.RED,
+    )
     try:
         from hiphive import ForceConstantPotential
+        from hiphive.calculators import ForceConstantCalculator
 
         fcp = ForceConstantPotential.read(potential)
         prim = fcp.primitive_structure
         supercell = prim.repeat((na, nb, nc))
         force_constants = fcp.get_force_constants(supercell)
-        force_constants.write_to_shengBTE("FORCE_CONSTANTS_3RD", prim)
+        calc = ForceConstantCalculator(force_constants)
+        calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
     except ImportError:
         typer.echo("hiphive not found, please install it first")
         raise typer.Exit(code=1)
