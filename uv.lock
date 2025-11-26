@@ -208,6 +208,7 @@ source = { editable = "." }
 dependencies = [
     { name = "ase" },
     { name = "calorine" },
+    { name = "hiphive" },
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }, marker = "python_full_version < '3.11'" },
@@ -230,6 +231,7 @@ phonon = [
 requires-dist = [
     { name = "ase" },
     { name = "calorine", specifier = ">=3.2" },
+    { name = "hiphive", specifier = ">=1.5" },
     { name = "hiphive", marker = "extra == 'phonon'" },
     { name = "matplotlib" },
     { name = "numba" },
