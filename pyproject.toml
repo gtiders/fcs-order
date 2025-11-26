@@ -7,6 +7,7 @@ requires-python = ">=3.10,<3.14"
 dependencies = [
     "ase",
     "calorine>=3.2",
+    "hiphive>=1.5",
     "matplotlib",
     "numba",
     "numpy",

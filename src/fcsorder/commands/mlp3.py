@@ -3,6 +3,8 @@
 
 # Standard library imports
 import sys
+import contextlib
+import io
 
 import numpy as np
 import typer
@@ -331,8 +333,12 @@ def hiphive(
         from hiphive.calculators import ForceConstantCalculator
 
         fcp = ForceConstantPotential.read(potential)
-        prim = fcp.primitive_structure
-        supercell = prim.repeat((na, nb, nc))
+        # Silence prepare_calculation3 output only for this call
+        with contextlib.redirect_stdout(io.StringIO()):
+            _, sposcar, _, _, _, _, _, _ = prepare_calculation3(
+                na, nb, nc, cutoff, poscar
+            )
+        supercell = get_atoms(normalize_SPOSCAR(sposcar))
         force_constants = fcp.get_force_constants(supercell)
         calc = ForceConstantCalculator(force_constants)
         calculate_phonon_force_constants(na, nb, nc, cutoff, calc, is_write, poscar)
