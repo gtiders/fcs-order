@@ -52,7 +52,7 @@ class SymmetryAnalyzer:
             symmetry_precision: 对称性搜索容差
         """
         self._lattice_vectors = np.array(lattice_vectors, dtype=np.float64)
-        self._atom_types = np.array(atom_types, dtype=np.intc)
+        self._atom_types = np.array(atom_types, dtype=np.int64)
         self._positions = np.array(positions, dtype=np.float64)
         self._symmetry_precision = symmetry_precision
         
@@ -85,7 +85,7 @@ class SymmetryAnalyzer:
         return np.asarray(self._positions)
     
     @property
-    def atom_types(self) -> NDArray[np.intc]:
+    def atom_types(self) -> NDArray[np.int64]:
         """原子类型索引"""
         return np.asarray(self._atom_types)
     
@@ -187,32 +187,23 @@ class SymmetryAnalyzer:
     
     def map_supercell_atoms(
         self,
-        supercell: SupercellStructure | dict,
-    ) -> NDArray[np.intc]:
+        supercell: SupercellStructure,
+    ) -> NDArray[np.int64]:
         """
         建立超胞原子在对称操作下的映射关系
         
         对于超胞中的每个原子，计算其在每个对称操作下映射到的原子索引。
         
         Args:
-            supercell: 超胞结构对象或字典
+            supercell: 超胞结构对象
             
         Returns:
             映射数组 (nsyms, ntot)，其中 result[isym, i] 表示
             原子 i 在对称操作 isym 下映射到的原子索引
         """
-        # 支持字典格式（向后兼容）
-        if isinstance(supercell, dict):
-            positions = supercell["positions"]
-            lattice = supercell["lattvec"]
-            grid_size = np.array(
-                [supercell["na"], supercell["nb"], supercell["nc"]],
-                dtype=np.intc
-            )
-        else:
-            positions = supercell.positions
-            lattice = supercell.lattice_vectors
-            grid_size = np.array(supercell.grid_size, dtype=np.intc)
+        positions = supercell.positions
+        lattice = supercell.lattice_vectors
+        grid_size = np.array(supercell.grid_size, dtype=np.int64)
         
         num_supercell_atoms = positions.shape[1]
         num_primitive_atoms = num_supercell_atoms // (grid_size[0] * grid_size[1] * grid_size[2])
@@ -230,7 +221,7 @@ class SymmetryAnalyzer:
         # 构建映射数组
         atom_mapping = np.empty(
             (self.num_symmetry_operations, num_supercell_atoms),
-            dtype=np.intc
+            dtype=np.int64
         )
         
         lu_factorization = scipy.linalg.lu_factor(self._lattice_vectors)
@@ -265,7 +256,7 @@ class SymmetryAnalyzer:
                     fractional_diff = scipy.linalg.lu_solve(lu_factorization, diff)
                     
                     # 四舍五入到最近整数
-                    cell_indices = np.empty(3, dtype=np.intc)
+                    cell_indices = np.empty(3, dtype=np.int64)
                     for coord in range(3):
                         cell_indices[coord] = int(round(fractional_diff[coord]))
                     
@@ -318,7 +309,3 @@ class SymmetryAnalyzer:
             positions=structure.positions.T,  # 转换为 (natoms, 3)
             symmetry_precision=symmetry_precision,
         )
-
-
-# 向后兼容的别名
-SymmetryOperations = SymmetryAnalyzer

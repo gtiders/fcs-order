@@ -19,7 +19,7 @@ from numpy.typing import NDArray
 def jit_cell_atom_to_supercell_index(
     cell_indices: NDArray[np.int64],
     atom_index: int,
-    grid_size: NDArray[np.intc],
+    grid_size: NDArray[np.int64],
     num_primitive_atoms: int,
 ) -> int:
     """
@@ -42,7 +42,7 @@ def jit_cell_atom_to_supercell_index(
 
 @jit(nopython=True)
 def jit_supercell_index_to_cell_atom(
-    grid_size: NDArray[np.intc],
+    grid_size: NDArray[np.int64],
     num_primitive_atoms: int,
 ) -> tuple[NDArray[np.int64], NDArray[np.int64]]:
     """
@@ -173,9 +173,9 @@ def jit_build_transformation_array(
 
 @jit(nopython=True)
 def jit_build_sparse_ifc_indices(
-    triplet_class_indices: NDArray[np.intc],
-    equivalent_indices: NDArray[np.intc],
-    accumulated_independent: NDArray[np.intc],
+    triplet_class_indices: NDArray[np.int64],
+    equivalent_indices: NDArray[np.int64],
+    accumulated_independent: NDArray[np.int64],
     num_primitive_atoms: int,
     num_supercell_atoms: int,
     num_triplet_classes: int,
@@ -256,7 +256,7 @@ def jit_build_full_ifc_coordinates(
     equivalent_count: NDArray[np.int64],
     independent_basis_count: NDArray[np.int64],
     equivalent_triplets: NDArray[np.int64],
-    accumulated_independent: NDArray[np.intc],
+    accumulated_independent: NDArray[np.int64],
     transformation_array: NDArray[np.float64],
     force_constant_values: NDArray[np.float64],
 ) -> tuple:
@@ -315,17 +315,3 @@ def jit_build_full_ifc_coordinates(
                             values.append(value)
     
     return coord_0, coord_1, coord_2, coord_3, coord_4, coord_5, values
-
-
-# ============================================================================
-# 向后兼容的别名
-# ============================================================================
-
-# 保持与旧代码的兼容性
-_ind2id = jit_cell_atom_to_supercell_index
-_id2ind = jit_supercell_index_to_cell_atom
-_triplet_in_list = jit_triplet_in_list
-_triplets_are_equal = jit_triplets_equal
-_build_transformationarray3 = jit_build_transformation_array
-_build_ijv_thirdorder = jit_build_sparse_ifc_indices
-_build_ifc3_coords_vals_list = jit_build_full_ifc_coordinates

@@ -34,8 +34,8 @@ class ThirdOrderIFC:
     supercell_structure: "SupercellStructure"
     cutoff_range: float
     distance_matrix: NDArray[np.float64]
-    equivalent_count: NDArray[np.intc]
-    shift_vectors: NDArray[np.intc]
+    equivalent_count: NDArray[np.int64]
+    shift_vectors: NDArray[np.int64]
     
     @property
     def num_primitive_atoms(self) -> int:

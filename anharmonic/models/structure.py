@@ -17,7 +17,7 @@ class CrystalStructure:
     晶体结构数据类
     
     Attributes:
-        lattice_vectors: 晶格矢量 (3, 3)，单位 nm，列向量形式
+        lattice_vectors: 晶格矢量 (3, 3), 单位 nm, 列向量形式
         positions: 原子分数坐标 (3, N)
         elements: 元素符号列表（按种类分组）
         atom_counts: 每种元素的原子数量
@@ -26,7 +26,7 @@ class CrystalStructure:
     lattice_vectors: NDArray[np.float64]
     positions: NDArray[np.float64]
     elements: list[str]
-    atom_counts: NDArray[np.intc]
+    atom_counts: NDArray[np.int64]
     atom_types: list[int]
     
     @property
@@ -39,26 +39,31 @@ class CrystalStructure:
         """元素种类数"""
         return len(self.elements)
     
-    def to_dict(self) -> dict:
-        """转换为旧版字典格式（兼容性）"""
-        return {
-            "lattvec": self.lattice_vectors,
-            "positions": self.positions,
-            "elements": self.elements,
-            "numbers": self.atom_counts,
-            "types": self.atom_types,
-        }
-    
-    @classmethod
-    def from_dict(cls, data: dict) -> "CrystalStructure":
-        """从旧版字典格式创建"""
-        return cls(
-            lattice_vectors=data["lattvec"],
-            positions=data["positions"],
-            elements=data["elements"],
-            atom_counts=data["numbers"],
-            atom_types=data["types"],
+    def to_atoms(self, calculator=None):
+        """
+        转换为 ASE Atoms 对象
+        
+        Args:
+            calculator: ASE 计算器（可选）
+            
+        Returns:
+            ASE Atoms 对象
+        """
+        from ase import Atoms
+        
+        symbols = np.repeat(self.elements, self.atom_counts).tolist()
+        
+        atoms = Atoms(
+            symbols=symbols,
+            scaled_positions=self.positions.T,
+            cell=self.lattice_vectors.T * 10.0,  # nm -> Angstrom
+            pbc=True,
         )
+        
+        if calculator is not None:
+            atoms.calc = calculator
+        
+        return atoms
 
 
 @dataclass
@@ -66,7 +71,7 @@ class SupercellStructure(CrystalStructure):
     """
     超胞结构数据类
     
-    继承自 CrystalStructure，添加超胞特有属性
+    继承自 CrystalStructure, 添加超胞特有属性
     
     Attributes:
         grid_size: 超胞扩展倍数 (na, nb, nc)
@@ -93,24 +98,3 @@ class SupercellStructure(CrystalStructure):
         if self.primitive is not None:
             return self.primitive.num_atoms
         return self.num_atoms // (self.na * self.nb * self.nc)
-    
-    def to_dict(self) -> dict:
-        """转换为旧版字典格式（兼容性）"""
-        result = super().to_dict()
-        result["na"] = self.na
-        result["nb"] = self.nb
-        result["nc"] = self.nc
-        return result
-    
-    @classmethod
-    def from_dict(cls, data: dict, primitive: Optional[CrystalStructure] = None) -> "SupercellStructure":
-        """从旧版字典格式创建"""
-        return cls(
-            lattice_vectors=data["lattvec"],
-            positions=data["positions"],
-            elements=data["elements"],
-            atom_counts=data["numbers"],
-            atom_types=data["types"],
-            grid_size=(data.get("na", 1), data.get("nb", 1), data.get("nc", 1)),
-            primitive=primitive,
-        )

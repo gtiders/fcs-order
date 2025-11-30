@@ -22,6 +22,7 @@ from anharmonic.core.jit_kernels import (
 
 if TYPE_CHECKING:
     from anharmonic.core.wedge import TripletWedge
+    from anharmonic.models.structure import CrystalStructure, SupercellStructure
 
 
 class IFCReconstructor:
@@ -37,8 +38,8 @@ class IFCReconstructor:
         partial_force_constants: NDArray[np.float64],
         wedge: TripletWedge,
         irreducible_displacements: list[tuple[int, int, int, int]],
-        primitive: dict,
-        supercell: dict,
+        primitive: CrystalStructure,
+        supercell: SupercellStructure,
     ) -> sparse.COO:
         """
         从部分力常数重构完整的三阶力常数矩阵
@@ -47,15 +48,15 @@ class IFCReconstructor:
             partial_force_constants: 部分力常数 (3, nirred, ntot)
             wedge: Wedge 约简器对象
             irreducible_displacements: 不可约位移列表
-            primitive: 原胞结构字典
-            supercell: 超胞结构字典
+            primitive: 原胞结构
+            supercell: 超胞结构
             
         Returns:
             完整的三阶力常数矩阵 (3, 3, 3, natoms, ntot, ntot)
         """
         num_triplet_classes = wedge.num_triplet_classes
-        num_primitive_atoms = len(primitive["types"])
-        num_supercell_atoms = len(supercell["types"])
+        num_primitive_atoms = primitive.num_atoms
+        num_supercell_atoms = supercell.num_atoms
         
         # 构建初始稀疏矩阵
         initial_ifc = sparse.zeros(
@@ -65,9 +66,9 @@ class IFCReconstructor:
         
         # 累积独立基数量
         accumulated_independent = np.insert(
-            np.cumsum(wedge.independent_basis_count[:num_triplet_classes], dtype=np.intc),
+            np.cumsum(wedge.independent_basis_count[:num_triplet_classes], dtype=np.int64),
             0,
-            np.zeros(1, dtype=np.intc),
+            np.zeros(1, dtype=np.int64),
         )
         total_independent = accumulated_independent[-1]
         
@@ -104,11 +105,11 @@ class IFCReconstructor:
         # 构建三元组类索引和等价索引数组
         triplet_class_indices = -np.ones(
             (num_primitive_atoms, num_supercell_atoms, num_supercell_atoms),
-            dtype=np.intc
+            dtype=np.int64
         )
         equivalent_indices = -np.ones(
             (num_primitive_atoms, num_supercell_atoms, num_supercell_atoms),
-            dtype=np.intc
+            dtype=np.int64
         )
         
         for class_idx in range(num_triplet_classes):
@@ -216,33 +217,3 @@ class IFCReconstructor:
         return force_constants + compensation
 
 
-# 向后兼容的函数
-def reconstruct_ifcs(
-    phipart: NDArray[np.float64],
-    wedge: TripletWedge,
-    list4: list[tuple[int, int, int, int]],
-    poscar: dict,
-    sposcar: dict,
-) -> sparse.COO:
-    """
-    向后兼容的重构函数
-    
-    从不可约力常数重构完整的三阶力常数矩阵。
-    
-    Args:
-        phipart: 部分力常数 (3, nirred, ntot)
-        wedge: Wedge 约简器对象
-        list4: 不可约位移列表
-        poscar: 原胞结构字典
-        sposcar: 超胞结构字典
-        
-    Returns:
-        完整的三阶力常数矩阵
-    """
-    return IFCReconstructor.reconstruct(
-        partial_force_constants=phipart,
-        wedge=wedge,
-        irreducible_displacements=list4,
-        primitive=poscar,
-        supercell=sposcar,
-    )

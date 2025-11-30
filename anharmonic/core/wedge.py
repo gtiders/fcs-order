@@ -34,7 +34,7 @@ TRIPLET_PERMUTATIONS = np.array([
     [0, 2, 1],
     [1, 2, 0],
     [2, 0, 1],
-], dtype=np.intc)
+], dtype=np.int64)
 
 
 class TripletWedge:
@@ -56,12 +56,12 @@ class TripletWedge:
     
     def __init__(
         self,
-        primitive: CrystalStructure | dict,
-        supercell: SupercellStructure | dict,
+        primitive: CrystalStructure,
+        supercell: SupercellStructure,
         symmetry: SymmetryAnalyzer,
         distance_matrix: NDArray[np.float64],
-        equivalent_count_matrix: NDArray[np.intc],
-        shift_vectors: NDArray[np.intc],
+        equivalent_count_matrix: NDArray[np.int64],
+        shift_vectors: NDArray[np.int64],
         cutoff_range: float,
     ):
         """
@@ -76,16 +76,8 @@ class TripletWedge:
             shift_vectors: 位移矢量 (natoms, ntot, max_equiv)
             cutoff_range: 截断距离 (nm)
         """
-        # 支持字典格式
-        if isinstance(primitive, dict):
-            self._primitive = primitive
-        else:
-            self._primitive = primitive.to_dict()
-        
-        if isinstance(supercell, dict):
-            self._supercell = supercell
-        else:
-            self._supercell = supercell.to_dict()
+        self._primitive = primitive
+        self._supercell = supercell
         
         self._symmetry = symmetry
         self._distance_matrix = distance_matrix
@@ -190,20 +182,20 @@ class TripletWedge:
         cutoff_squared = self._cutoff_range * self._cutoff_range
         
         grid_size = np.array([
-            self._supercell["na"],
-            self._supercell["nb"],
-            self._supercell["nc"],
-        ], dtype=np.intc)
+            self._supercell.na,
+            self._supercell.nb,
+            self._supercell.nc,
+        ], dtype=np.int64)
         
         num_syms = self._symmetry.num_symmetry_operations
-        num_primitive_atoms = len(self._primitive["types"])
-        num_supercell_atoms = len(self._supercell["types"])
+        num_primitive_atoms = self._primitive.num_atoms
+        num_supercell_atoms = self._supercell.num_atoms
         
-        lattice = self._supercell["lattvec"]
-        cartesian_positions = np.dot(lattice, self._supercell["positions"])
+        lattice = self._supercell.lattice_vectors
+        cartesian_positions = np.dot(lattice, self._supercell.positions)
         
         # 构建27个邻居位移
-        shifts_27 = np.empty((27, 3), dtype=np.intc)
+        shifts_27 = np.empty((27, 3), dtype=np.int64)
         idx = 0
         for i in range(-1, 2):
             for j in range(-1, 2):
@@ -437,10 +429,3 @@ class TripletWedge:
     def transformationarray(self) -> NDArray[np.float64]:
         return self.transformation_array
     
-    def build_list4(self) -> list[tuple[int, int, int, int]]:
-        """向后兼容的别名"""
-        return self.get_irreducible_displacements()
-
-
-# 向后兼容的别名
-Wedge = TripletWedge

@@ -12,45 +12,30 @@ from numba import jit
 EPSILON = 1e-10
 
 
+@jit(nopython=True)
 def gaussian_elimination(
-    coefficient_matrix: NDArray[np.float64],
-) -> tuple[NDArray[np.float64], NDArray[np.intc]]:
+    matrix: NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.int64]]:
     """
-    特化的高斯消元法
+    特化的高斯消元法 (JIT 编译)
     
     用于确定线性方程组的独立变量和相关变量，
     并构建从独立变量到相关变量的变换矩阵。
     
     Args:
-        coefficient_matrix: 系数矩阵 (m, n)，会被原地修改
+        matrix: 系数矩阵 (m, n)
         
     Returns:
         transformation_matrix: 变换矩阵 (n, n_independent)
         independent_indices: 独立变量的列索引
     """
-    matrix = np.ascontiguousarray(coefficient_matrix, dtype=np.float64)
-    return _gaussian_elimination_core(matrix)
-
-
-@jit(nopython=True)
-def _gaussian_elimination_core(
-    matrix: NDArray[np.float64],
-) -> tuple[NDArray[np.float64], NDArray[np.intc]]:
-    """
-    高斯消元核心实现 (JIT 编译)
-    
-    Args:
-        matrix: 系数矩阵 (num_rows, num_cols)
-        
-    Returns:
-        transformation_matrix: 变换矩阵
-        independent_indices: 独立变量索引
-    """
+    # 确保数组连续且不修改原数组
+    matrix = np.ascontiguousarray(matrix)
     num_rows, num_cols = matrix.shape
     
     # 存储相关和独立变量的索引
-    dependent_indices = np.empty(num_cols, dtype=np.intc)
-    independent_indices = np.empty(num_cols, dtype=np.intc)
+    dependent_indices = np.empty(num_cols, dtype=np.int64)
+    independent_indices = np.empty(num_cols, dtype=np.int64)
     transformation_matrix = np.zeros((num_cols, num_cols), dtype=np.float64)
     
     current_row = 0
@@ -107,7 +92,3 @@ def _gaussian_elimination_core(
         transformation_matrix[independent_indices[j], j] = 1.0
     
     return transformation_matrix, independent_indices[:num_independent]
-
-
-# 保持向后兼容的别名
-gaussian = gaussian_elimination

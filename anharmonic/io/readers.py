@@ -7,8 +7,8 @@
 from pathlib import Path
 from typing import Union
 
+import ase
 from ase import Atoms
-from ase.io import read as ase_read
 
 from anharmonic.models.structure import CrystalStructure
 
@@ -36,7 +36,7 @@ class StructureReader:
             CrystalStructure 对象
         """
         fmt = None if format == "auto" else format
-        atoms = ase_read(str(file_path), format=fmt)
+        atoms = ase.io.read(str(file_path), format=fmt)
         return StructureReader.from_ase_atoms(atoms)
     
     @staticmethod
@@ -73,7 +73,7 @@ class StructureReader:
             lattice_vectors=lattice_vectors,
             positions=positions,
             elements=elements,
-            atom_counts=np.array(atom_counts, dtype=np.intc),
+            atom_counts=np.array(atom_counts, dtype=np.int64),
             atom_types=atom_types,
         )
     
