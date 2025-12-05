@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, Optional
 
 import typer
 from ase.calculators.calculator import Calculator
@@ -20,19 +20,17 @@ class CalculatorConfig:
     def __init__(
         self,
         name: str,
-        required_params: dict[str, str],
-        optional_params: dict[str, tuple[Any, str]],
+        params: dict[str, tuple[Any, str]],
     ) -> None:
         """Initialize calculator configuration.
 
         Args:
             name: Calculator type name.
-            required_params: Dict of {param_name: description}.
-            optional_params: Dict of {param_name: (default_value, description)}.
+            params: Dict of {param_name: (default_value, description)}.
+                   Use ... (Ellipsis) for required parameters without defaults.
         """
         self._name = name
-        self._required_params = required_params
-        self._optional_params = optional_params
+        self._params = params
 
     @property
     def name(self) -> str:
@@ -40,14 +38,13 @@ class CalculatorConfig:
         return self._name
 
     @property
-    def required_params(self) -> dict[str, str]:
-        """Get required parameters."""
-        return self._required_params
+    def params(self) -> dict[str, tuple[Any, str]]:
+        """Get calculator parameters.
 
-    @property
-    def optional_params(self) -> dict[str, tuple[Any, str]]:
-        """Get optional parameters."""
-        return self._optional_params
+        Returns:
+            Dict of {param_name: (default_value, description)}.
+        """
+        return self._params
 
 
 class CalculatorFactory:
@@ -125,8 +122,7 @@ class CalculatorFactory:
     "nep",
     CalculatorConfig(
         name="nep",
-        required_params={"potential": "Path to NEP model file"},
-        optional_params={"device": ("cpu", "Compute device (cpu or cuda)")},
+        params={"device": ("cpu", "Compute device (cpu or cuda)")},
     ),
 )
 def _make_nep(potential: str, device: str = "cpu", **kwargs) -> Calculator:
@@ -154,12 +150,22 @@ def _make_nep(potential: str, device: str = "cpu", **kwargs) -> Calculator:
     "dp",
     CalculatorConfig(
         name="dp",
-        required_params={"potential": "Path to DeepMD model file"},
-        optional_params={},
+        params={},
     ),
 )
 def _make_dp(potential: str, **kwargs) -> Calculator:
-    """Create a DeepMD calculator."""
+    """Create a DeepMD calculator.
+
+    Args:
+        potential: Path to DeepMD model file.
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        DeepMD calculator instance.
+
+    Raises:
+        ImportError: If deepmd is not installed.
+    """
     try:
         from deepmd.calculator import DP  # type: ignore
     except ImportError as e:
@@ -171,12 +177,22 @@ def _make_dp(potential: str, **kwargs) -> Calculator:
     "polymlp",
     CalculatorConfig(
         name="polymlp",
-        required_params={"potential": "Path to PolyMLP model file"},
-        optional_params={},
+        params={},
     ),
 )
 def _make_polymlp(potential: str, **kwargs) -> Calculator:
-    """Create a PolyMLP ASE calculator."""
+    """Create a PolyMLP ASE calculator.
+
+    Args:
+        potential: Path to PolyMLP model file.
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        PolyMLP calculator instance.
+
+    Raises:
+        ImportError: If pypolymlp is not installed.
+    """
     try:
         from pypolymlp.calculator.utils.ase_calculator import (  # type: ignore
             PolymlpASECalculator,
@@ -190,41 +206,52 @@ def _make_polymlp(potential: str, **kwargs) -> Calculator:
     "mtp",
     CalculatorConfig(
         name="mtp",
-        required_params={"potential": "Path to MTP model file"},
-        optional_params={
-            "mtp_exe": ("mlp", "MLP executable name"),
-            "unique_elements": (None, "List of unique elements"),
-        },
+        params={},
     ),
 )
 def _make_mtp(
     potential: str,
-    mtp_exe: str = "mlp",
-    unique_elements: Optional[Sequence[str]] = None,
+    structure: Any = None,
     **kwargs,
 ) -> Calculator:
-    """
-    Create an internal MTP calculator wrapper.
-    
+    """Create an internal MTP calculator wrapper.
+
     Warning:
-        This MTP calculator only supports mlp2.x versions.
+        This MTP calculator only supports mlip2.x versions.
+
+    Args:
+        potential: Path to MTP model file.
+        structure: ASE Atoms object for extracting unique elements.
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        MTP calculator instance.
+
+    Raises:
+        ImportError: If MTP calculator cannot be imported.
+        ValueError: If structure is not provided.
     """
     try:
         from fcsorder.calc.mtpcalc import MTP
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
     
+    if structure is None:
+        raise ValueError("structure is required for MTP calculator to extract unique elements")
+    
+    # Extract unique elements from structure, preserving order of first appearance
+    unique_elements = list(dict.fromkeys(structure.get_chemical_symbols()))
+    
     # Print warning message in red
     typer.secho(
-        "⚠️  Warning: This MTP calculator only supports mlp2.x versions",
+        "⚠️  Warning: This MTP calculator only supports mlip2.x versions",
         fg=typer.colors.RED,
         bold=True,
     )
     
     return MTP(
-        mtp_path=potential,
-        mtp_exe=mtp_exe,
-        unique_elements=list(unique_elements or []),
+        potential=potential,
+        unique_elements=unique_elements,
     )
 
 
@@ -232,15 +259,26 @@ def _make_mtp(
     "hiphive",
     CalculatorConfig(
         name="hiphive",
-        required_params={
-            "potential": "Path to hiphive ForceConstantPotential file",
-            "supercell": "ASE Atoms object for supercell",
+        params={
+            "supercell": (None, "ASE Atoms object for supercell"),
         },
-        optional_params={},
     ),
 )
 def _make_hiphive(potential: str, supercell: Any = None, **kwargs) -> Calculator:
-    """Create a hiphive ForceConstantCalculator from a supercell."""
+    """Create a hiphive ForceConstantCalculator from a supercell.
+
+    Args:
+        potential: Path to hiphive ForceConstantPotential file.
+        supercell: ASE Atoms object for the supercell (required).
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        hiphive ForceConstantCalculator instance.
+
+    Raises:
+        ValueError: If supercell is not provided.
+        ImportError: If hiphive is not installed.
+    """
     if supercell is None:
         raise ValueError("supercell is required for hiphive calculator")
     try:
@@ -257,8 +295,7 @@ def _make_hiphive(potential: str, supercell: Any = None, **kwargs) -> Calculator
     "tace",
     CalculatorConfig(
         name="tace",
-        required_params={"model_path": "Path to TACE model checkpoint"},
-        optional_params={
+        params={
             "device": ("cpu", "Compute device (cpu/cuda)"),
             "dtype": ("float64", "Tensor dtype (float32/float64)"),
             "level": (0, "Fidelity level"),
@@ -269,12 +306,22 @@ def _make_tace(
     model_path: str,
     device: str = "cpu",
     dtype: Optional[str] = "float64",
-    extra_compute_first_derivative: Optional[bool] = None,
-    extra_compute_second_derivative: Optional[bool] = None,
-    level: int = 0,
     **kwargs,
 ) -> Calculator:
-    """Create a TACECalculator."""
+    """Create a TACECalculator.
+
+    Args:
+        model_path: Path to TACE model checkpoint.
+        device: Compute device ("cpu" or "cuda"). Defaults to "cpu".
+        dtype: Tensor dtype ("float32" or "float64"). Defaults to "float64".
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        TACE calculator instance.
+
+    Raises:
+        ImportError: If tace is not installed.
+    """
     try:
         from tace.interface.ase.calculator import TACECalculator  # type: ignore
     except ImportError as e:
@@ -283,9 +330,6 @@ def _make_tace(
         model_path=model_path,
         device=device,
         dtype=dtype,
-        extra_compute_first_derivative=extra_compute_first_derivative,
-        extra_compute_second_derivative=extra_compute_second_derivative,
-        level=level,
     )
 
 
@@ -293,8 +337,7 @@ def _make_tace(
     "mace",
     CalculatorConfig(
         name="mace",
-        required_params={"model_path": "Path to MACE model file"},
-        optional_params={
+        params={
             "device": ("cpu", "Compute device (cpu/cuda)"),
             "default_dtype": ("float64", "Default tensor dtype"),
         },
@@ -306,7 +349,20 @@ def _make_mace(
     default_dtype: str = "float64",
     **kwargs,
 ) -> Calculator:
-    """Create a MACE calculator."""
+    """Create a MACE calculator.
+
+    Args:
+        model_path: Path to MACE model file.
+        device: Compute device ("cpu" or "cuda"). Defaults to "cpu".
+        default_dtype: Default tensor dtype. Defaults to "float64".
+        **kwargs: Additional arguments (ignored).
+
+    Returns:
+        MACE calculator instance.
+
+    Raises:
+        ImportError: If mace is not installed.
+    """
     try:
         from mace.calculators import MACECalculator  # type: ignore
     except ImportError as e:

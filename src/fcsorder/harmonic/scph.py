@@ -79,31 +79,30 @@ def analyze_scph_convergence(temperature: float) -> None:
 
 
 def run_scph(
-    primcell: Atoms,
+    structure: Atoms,
     calc: Calculator,
     supercell: Atoms,
     temperatures: list[float],
     cutoff: float,
     alpha: float = 0.2,
-    n_iterations: int = 100,
-    n_structures: int = 50,
-    is_qm: bool = True,
-    imag_freq_factor: float = 1.0,
+    num_iterations: int = 100,
+    num_structures: int = 50,
+    use_qm_statistics: bool = True,
+    imaginary_frequency_factor: float = 1.0,
 ) -> None:
-    """
-    Run the self-consistent phonon calculation.
+    """Run the self-consistent phonon calculation.
 
     Args:
-        primcell: The primitive cell structure.
+        structure: The primitive cell structure (ASE Atoms object).
         calc: The calculator for computing forces.
-        supercell: The supercell structure.
+        supercell: The supercell structure (ASE Atoms object).
         temperatures: List of temperatures for the calculation.
         cutoff: Cutoff radius for the cluster space.
         alpha: The mixing parameter for SCPH iterations. Defaults to 0.2.
-        n_iterations: The number of iterations for SCPH. Defaults to 100.
-        n_structures: The number of structures to generate. Defaults to 50.
-        is_qm: Whether to use quantum statistics. Defaults to True.
-        imag_freq_factor: Factor for handling imaginary frequencies. Defaults to 1.0.
+        num_iterations: The number of iterations for SCPH. Defaults to 100.
+        num_structures: The number of structures to generate. Defaults to 50.
+        use_qm_statistics: Whether to use quantum-mechanical statistics. Defaults to True.
+        imaginary_frequency_factor: Factor for treating imaginary frequencies. Defaults to 1.0.
 
     Returns:
         None: Results are saved to files in the 'fcps/' and 'scph_trajs/' directories.
@@ -120,7 +119,7 @@ def run_scph(
 
     # Setup parameters
     cutoff_list = [cutoff]
-    cluster_space = ClusterSpace(primcell, cutoff_list)
+    cluster_space = ClusterSpace(structure, cutoff_list)
 
     # Run SCPH
     os.makedirs("scph_trajs/", exist_ok=True)
@@ -133,10 +132,10 @@ def run_scph(
             cs=cluster_space,
             T=temperature,
             alpha=alpha,
-            n_iterations=n_iterations,
-            n_structures=n_structures,
-            QM_statistics=is_qm,
-            imag_freq_factor=imag_freq_factor,
+            n_iterations=num_iterations,
+            n_structures=num_structures,
+            QM_statistics=use_qm_statistics,
+            imag_freq_factor=imaginary_frequency_factor,
         )
         force_constant_potential = ForceConstantPotential(cluster_space, parameter_trajectory[-1])
         force_constant_potential.get_force_constants(supercell).write_to_phonopy(
@@ -208,29 +207,29 @@ def scph(
         "-a",
         help="Mixing parameter for SCPH iterations",
     ),
-    n_iterations: int = typer.Option(
+    num_iterations: int = typer.Option(
         100,
-        "--n-iterations",
+        "--num-iterations",
         "-i",
         help="Number of SCPH iterations",
         min=1,
     ),
-    n_structures: int = typer.Option(
+    num_structures: int = typer.Option(
         50,
-        "--n-structures",
+        "--num-structures",
         "-n",
         help="Number of structures to generate",
         min=1,
     ),
-    is_qm: bool = typer.Option(
+    use_qm_statistics: bool = typer.Option(
         True,
-        "--is-qm/--no-qm",
-        help="Use quantum statistics",
+        "--use-qm-statistics/--no-qm-statistics",
+        help="Use quantum-mechanical statistics",
     ),
-    imag_freq_factor: float = typer.Option(
+    imaginary_frequency_factor: float = typer.Option(
         1.0,
-        "--imag-freq-factor",
-        help="Factor for imaginary frequencies",
+        "--imaginary-frequency-factor",
+        help="Factor for treating imaginary frequencies",
         min=0.0,
     ),
     device: str = typer.Option(
@@ -255,17 +254,17 @@ def scph(
         scph 2 2 2 --calculator tace --potential model.pt --temperatures 100 --cutoff 5.0 --device cuda
     """
     # Parse temperatures
-    T = parse_temperatures(temperatures)
+    temperature_list = parse_temperatures(temperatures)
     
     # Read structure and build supercell
     typer.echo(f"Reading structure from {structure_file}")
-    structure_data = StructureData.from_file(structure_file)
-    primcell = structure_data.to_atoms()
+    structure = StructureData.from_file(structure_file)
+    structure_atoms = structure.to_atoms()
     
     # Build supercell using na, nb, nc
-    supercell_data = structure_data.make_supercell(na, nb, nc)
-    supercell = supercell_data.to_atoms()
-    supercell.write("scph_SPOSCAR", format="vasp", direct=True)
+    supercell_structure = structure.make_supercell(na, nb, nc)
+    supercell_atoms = supercell_structure.to_atoms()
+    supercell_atoms.write("scph_SPOSCAR", format="vasp", direct=True)
     typer.echo("Supercell written to scph_SPOSCAR")
     
     # Build calculator arguments - pass all parameters, calculators use what they need
@@ -273,8 +272,8 @@ def scph(
         "potential": potential,
         "device": device,
         "dtype": dtype,
-        "supercell": supercell, 
-        "primcell":primcell,
+        "supercell": supercell_atoms, 
+        "structure": structure_atoms,
     }
     
     # Create calculator
@@ -287,19 +286,19 @@ def scph(
         sys.exit(1)
     
     # Run SCPH
-    typer.echo(f"Starting SCPH calculation with {len(T)} temperature(s)...")
+    typer.echo(f"Starting SCPH calculation with {len(temperature_list)} temperature(s)...")
     try:
         run_scph(
-            primcell=primcell,
+            structure=structure_atoms,
             calc=calc,
-            supercell=supercell,
-            temperatures=T,
+            supercell=supercell_atoms,
+            temperatures=temperature_list,
             cutoff=cutoff,
             alpha=alpha,
-            n_iterations=n_iterations,
-            n_structures=n_structures,
-            is_qm=is_qm,
-            imag_freq_factor=imag_freq_factor,
+            num_iterations=num_iterations,
+            num_structures=num_structures,
+            use_qm_statistics=use_qm_statistics,
+            imaginary_frequency_factor=imaginary_frequency_factor,
         )
         typer.secho("✓ SCPH calculation completed successfully", fg=typer.colors.GREEN)
     except Exception as e:
