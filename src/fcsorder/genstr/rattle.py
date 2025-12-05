@@ -1,14 +1,17 @@
-"""CLI for generating rattled structures using Monte Carlo rattle."""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""CLI for generating rattled structures using simple random displacements."""
 
 import numpy as np
 import typer
 
 from fcsorder.io.reader import StructureData
 from fcsorder.genstr.tools import plot_distributions
-from hiphive.structure_generation import generate_mc_rattled_structures
+from hiphive.structure_generation import generate_rattled_structures
 
 
-def monte_rattle_cli(
+def rattle_cli(
     structure_file: str = typer.Argument(
         ..., help="Path to structure file (POSCAR, CIF, etc.)"
     ),
@@ -24,33 +27,6 @@ def monte_rattle_cli(
         "--rattle-amplitude",
         "-a",
         help="Rattle amplitude (standard deviation in Angstrom)",
-        min=0.0,
-    ),
-    min_distance: float = typer.Option(
-        1.0,
-        "--min-distance",
-        "-d",
-        help="Minimum interatomic distance for MC acceptance",
-        min=0.0,
-    ),
-    error_width: float = typer.Option(
-        0.1,
-        "--error-width",
-        "-w",
-        help="Width of error function for MC acceptance",
-        min=0.0,
-    ),
-    num_iterations: int = typer.Option(
-        10,
-        "--num-iterations",
-        "-i",
-        help="Number of Monte Carlo iterations per atom",
-        min=1,
-    ),
-    max_displacement: float = typer.Option(
-        2.0,
-        "--max-displacement",
-        help="Maximum allowed displacement magnitude for any atom",
         min=0.0,
     ),
     random_seed: int = typer.Option(
@@ -84,11 +60,11 @@ def monte_rattle_cli(
         help="Maximum volume ratio for strain (when --apply-strain is enabled)",
     ),
 ):
-    """Generate Monte Carlo rattled structures with distance constraints.
+    """Generate rattled structures using simple random displacements.
 
-    Structures are generated using the Monte Carlo rattle algorithm with the
-    specified rattle amplitude and minimum distance constraints. Optionally,
-    random volumetric strain can be applied to each generated structure.
+    Structures are generated using random Gaussian displacements with the
+    specified rattle amplitude. Optionally, random volumetric strain can be
+    applied to each generated structure.
     """
     # Validate output format
     fmt = output_format.lower()
@@ -119,16 +95,12 @@ def monte_rattle_cli(
     # Calculate zero-padding width for indices
     index_width = len(str(num_structures)) if num_structures > 0 else 1
 
-    # Generate MC-rattled structures
-    structures = generate_mc_rattled_structures(
+    # Generate rattled structures
+    structures = generate_rattled_structures(
         atoms=atoms,
         n_structures=num_structures,
         rattle_std=rattle_amplitude,
-        d_min=min_distance,
         seed=random_seed,
-        width=error_width,
-        n_iter=num_iterations,
-        max_disp=max_displacement,
     )
 
     # Write structures and apply strain if requested
@@ -142,7 +114,7 @@ def monte_rattle_cli(
         if output_prefix is not None:
             filename = f"{output_prefix}{i + 1:0{index_width}d}"
         else:
-            filename = f"mc_rattle_{i + 1:0{index_width}d}"
+            filename = f"rattle_{i + 1:0{index_width}d}"
 
         # Write structure
         structure_data_out = StructureData(atoms=structure)
@@ -150,3 +122,7 @@ def monte_rattle_cli(
 
     # Plot distributions
     plot_distributions(structures, reference_positions, rattle_amplitude)
+
+
+if __name__ == "__main__":
+    typer.run(rattle_cli)
