@@ -27,9 +27,7 @@ class MTP(Calculator):
         nolabel: Whether to use a label for the calculator.
 
     Args:
-        mtp_path: Path to the MTP potential file. Default is "pot.mtp".
-        mtp_exe: Path to the MLP executable. Default is "mlp".
-        tmp_folder: Temporary folder for intermediate files. Default is system temp directory.
+        potential: Path to the MTP potential file. Default is "pot.mtp".
         unique_elements: List of unique element symbols in the system. Required for calculations.
         **kwargs: Additional arguments passed to the parent Calculator class.
     """
@@ -39,24 +37,20 @@ class MTP(Calculator):
 
     def __init__(
         self,
-        mtp_path: str = "pot.mtp",
-        mtp_exe: str = "mlp",
-        tmp_folder: Optional[str] = None,
+        potential: str = "pot.mtp",
         unique_elements: Optional[list[str]] = None,
         **kwargs,
     ) -> None:
         """Initialize the MTP calculator.
 
         Args:
-            mtp_path: Path to the MTP potential file.
-            mtp_exe: Path to the MLP executable.
-            tmp_folder: Temporary folder for intermediate files.
+            potential: Path to the MTP potential file.
             unique_elements: List of unique element symbols.
             **kwargs: Additional arguments for the parent Calculator.
         """
-        self._mtp_path = mtp_path
-        self._mtp_exe = mtp_exe
-        self._tmp_folder = tmp_folder or tempfile.gettempdir()
+        self._potential = potential
+        self._mtp_exe = "mlp"  # Default MLP executable name
+        self._tmp_folder = tempfile.gettempdir()  # Use system temporary directory
         self._unique_elements = unique_elements
         self._numbers = None
         Calculator.__init__(self, **kwargs)
@@ -101,7 +95,7 @@ class MTP(Calculator):
         atoms_to_cfg(atoms.copy(), input_file, self._unique_elements)
 
         subprocess.run(
-            [self._mtp_exe, "calc-efs", self._mtp_path, input_file, output_file],
+            [self._mtp_exe, "calc-efs", self._potential, input_file, output_file],
             check=True,
             capture_output=True,
         )
