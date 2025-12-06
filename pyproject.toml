@@ -21,7 +21,7 @@ license = "Apache-2.0"
 
 
 [project.scripts]
-forcekit = "fcsorder.commands:main"
+fcsorder = "fcsorder.commands:main"
 
 
 [project.optional-dependencies]
