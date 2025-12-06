@@ -208,14 +208,14 @@ def scph(
         help="Mixing parameter for SCPH iterations",
     ),
     num_iterations: int = typer.Option(
-        100,
+        30,
         "--num-iterations",
         "-i",
         help="Number of SCPH iterations",
         min=1,
     ),
     num_structures: int = typer.Option(
-        50,
+        500,
         "--num-structures",
         "-n",
         help="Number of structures to generate",
