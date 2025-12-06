@@ -1,337 +1,808 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Core functions for fourth-order force constant calculation and reconstruction.
+
+This module provides:
+- QuartetWedge: Class for symmetry-based IFC reduction (formerly Wedge)
+- reconstruct_ifcs: Reconstruct full IFC tensor from irreducible set
+- gaussian_elimination: Specialized Gaussian elimination for finding independent basis
+- Numba-optimized helper functions for sparse matrix construction
+"""
+
+from __future__ import annotations
+
+from math import fabs
+from typing import TYPE_CHECKING, Tuple
+
 import numpy as np
 import scipy as sp
 import sparse
 import typer
-from rich.progress import track
+from numba import jit, types
+from numba.typed import List
+from rich.progress import Progress
 
-from fcsorder.core.domain.symmetry import SymmetryOperations
-from fcsorder.core.domain.wedge4 import Wedge
-from fcsorder.core.domain.gaussian import gaussian
+from fcsorder.core.symmetry import SymmetryOperations
 
-from fcsorder.io.io_abstraction import read_structure
-from fcsorder.core.domain.common import (
-    SYMPREC,
-    _parse_cutoff,
-    _validate_cutoff,
-    calc_dists,
-    calc_frange,
-    gen_SPOSCAR,
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+
+# =============================================================================
+# Constants
+# =============================================================================
+
+GAUSSIAN_EPS = 1e-10
+
+# 24 permutations of 4 elements (order matches old Fortran code)
+QUARTET_PERMUTATIONS = np.array(
+    [
+        [0, 1, 2, 3],
+        [0, 2, 1, 3],
+        [0, 1, 3, 2],
+        [0, 3, 1, 2],
+        [0, 3, 2, 1],
+        [0, 2, 3, 1],
+        [1, 0, 2, 3],
+        [1, 0, 3, 2],
+        [1, 2, 0, 3],
+        [1, 2, 3, 0],
+        [1, 3, 0, 2],
+        [1, 3, 2, 0],
+        [2, 0, 1, 3],
+        [2, 0, 3, 1],
+        [2, 1, 0, 3],
+        [2, 1, 3, 0],
+        [2, 3, 0, 1],
+        [2, 3, 1, 0],
+        [3, 0, 1, 2],
+        [3, 0, 2, 1],
+        [3, 1, 0, 2],
+        [3, 1, 2, 0],
+        [3, 2, 0, 1],
+        [3, 2, 1, 0],
+    ],
+    dtype=np.intc,
 )
 
-from numba import jit
-from numba.typed import List
+
+# =============================================================================
+# Gaussian elimination
+# =============================================================================
 
 
 @jit(nopython=True)
-def _build_ifc4_coords_vals_list(
-    nlist,
-    nequi,
-    nindependentbasis,
-    vequilist,
-    naccumindependent,
-    transformationarray,
-    aphilist,
-):
-    """Build coordinate/value lists for 4th-order IFCs in nopython mode.
+def gaussian_elimination(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Find independent IFC basis via Gaussian elimination."""
+    n_rows, n_cols = matrix.shape
+    dependent = np.empty(n_cols, dtype=np.intc)
+    independent = np.empty(n_cols, dtype=np.intc)
+    basis_transform = np.zeros((n_cols, n_cols), dtype=np.double)
 
-    Returns 8 index lists (ll, mm, nn, aa1, e0, e1, e2, e3) and one value list.
-    """
+    current_row = 0
+    n_dependent = 0
+    n_independent = 0
 
-    ifc4_rows0 = List()
-    ifc4_rows1 = List()
-    ifc4_rows2 = List()
-    ifc4_rows3 = List()
-    ifc4_cols0 = List()
-    ifc4_cols1 = List()
-    ifc4_cols2 = List()
-    ifc4_cols3 = List()
-    ifc4_vals = List()
+    for col in range(min(n_rows, n_cols)):
+        col_values = matrix[:, col]
+        col_values[np.abs(col_values) < GAUSSIAN_EPS] = 0.0
 
-    for ii in range(nlist):
-        ne = nequi[ii]
-        nind = nindependentbasis[ii]
+        if current_row < n_rows:
+            for row in range(current_row + 1, n_rows):
+                if abs(matrix[row, col]) - abs(matrix[current_row, col]) > GAUSSIAN_EPS:
+                    tmp = matrix[current_row, col:n_cols].copy()
+                    matrix[current_row, col:n_cols] = matrix[row, col:n_cols]
+                    matrix[row, col:n_cols] = tmp
 
-        for jj in range(ne):
-            e0 = vequilist[0, jj, ii]
-            e1 = vequilist[1, jj, ii]
-            e2 = vequilist[2, jj, ii]
-            e3 = vequilist[3, jj, ii]
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            tribasisindex = ((ll * 3 + mm) * 3 + nn) * 3 + aa1
-                            for ix in range(nind):
+        if current_row < n_rows and abs(matrix[current_row, col]) > GAUSSIAN_EPS:
+            dependent[n_dependent] = col
+            n_dependent += 1
+            pivot = matrix[current_row, col]
+            if n_cols - 1 > col:
+                matrix[current_row, col + 1 : n_cols] /= pivot
+            matrix[current_row, col] = 1.0
+
+            for row in range(n_rows):
+                if row == current_row:
+                    continue
+                if n_cols - 1 > col:
+                    factor = matrix[row, col] / matrix[current_row, col]
+                    matrix[row, col + 1 : n_cols] -= (
+                        factor * matrix[current_row, col + 1 : n_cols]
+                    )
+                matrix[row, col] = 0.0
+
+            if current_row < n_rows - 1:
+                current_row += 1
+        else:
+            independent[n_independent] = col
+            n_independent += 1
+
+    for j in range(n_independent):
+        for i in range(n_dependent):
+            basis_transform[dependent[i], j] = -matrix[i, independent[j]]
+        basis_transform[independent[j], j] = 1.0
+
+    return basis_transform, independent[:n_independent]
+
+
+# =============================================================================
+# Numba helper functions
+# =============================================================================
+
+
+@jit(nopython=True)
+def _cell_atom_to_index(
+    cell: np.ndarray, species: int, grid: np.ndarray, n_species: int
+) -> int:
+    """Convert cell coordinates and species to supercell atom index."""
+    return (cell[0] + (cell[1] + cell[2] * grid[1]) * grid[0]) * n_species + species
+
+
+@jit(nopython=True)
+def _quartet_in_list(
+    quartet: np.ndarray, quartet_list: np.ndarray, n_list: int
+) -> bool:
+    """Check if quartet exists in the list."""
+    for i in range(n_list):
+        if (
+            quartet[0] == quartet_list[0, i]
+            and quartet[1] == quartet_list[1, i]
+            and quartet[2] == quartet_list[2, i]
+            and quartet[3] == quartet_list[3, i]
+        ):
+            return True
+    return False
+
+
+@jit(nopython=True)
+def _quartets_equal(q1: np.ndarray, q2: np.ndarray) -> bool:
+    """Check if two quartets are identical."""
+    for i in range(4):
+        if q1[i] != q2[i]:
+            return False
+    return True
+
+
+@jit(nopython=True)
+def _index_to_cell_atom(
+    grid: np.ndarray, n_species: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Create mapping from linear index to (cell, species)."""
+    n_total = grid[0] * grid[1] * grid[2] * n_species
+    cell_indices = np.empty((3, n_total), dtype=np.intc)
+    species_indices = np.empty(n_total, dtype=np.intc)
+    for idx in range(n_total):
+        tmp, species_indices[idx] = divmod(idx, n_species)
+        tmp, cell_indices[0, idx] = divmod(tmp, grid[0])
+        cell_indices[2, idx], cell_indices[1, idx] = divmod(tmp, grid[1])
+    return cell_indices, species_indices
+
+
+@jit(nopython=True)
+def _build_transformation_product(
+    transformation: np.ndarray,
+    transformation_aux: np.ndarray,
+    n_equivalent: np.ndarray,
+    n_independent_basis: np.ndarray,
+    n_list: int,
+    output: np.ndarray,
+) -> None:
+    """Compute product of transformation matrices for all equivalence classes."""
+    for idx in range(n_list):
+        n_equiv = n_equivalent[idx]
+        n_indep = n_independent_basis[idx]
+        for eq in range(n_equiv):
+            for k in range(81):
+                for l in range(n_indep):
+                    value = 0.0
+                    for aux in range(81):
+                        value += (
+                            transformation[k, aux, eq, idx]
+                            * transformation_aux[aux, l, idx]
+                        )
+                    if value != 0.0 and abs(value) < 1e-15:
+                        value = 0.0
+                    output[k, l, eq, idx] = value
+
+
+@jit(nopython=True)
+def _build_sparse_quartets(
+    quartet_class_idx: np.ndarray,
+    equiv_class_idx: np.ndarray,
+    accumulated_independent: np.ndarray,
+    n_atoms: int,
+    n_total: int,
+    n_list: int,
+    transformation_array: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Build COO sparse matrix triplets for IFC reconstruction."""
+    # Count total elements
+    total_count = 0
+    for i in range(n_atoms):
+        for j in range(n_total):
+            for _ in range(81):
+                for k in range(n_total):
+                    for l in range(n_total):
+                        for idx in range(n_list):
+                            if quartet_class_idx[i, j, k, l] == idx:
+                                total_count += (
+                                    accumulated_independent[idx + 1]
+                                    - accumulated_independent[idx]
+                                )
+
+    row_indices = np.empty(total_count, dtype=np.int64)
+    col_indices = np.empty(total_count, dtype=np.int64)
+    values = np.empty(total_count, dtype=np.float64)
+
+    count = 0
+    col_idx = 0
+    for i in range(n_atoms):
+        for j in range(n_total):
+            basis = 0
+            for _ in range(81):
+                for k in range(n_total):
+                    for l in range(n_total):
+                        for idx in range(n_list):
+                            if quartet_class_idx[i, j, k, l] == idx:
+                                start = accumulated_independent[idx]
+                                end = accumulated_independent[idx + 1]
+                                for s in range(start, end):
+                                    offset = s - start
+                                    eq = equiv_class_idx[i, j, k, l]
+                                    row_indices[count] = s
+                                    col_indices[count] = col_idx
+                                    values[count] = transformation_array[
+                                        basis, offset, eq, idx
+                                    ]
+                                    count += 1
+                basis += 1
+                col_idx += 1
+
+    return row_indices, col_indices, values
+
+
+@jit(nopython=True)
+def _build_full_ifc_coordinates(
+    n_list: int,
+    n_equivalent: np.ndarray,
+    n_independent_basis: np.ndarray,
+    equiv_list: np.ndarray,
+    accumulated_independent: np.ndarray,
+    transformation_array: np.ndarray,
+    phi_values: np.ndarray,
+) -> Tuple:
+    """Build coordinate lists for final sparse IFC tensor."""
+    c0 = List.empty_list(types.int64)
+    c1 = List.empty_list(types.int64)
+    c2 = List.empty_list(types.int64)
+    c3 = List.empty_list(types.int64)
+    a0 = List.empty_list(types.int64)
+    a1 = List.empty_list(types.int64)
+    a2 = List.empty_list(types.int64)
+    a3 = List.empty_list(types.int64)
+    vals = List.empty_list(types.float64)
+
+    for idx in range(n_list):
+        n_equiv = n_equivalent[idx]
+        n_indep = n_independent_basis[idx]
+        for eq in range(n_equiv):
+            e0, e1, e2, e3 = (
+                equiv_list[0, eq, idx],
+                equiv_list[1, eq, idx],
+                equiv_list[2, eq, idx],
+                equiv_list[3, eq, idx],
+            )
+            for l in range(3):
+                for m in range(3):
+                    for n in range(3):
+                        for o in range(3):
+                            basis = ((l * 3 + m) * 3 + n) * 3 + o
+                            for ind in range(n_indep):
+                                phi_idx = accumulated_independent[idx] + ind
                                 val = (
-                                    transformationarray[tribasisindex, ix, jj, ii]
-                                    * aphilist[naccumindependent[ii] + ix]
+                                    transformation_array[basis, ind, eq, idx]
+                                    * phi_values[phi_idx]
                                 )
                                 if val == 0.0:
                                     continue
-                                ifc4_rows0.append(ll)
-                                ifc4_rows1.append(mm)
-                                ifc4_rows2.append(nn)
-                                ifc4_rows3.append(aa1)
-                                ifc4_cols0.append(e0)
-                                ifc4_cols1.append(e1)
-                                ifc4_cols2.append(e2)
-                                ifc4_cols3.append(e3)
-                                ifc4_vals.append(val)
+                                c0.append(l)
+                                c1.append(m)
+                                c2.append(n)
+                                c3.append(o)
+                                a0.append(e0)
+                                a1.append(e1)
+                                a2.append(e2)
+                                a3.append(e3)
+                                vals.append(val)
 
-    return (
-        ifc4_rows0,
-        ifc4_rows1,
-        ifc4_rows2,
-        ifc4_rows3,
-        ifc4_cols0,
-        ifc4_cols1,
-        ifc4_cols2,
-        ifc4_cols3,
-        ifc4_vals,
-    )
+    return c0, c1, c2, c3, a0, a1, a2, a3, vals
 
 
-@jit(nopython=True)
-def _build_ijv_fourthorder(
-    vind1,
-    vind2,
-    naccumindependent,
-    natoms,
-    ntot,
-    nlist,
-    vtrans,
-):
-    # Pass 1: Count total elements
-    total_count = 0
-    for ii in range(natoms):
-        for jj in range(ntot):
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            for kk in range(ntot):
-                                for bb in range(ntot):
-                                    for ix in range(nlist):
-                                        if vind1[ii, jj, kk, bb] == ix:
-                                            total_count += (
-                                                naccumindependent[ix + 1]
-                                                - naccumindependent[ix]
-                                            )
-
-    # Allocate arrays
-    i = np.empty(total_count, dtype=np.int64)
-    j = np.empty(total_count, dtype=np.int64)
-    v = np.empty(total_count, dtype=np.float64)
-
-    # Pass 2: Fill arrays
-    count = 0
-    colindex = 0
-    for ii in range(natoms):
-        for jj in range(ntot):
-            tribasisindex = 0
-            for ll in range(3):
-                for mm in range(3):
-                    for nn in range(3):
-                        for aa1 in range(3):
-                            for kk in range(ntot):
-                                for bb in range(ntot):
-                                    for ix in range(nlist):
-                                        if vind1[ii, jj, kk, bb] == ix:
-                                            start = naccumindependent[ix]
-                                            end = naccumindependent[ix + 1]
-                                            for ss in range(start, end):
-                                                tt = ss - start
-                                                i[count] = ss
-                                                j[count] = colindex
-                                                v[count] = vtrans[
-                                                    tribasisindex,
-                                                    tt,
-                                                    vind2[ii, jj, kk, bb],
-                                                    ix,
-                                                ]
-                                                count += 1
-                            tribasisindex += 1
-                            colindex += 1
-
-    return i, j, v
+# =============================================================================
+# QuartetWedge class
+# =============================================================================
 
 
-def prepare_calculation4(na, nb, nc, cutoff, poscar_path: str = "POSCAR"):
-    """
-    Validate the input parameters and prepare the calculation.
-    """
-    _validate_cutoff(na, nb, nc)
-    nneigh, frange = _parse_cutoff(cutoff)
-    typer.echo("Reading structure")
-    poscar = read_structure(poscar_path, in_format="auto")
-    typer.echo("Analyzing the symmetries")
-    symops = SymmetryOperations(
-        poscar["lattvec"], poscar["types"], poscar["positions"].T, SYMPREC
-    )
-    typer.echo(f"Symmetry group {symops.symbol} detected")
-    typer.echo(f"{symops.translations.shape[0]} symmetry operations")
-    typer.echo("Creating the supercell")
-    sposcar = gen_SPOSCAR(poscar, na, nb, nc)
-    typer.echo("Computing all distances in the supercell")
-    dmin, nequi, shifts = calc_dists(sposcar)
-    if nneigh is not None:
-        frange = calc_frange(poscar, sposcar, nneigh, dmin)
-        typer.echo(f"Automatic cutoff: {frange} nm")
-    else:
-        typer.echo(f"User-defined cutoff: {frange} nm")
-    typer.echo("Looking for an irreducible set of fourth-order IFCs")
+class QuartetWedge:
+    """Symmetry-based reduction of fourth-order interatomic force constants."""
 
-    return poscar, sposcar, symops, dmin, nequi, shifts, frange, nneigh
+    def __init__(
+        self,
+        primitive_dict: dict,
+        supercell_dict: dict,
+        symmetry_ops: SymmetryOperations,
+        min_distances: np.ndarray,
+        n_equivalent: np.ndarray,
+        cell_shifts: np.ndarray,
+        force_range: float,
+    ):
+        self.primitive_dict = primitive_dict
+        self.supercell_dict = supercell_dict
+        self.symmetry_ops = symmetry_ops
+        self.min_distances = min_distances
+        self.n_equivalent_images = n_equivalent
+        self.cell_shifts = cell_shifts
+        self.force_range = force_range
 
+        self._alloc_size = 0
+        self._all_alloc_size = 0
+        self._expand_arrays()
+        self._expand_all_list()
+        self._reduce()
 
-def reconstruct_ifcs(phipart, wedge, list4, poscar, sposcar):
-    """
-    Recover the full fourth-order IFC set from the irreducible set of
-    force constants and the information contained in a wedge object.
-    """
-    nlist = wedge.nlist
-    natoms = len(poscar["types"])
-    ntot = len(sposcar["types"])
-
-    typer.echo("using sparse method with dok sparse matrix !")
-    vnruter = sparse.zeros((3, 3, 3, 3, natoms, ntot, ntot, ntot), format="dok")
-
-    naccumindependent = np.insert(
-        np.cumsum(wedge.nindependentbasis[:nlist], dtype=np.intc),
-        0,
-        np.zeros(1, dtype=np.intc),
-    )
-    ntotalindependent = naccumindependent[-1]
-    vphipart = phipart
-
-    nlist6 = len(list4)
-    for ii in track(range(nlist6), description="Processing list6"):
-        e0, e1, e2, e3, e4, e5 = list4[ii]
-        vnruter[e3, e4, e5, :, e0, e1, e2, :] = vphipart[:, ii, :]
-    vnruter=vnruter.to_coo()
-
-    philist = []
-    for ii in track(range(nlist), description="Building philist"):
-        for jj in range(wedge.nindependentbasis[ii]):
-            kk = wedge.independentbasis[jj, ii] // 27
-            ll = wedge.independentbasis[jj, ii] % 27 // 9
-            mm = wedge.independentbasis[jj, ii] % 9 // 3
-            nn = wedge.independentbasis[jj, ii] % 3
-            philist.append(
-                vnruter[
-                    kk,
-                    ll,
-                    mm,
-                    nn,
-                    wedge.llist[0, ii],
-                    wedge.llist[1, ii],
-                    wedge.llist[2, ii],
-                    wedge.llist[3, ii],
-                ]
+    def _expand_arrays(self) -> None:
+        if self._alloc_size == 0:
+            self._alloc_size = 32
+            max_equiv = 24 * self.symmetry_ops.nsyms
+            self.nequi = np.empty(self._alloc_size, dtype=np.intc)
+            self.allequilist = np.empty((4, max_equiv, self._alloc_size), dtype=np.intc)
+            self.transformationarray = np.empty(
+                (81, 81, max_equiv, self._alloc_size), dtype=np.double
             )
-    aphilist = np.array(philist, dtype=np.double)
+            self._transformation = np.empty(
+                (81, 81, max_equiv, self._alloc_size), dtype=np.double
+            )
+            self._transformation_aux = np.empty(
+                (81, 81, self._alloc_size), dtype=np.double
+            )
+            self.nindependentbasis = np.empty(self._alloc_size, dtype=np.intc)
+            self.independentbasis = np.empty((81, self._alloc_size), dtype=np.intc)
+            self.llist = np.empty((4, self._alloc_size), dtype=np.intc)
+        else:
+            self._alloc_size *= 2
+            self.nequi = np.concatenate((self.nequi, self.nequi), axis=-1)
+            self.allequilist = np.concatenate(
+                (self.allequilist, self.allequilist), axis=-1
+            )
+            self.transformationarray = np.concatenate(
+                (self.transformationarray, self.transformationarray), axis=-1
+            )
+            self._transformation = np.concatenate(
+                (self._transformation, self._transformation), axis=-1
+            )
+            self._transformation_aux = np.concatenate(
+                (self._transformation_aux, self._transformation_aux), axis=-1
+            )
+            self.nindependentbasis = np.concatenate(
+                (self.nindependentbasis, self.nindependentbasis), axis=-1
+            )
+            self.independentbasis = np.concatenate(
+                (self.independentbasis, self.independentbasis), axis=-1
+            )
+            self.llist = np.concatenate((self.llist, self.llist), axis=-1)
 
-    vind1 = -np.ones((natoms, ntot, ntot, ntot), dtype=np.intc)
-    vind2 = -np.ones((natoms, ntot, ntot, ntot), dtype=np.intc)
-    vequilist = wedge.allequilist
-    for ii in range(nlist):
-        for jj in range(wedge.nequi[ii]):
-            vind1[
-                vequilist[0, jj, ii],
-                vequilist[1, jj, ii],
-                vequilist[2, jj, ii],
-                vequilist[3, jj, ii],
-            ] = ii
-            vind2[
-                vequilist[0, jj, ii],
-                vequilist[1, jj, ii],
-                vequilist[2, jj, ii],
-                vequilist[3, jj, ii],
-            ] = jj
+    def _expand_all_list(self) -> None:
+        if self._all_alloc_size == 0:
+            self._all_alloc_size = 512
+            self._all_list = np.empty((4, self._all_alloc_size), dtype=np.intc)
+        else:
+            self._all_alloc_size *= 2
+            self._all_list = np.concatenate((self._all_list, self._all_list), axis=-1)
 
-    vtrans = wedge.transformationarray
+    def _reduce(self) -> None:
+        force_range_sq = self.force_range * self.force_range
+        grid = np.array(
+            [
+                self.supercell_dict["na"],
+                self.supercell_dict["nb"],
+                self.supercell_dict["nc"],
+            ],
+            dtype=np.intc,
+        )
+        n_sym = self.symmetry_ops.nsyms
+        n_atoms = len(self.primitive_dict["types"])
+        n_total = len(self.supercell_dict["types"])
+        lattice = self.supercell_dict["lattvec"]
+        cart_coords = np.dot(lattice, self.supercell_dict["positions"])
+        rotation_tensors = np.transpose(self.symmetry_ops.crotations, (1, 2, 0))
 
-    nrows = ntotalindependent
-    ncols = natoms * ntot * 81
+        self.nlist = 0
+        self._n_all_list = 0
 
-    typer.echo("Storing the coefficients in a sparse matrix")
-    i, j, v = _build_ijv_fourthorder(
-        vind1,
-        vind2,
-        naccumindependent,
-        natoms,
-        ntot,
-        nlist,
-        vtrans,
+        shifts_27 = np.array(
+            [
+                [i, j, k]
+                for i in range(-1, 2)
+                for j in range(-1, 2)
+                for k in range(-1, 2)
+            ],
+            dtype=np.intc,
+        )
+        equiv_atom_map = self.symmetry_ops.map_supercell(self.supercell_dict)
+        cell_indices, species_indices = _index_to_cell_atom(grid, n_atoms)
+        rotation_matrices, rotation_identity_diff, has_nonzero = (
+            self._build_rotation_matrices(n_sym, rotation_tensors)
+        )
+
+        quartet = np.empty(4, dtype=np.intc)
+        quartet_permuted = np.empty(4, dtype=np.intc)
+        quartet_symmetric = np.empty(4, dtype=np.intc)
+        equiv_quartets = np.empty((4, n_sym * 24), dtype=np.intc)
+        coeff_matrix = np.empty((24 * n_sym * 81, 81), dtype=np.double)
+        shift_j = np.empty((3, 27), dtype=np.intc)
+        shift_k = np.empty((3, 27), dtype=np.intc)
+        shift_l = np.empty((3, 27), dtype=np.intc)
+
+        with Progress() as progress:
+            task = progress.add_task("Scanning atom quartets", total=n_atoms)
+            for atom_i in range(n_atoms):
+                for atom_j in range(n_total):
+                    if self.min_distances[atom_i, atom_j] >= self.force_range:
+                        continue
+                    n_eq_j = self.n_equivalent_images[atom_i, atom_j]
+                    for x in range(n_eq_j):
+                        shift_j[:, x] = shifts_27[self.cell_shifts[atom_i, atom_j, x]]
+
+                    for atom_k in range(n_total):
+                        if self.min_distances[atom_i, atom_k] >= self.force_range:
+                            continue
+                        n_eq_k = self.n_equivalent_images[atom_i, atom_k]
+                        for x in range(n_eq_k):
+                            shift_k[:, x] = shifts_27[
+                                self.cell_shifts[atom_i, atom_k, x]
+                            ]
+
+                        for atom_l in range(n_total):
+                            if self.min_distances[atom_i, atom_l] >= self.force_range:
+                                continue
+                            n_eq_l = self.n_equivalent_images[atom_i, atom_l]
+                            for x in range(n_eq_l):
+                                shift_l[:, x] = shifts_27[
+                                    self.cell_shifts[atom_i, atom_l, x]
+                                ]
+
+                            # Check pairwise distances
+                            min_jk_sq = min_jl_sq = min_kl_sq = np.inf
+                            for ij in range(n_eq_j):
+                                cj = (
+                                    shift_j[:, ij : ij + 1].T @ lattice.T
+                                ).flatten() + cart_coords[:, atom_j]
+                                for ik in range(n_eq_k):
+                                    ck = (
+                                        shift_k[:, ik : ik + 1].T @ lattice.T
+                                    ).flatten() + cart_coords[:, atom_k]
+                                    d_jk = np.sum((ck - cj) ** 2)
+                                    if d_jk < min_jk_sq:
+                                        min_jk_sq = d_jk
+                                for il in range(n_eq_l):
+                                    cl = (
+                                        shift_l[:, il : il + 1].T @ lattice.T
+                                    ).flatten() + cart_coords[:, atom_l]
+                                    d_jl = np.sum((cl - cj) ** 2)
+                                    if d_jl < min_jl_sq:
+                                        min_jl_sq = d_jl
+
+                            if (
+                                min_jk_sq >= force_range_sq
+                                or min_jl_sq >= force_range_sq
+                            ):
+                                continue
+
+                            quartet[:] = [atom_i, atom_j, atom_k, atom_l]
+                            if _quartet_in_list(
+                                quartet, self._all_list, self._n_all_list
+                            ):
+                                continue
+
+                            self.nlist += 1
+                            if self.nlist == self._alloc_size:
+                                self._expand_arrays()
+
+                            idx = self.nlist - 1
+                            self.llist[:, idx] = quartet
+                            self.nequi[idx] = 0
+                            coeff_matrix[:] = 0.0
+                            n_nonzero = 0
+
+                            for perm_idx in range(24):
+                                perm = QUARTET_PERMUTATIONS[perm_idx]
+                                quartet_permuted[:] = quartet[perm]
+
+                                for sym_idx in range(n_sym):
+                                    for d in range(4):
+                                        quartet_symmetric[d] = equiv_atom_map[
+                                            sym_idx, quartet_permuted[d]
+                                        ]
+
+                                    vec1 = cell_indices[:, quartet_symmetric[0]].copy()
+                                    if not (
+                                        vec1[0] == 0 and vec1[1] == 0 and vec1[2] == 0
+                                    ):
+                                        vec2 = (
+                                            cell_indices[:, quartet_symmetric[1]] - vec1
+                                        ) % grid
+                                        vec3 = (
+                                            cell_indices[:, quartet_symmetric[2]] - vec1
+                                        ) % grid
+                                        vec4 = (
+                                            cell_indices[:, quartet_symmetric[3]] - vec1
+                                        ) % grid
+                                        vec1[:] = 0
+                                        quartet_symmetric[0] = _cell_atom_to_index(
+                                            vec1,
+                                            species_indices[quartet_symmetric[0]],
+                                            grid,
+                                            n_atoms,
+                                        )
+                                        quartet_symmetric[1] = _cell_atom_to_index(
+                                            vec2,
+                                            species_indices[quartet_symmetric[1]],
+                                            grid,
+                                            n_atoms,
+                                        )
+                                        quartet_symmetric[2] = _cell_atom_to_index(
+                                            vec3,
+                                            species_indices[quartet_symmetric[2]],
+                                            grid,
+                                            n_atoms,
+                                        )
+                                        quartet_symmetric[3] = _cell_atom_to_index(
+                                            vec4,
+                                            species_indices[quartet_symmetric[3]],
+                                            grid,
+                                            n_atoms,
+                                        )
+
+                                    if (perm_idx == 0 and sym_idx == 0) or not (
+                                        _quartets_equal(quartet_symmetric, quartet)
+                                        or _quartet_in_list(
+                                            quartet_symmetric,
+                                            equiv_quartets,
+                                            self.nequi[idx],
+                                        )
+                                    ):
+                                        eq = self.nequi[idx]
+                                        self.nequi[idx] += 1
+                                        equiv_quartets[:, eq] = quartet_symmetric
+                                        self.allequilist[:, eq, idx] = quartet_symmetric
+                                        self._n_all_list += 1
+                                        if self._n_all_list == self._all_alloc_size:
+                                            self._expand_all_list()
+                                        self._all_list[:, self._n_all_list - 1] = (
+                                            quartet_symmetric
+                                        )
+                                        self._transformation[:, :, eq, idx] = (
+                                            rotation_matrices[perm_idx, sym_idx]
+                                        )
+
+                                    if _quartets_equal(quartet_symmetric, quartet):
+                                        for basis_idx in range(81):
+                                            if has_nonzero[
+                                                perm_idx, sym_idx, basis_idx
+                                            ]:
+                                                coeff_matrix[n_nonzero, :] = (
+                                                    rotation_identity_diff[
+                                                        perm_idx, sym_idx, basis_idx, :
+                                                    ]
+                                                )
+                                                n_nonzero += 1
+
+                            coeff_reduced = np.ascontiguousarray(
+                                np.zeros((max(n_nonzero, 81), 81), dtype=np.double)
+                            )
+                            coeff_reduced[:n_nonzero, :] = coeff_matrix[:n_nonzero, :]
+                            basis_transform, independent = gaussian_elimination(
+                                coeff_reduced
+                            )
+                            self._transformation_aux[:, :, idx] = basis_transform
+                            self.nindependentbasis[idx] = len(independent)
+                            self.independentbasis[: len(independent), idx] = independent
+
+                progress.update(task, advance=1)
+
+        self.transformationarray[:] = 0.0
+        _build_transformation_product(
+            self._transformation,
+            self._transformation_aux,
+            self.nequi,
+            self.nindependentbasis,
+            self.nlist,
+            self.transformationarray,
+        )
+
+    def _build_rotation_matrices(
+        self, n_sym: int, rotation_tensors: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rot = np.empty((24, n_sym, 81, 81), dtype=np.double)
+        for perm_idx in range(24):
+            perm = QUARTET_PERMUTATIONS[perm_idx]
+            for sym_idx in range(n_sym):
+                for i_p in range(3):
+                    for j_p in range(3):
+                        for k_p in range(3):
+                            for l_p in range(3):
+                                idx_p = ((i_p * 3 + j_p) * 3 + k_p) * 3 + l_p
+                                for i in range(3):
+                                    for j in range(3):
+                                        for k in range(3):
+                                            for l in range(3):
+                                                idx = i * 27 + j * 9 + k * 3 + l
+                                                basis = np.array([i, j, k, l])
+                                                rot[perm_idx, sym_idx, idx_p, idx] = (
+                                                    rotation_tensors[
+                                                        i_p, basis[perm[0]], sym_idx
+                                                    ]
+                                                    * rotation_tensors[
+                                                        j_p, basis[perm[1]], sym_idx
+                                                    ]
+                                                    * rotation_tensors[
+                                                        k_p, basis[perm[2]], sym_idx
+                                                    ]
+                                                    * rotation_tensors[
+                                                        l_p, basis[perm[3]], sym_idx
+                                                    ]
+                                                )
+
+        rot_diff = rot.copy()
+        has_nonzero = np.zeros((24, n_sym, 81), dtype=np.intc)
+        for perm_idx in range(24):
+            for sym_idx in range(n_sym):
+                for idx_p in range(81):
+                    rot_diff[perm_idx, sym_idx, idx_p, idx_p] -= 1.0
+                    for idx in range(81):
+                        if fabs(rot_diff[perm_idx, sym_idx, idx_p, idx]) > 1e-12:
+                            has_nonzero[perm_idx, sym_idx, idx_p] = 1
+                        else:
+                            rot_diff[perm_idx, sym_idx, idx_p, idx] = 0.0
+        return rot, rot_diff, has_nonzero
+
+    def build_quartet_list(self) -> list:
+        extended = []
+        for idx in range(self.nlist):
+            for b in range(self.nindependentbasis[idx]):
+                val = self.independentbasis[b, idx]
+                c0, c1, c2, c3 = val // 27, (val % 27) // 9, (val % 9) // 3, val % 3
+                extended.append(
+                    (
+                        c0,
+                        self.llist[0, idx],
+                        c1,
+                        self.llist[1, idx],
+                        c2,
+                        self.llist[2, idx],
+                        c3,
+                        self.llist[3, idx],
+                    )
+                )
+        unique = []
+        for item in extended:
+            six_tuple = (item[1], item[3], item[5], item[0], item[2], item[4])
+            if six_tuple not in unique:
+                unique.append(six_tuple)
+        return unique
+
+    build_list4 = build_quartet_list
+
+
+# =============================================================================
+# Main reconstruction function
+# =============================================================================
+
+
+def reconstruct_ifcs(
+    phi_partial: np.ndarray,
+    wedge: QuartetWedge,
+    quartet_list: list,
+    primitive_dict: dict,
+    supercell_dict: dict,
+) -> sparse.COO:
+    """Reconstruct full fourth-order IFC tensor from irreducible set."""
+    n_list = wedge.nlist
+    n_atoms = len(primitive_dict["types"])
+    n_total = len(supercell_dict["types"])
+
+    typer.echo("Using sparse method with DOK sparse matrix")
+    result_sparse = sparse.zeros(
+        (3, 3, 3, 3, n_atoms, n_total, n_total, n_total), format="dok"
     )
-    aaa = sp.sparse.coo_matrix((v, (i, j)), (nrows, ncols)).tocsr()
-    D = sp.sparse.spdiags(aphilist, [0], aphilist.size, aphilist.size, format="csr")
-    bbs = D.dot(aaa)
-    ones = np.ones_like(aphilist)
-    multiplier = -sp.sparse.linalg.lsqr(bbs, ones)[0]
-    compensation = D.dot(bbs.dot(multiplier))
-    aphilist += compensation
+    accumulated = np.insert(
+        np.cumsum(wedge.nindependentbasis[:n_list], dtype=np.intc), 0, 0
+    )
+    n_total_indep = accumulated[-1]
 
-    typer.echo("Build the final, full set of 4th-order IFCs.")
-    (
-        ifc4_rows0_list,
-        ifc4_rows1_list,
-        ifc4_rows2_list,
-        ifc4_rows3_list,
-        ifc4_cols0_list,
-        ifc4_cols1_list,
-        ifc4_cols2_list,
-        ifc4_cols3_list,
-        ifc4_vals_list,
-    ) = _build_ifc4_coords_vals_list(
-        nlist,
+    with Progress() as progress:
+        task = progress.add_task("Storing partial results", total=len(quartet_list))
+        for idx, (e0, e1, e2, e3, e4, e5) in enumerate(quartet_list):
+            result_sparse[e3, e4, e5, :, e0, e1, e2, :] = phi_partial[:, idx, :]
+            progress.update(task, advance=1)
+    result_sparse = result_sparse.to_coo()
+
+    phi_list = []
+    with Progress() as progress:
+        task = progress.add_task("Extracting phi values", total=n_list)
+        for idx in range(n_list):
+            for b in range(wedge.nindependentbasis[idx]):
+                val = wedge.independentbasis[b, idx]
+                c0, c1, c2, c3 = val // 27, (val % 27) // 9, (val % 9) // 3, val % 3
+                phi_list.append(
+                    result_sparse[
+                        c0,
+                        c1,
+                        c2,
+                        c3,
+                        wedge.llist[0, idx],
+                        wedge.llist[1, idx],
+                        wedge.llist[2, idx],
+                        wedge.llist[3, idx],
+                    ]
+                )
+            progress.update(task, advance=1)
+    phi_values = np.array(phi_list, dtype=np.double)
+
+    quartet_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.intc)
+    equiv_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.intc)
+    equiv_list = wedge.allequilist
+    for idx in range(n_list):
+        for eq in range(wedge.nequi[idx]):
+            i, j, k, l = (
+                equiv_list[0, eq, idx],
+                equiv_list[1, eq, idx],
+                equiv_list[2, eq, idx],
+                equiv_list[3, eq, idx],
+            )
+            quartet_class_idx[i, j, k, l] = idx
+            equiv_class_idx[i, j, k, l] = eq
+
+    typer.echo("Building sparse coefficient matrix")
+    row, col, val = _build_sparse_quartets(
+        quartet_class_idx,
+        equiv_class_idx,
+        accumulated,
+        n_atoms,
+        n_total,
+        n_list,
+        wedge.transformationarray,
+    )
+    coeff = sp.sparse.coo_matrix(
+        (val, (row, col)), (n_total_indep, n_atoms * n_total * 81)
+    ).tocsr()
+
+    diag = sp.sparse.spdiags(
+        phi_values, [0], phi_values.size, phi_values.size, format="csr"
+    )
+    weighted = diag.dot(coeff)
+    mult = -sp.sparse.linalg.lsqr(weighted, np.ones_like(phi_values))[0]
+    phi_values += diag.dot(weighted.dot(mult))
+
+    typer.echo("Building final full IFC tensor")
+    coords = _build_full_ifc_coordinates(
+        n_list,
         wedge.nequi,
         wedge.nindependentbasis,
-        vequilist,
-        naccumindependent,
+        equiv_list,
+        accumulated,
         wedge.transformationarray,
-        aphilist,
+        phi_values,
     )
 
-    (
-        ifc4_rows0,
-        ifc4_rows1,
-        ifc4_rows2,
-        ifc4_rows3,
-        ifc4_cols0,
-        ifc4_cols1,
-        ifc4_cols2,
-        ifc4_cols3,
-    ) = (
-        np.array(ifc4_rows0_list, dtype=np.intp),
-        np.array(ifc4_rows1_list, dtype=np.intp),
-        np.array(ifc4_rows2_list, dtype=np.intp),
-        np.array(ifc4_rows3_list, dtype=np.intp),
-        np.array(ifc4_cols0_list, dtype=np.intp),
-        np.array(ifc4_cols1_list, dtype=np.intp),
-        np.array(ifc4_cols2_list, dtype=np.intp),
-        np.array(ifc4_cols3_list, dtype=np.intp),
+    final_coords = np.array(
+        [np.array(coords[i], dtype=np.intp) for i in range(8)], dtype=np.intp
     )
-    ifc4_vals = np.array(ifc4_vals_list, dtype=np.double)
-
-    ifc4_coords = np.array(
-        [
-            ifc4_rows0,
-            ifc4_rows1,
-            ifc4_rows2,
-            ifc4_rows3,
-            ifc4_cols0,
-            ifc4_cols1,
-            ifc4_cols2,
-            ifc4_cols3,
-        ],
-        dtype=np.intp,
-    )
-    vnruter = sparse.COO(
-        ifc4_coords,
-        ifc4_vals,
-        shape=(3, 3, 3, 3, natoms, ntot, ntot, ntot),
+    return sparse.COO(
+        final_coords,
+        np.array(coords[8], dtype=np.double),
+        shape=(3, 3, 3, 3, n_atoms, n_total, n_total, n_total),
         has_duplicates=True,
     )
-
-    return vnruter

@@ -54,9 +54,7 @@ class CalculatorFactory:
     _configs: dict[str, CalculatorConfig] = {}
 
     @classmethod
-    def register(
-        cls, name: str, config: Optional[CalculatorConfig] = None
-    ) -> Callable:
+    def register(cls, name: str, config: Optional[CalculatorConfig] = None) -> Callable:
         """Decorator to register a calculator builder function.
 
         Args:
@@ -66,11 +64,13 @@ class CalculatorFactory:
         Returns:
             Decorator function.
         """
+
         def decorator(func: Callable[..., Calculator]) -> Callable[..., Calculator]:
             cls._registry[name.lower()] = func
             if config:
                 cls._configs[name.lower()] = config
             return func
+
         return decorator
 
     @classmethod
@@ -235,20 +235,22 @@ def _make_mtp(
         from fcsorder.calc.mtpcalc import MTP
     except Exception as e:
         raise ImportError(f"Error importing MTP: {e}") from e
-    
+
     if structure is None:
-        raise ValueError("structure is required for MTP calculator to extract unique elements")
-    
+        raise ValueError(
+            "structure is required for MTP calculator to extract unique elements"
+        )
+
     # Extract unique elements from structure, preserving order of first appearance
     unique_elements = list(dict.fromkeys(structure.get_chemical_symbols()))
-    
+
     # Print warning message in red
     typer.secho(
         "⚠️  Warning: This MTP calculator only supports mlip2.x versions",
         fg=typer.colors.RED,
         bold=True,
     )
-    
+
     return MTP(
         potential=potential,
         unique_elements=unique_elements,
@@ -303,7 +305,7 @@ def _make_hiphive(potential: str, supercell: Any = None, **kwargs) -> Calculator
     ),
 )
 def _make_tace(
-    model_path: str,
+    potential: str,
     device: str = "cpu",
     dtype: Optional[str] = "float64",
     **kwargs,
@@ -311,7 +313,7 @@ def _make_tace(
     """Create a TACECalculator.
 
     Args:
-        model_path: Path to TACE model checkpoint.
+        potential: Path to TACE model checkpoint.
         device: Compute device ("cpu" or "cuda"). Defaults to "cpu".
         dtype: Tensor dtype ("float32" or "float64"). Defaults to "float64".
         **kwargs: Additional arguments (ignored).
@@ -327,7 +329,7 @@ def _make_tace(
     except ImportError as e:
         raise ImportError("tace not found, please install it first") from e
     return TACECalculator(
-        model_path=model_path,
+        model_path=potential,
         device=device,
         dtype=dtype,
     )
@@ -344,7 +346,7 @@ def _make_tace(
     ),
 )
 def _make_mace(
-    model_path: str,
+    potential: str,
     device: str = "cpu",
     default_dtype: str = "float64",
     **kwargs,
@@ -352,7 +354,7 @@ def _make_mace(
     """Create a MACE calculator.
 
     Args:
-        model_path: Path to MACE model file.
+        potential: Path to MACE model file.
         device: Compute device ("cpu" or "cuda"). Defaults to "cpu".
         default_dtype: Default tensor dtype. Defaults to "float64".
         **kwargs: Additional arguments (ignored).
@@ -368,7 +370,7 @@ def _make_mace(
     except ImportError as e:
         raise ImportError("mace not found, please install it first") from e
     return MACECalculator(
-        model_paths=model_path,
+        model_paths=potential,
         device=device,
         default_dtype=default_dtype,
     )

@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """CLI for generating rattled structures using Monte Carlo rattle."""
+
+from __future__ import annotations
 
 import numpy as np
 import typer

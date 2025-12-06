@@ -5,43 +5,38 @@ description = "Extract 2nd-, 3rd-, and 4th-order force constants using arbitrary
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "ase",
-    "calorine>=3.2",
-    "hiphive>=1.5",
-    "matplotlib",
-    "numba",
-    "numpy",
-    "phonopy>=2.44.0",
-    "scipy",
-    "sparse",
-    "spglib",
-    "typer",
+"ase",
+"calorine >= 3.2",
+"hiphive >= 1.5",
+"matplotlib",
+"numba",
+"numpy",
+"phonopy >= 2.44.0",
+"scipy",
+"sparse",
+"spglib",
+"typer"
 ]
-
 license = "Apache-2.0"
 
+
 [project.scripts]
-fcs-order = "fcsorder.__init__:cli"
+forcekit = "fcsorder.commands:main"
+
 
 [project.optional-dependencies]
-phonon = [
-    "phonopy",
-    "hiphive"
-]
-
+phonon = [ "phonopy", "hiphive" ]
 
 
 [[tool.uv.index]]
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 default = true
 
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/fcsorder"]
+packages = [ "src/fcsorder" ]
 
 
 [build-system]
-requires = [
-    "hatchling>=1.0.0",
-]
+requires = [ "hatchling>=1.0.0" ]
 build-backend = "hatchling.build"
-

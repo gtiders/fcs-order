@@ -1,5 +1,13 @@
-import matplotlib.pyplot as plt
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Utility functions for structure generation, including distribution analysis and plotting."""
+
+from __future__ import annotations
+
 from collections import OrderedDict
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
