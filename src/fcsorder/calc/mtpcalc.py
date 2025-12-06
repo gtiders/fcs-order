@@ -80,7 +80,7 @@ class MTP(Calculator):
             properties = ["energy"]
         if system_changes is None:
             system_changes = all_changes
-        
+
         Calculator.calculate(self, atoms, properties, system_changes)
 
         if "numbers" in system_changes:
@@ -128,7 +128,9 @@ def atoms_to_cfg(atoms, file: str, unique_elements: list[str]) -> None:
         has_forces = False
 
     with open(file, "w") as f:
-        element_dict = {ele.capitalize(): int(i) for i, ele in enumerate(unique_elements)}
+        element_dict = {
+            ele.capitalize(): int(i) for i, ele in enumerate(unique_elements)
+        }
 
         f.write("BEGIN_CFG\n")
         f.write(" Size\n")

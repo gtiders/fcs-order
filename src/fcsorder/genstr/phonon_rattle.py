@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import typer
+"""CLI for generating phonon-rattled structures using harmonic force constants."""
+
+from __future__ import annotations
+
 import numpy as np
+import typer
 
 from fcsorder.io.reader import StructureData
 from fcsorder.genstr.tools import plot_distributions
@@ -89,17 +93,17 @@ def phonon_rattle_cli(
     # Read structure
     structure_data = StructureData.from_file(structure_file)
     atoms = structure_data.to_atoms()
-    
+
     # Read force constants
     # Determine format from file extension or default to 'text' for FORCE_CONSTANTS
     fc_format = None
-    if force_constants_file.endswith('.hdf5'):
-        fc_format = 'hdf5'
+    if force_constants_file.endswith(".hdf5"):
+        fc_format = "hdf5"
     else:
-        fc_format = 'text'  # Default format for Phonopy FORCE_CONSTANTS
-    
+        fc_format = "text"  # Default format for Phonopy FORCE_CONSTANTS
+
     fc = ForceConstants.read_phonopy(atoms, force_constants_file, format=fc_format)
-    fc2_matrix = fc.get_fc_array(order=2, format='ase')
+    fc2_matrix = fc.get_fc_array(order=2, format="ase")
     reference_positions = atoms.get_positions().copy()
 
     # Validate volumetric strain options

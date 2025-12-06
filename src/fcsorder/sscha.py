@@ -15,6 +15,9 @@ import typer
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 
+from hiphive import ClusterSpace, ForceConstantPotential
+from hiphive.self_consistent_phonons import self_consistent_harmonic_model
+
 from fcsorder.calc.calculators import CalculatorFactory
 from fcsorder.io.reader import StructureData
 
@@ -33,10 +36,10 @@ def parse_temperatures(temperature_str: str) -> list[float]:
 
 def analyze_scph_convergence(temperature: float) -> None:
     """Analyze the convergence of SCPH parameters.
-    
+
     Args:
         temperature: Temperature value in Kelvin.
-    
+
     Returns:
         None: Plots are saved to 'scph_trajs/scph_parameter_T{temperature}.png'.
     """
@@ -45,7 +48,7 @@ def analyze_scph_convergence(temperature: float) -> None:
 
     # Calculate parameter differences between iterations
     parameter_differences = [
-        np.linalg.norm(p - p_next) 
+        np.linalg.norm(p - p_next)
         for p, p_next in zip(parameter_trajectories, parameter_trajectories[1:])
     ]
 
@@ -89,6 +92,7 @@ def run_scph(
     num_structures: int = 50,
     use_qm_statistics: bool = True,
     imaginary_frequency_factor: float = 1.0,
+    output_format: str = "text",
 ) -> None:
     """Run the self-consistent phonon calculation.
 
@@ -103,20 +107,11 @@ def run_scph(
         num_structures: The number of structures to generate. Defaults to 50.
         use_qm_statistics: Whether to use quantum-mechanical statistics. Defaults to True.
         imaginary_frequency_factor: Factor for treating imaginary frequencies. Defaults to 1.0.
+        output_format: Output format for force constants, 'text' or 'hdf5'. Defaults to 'text'.
 
     Returns:
         None: Results are saved to files in the 'fcps/' and 'scph_trajs/' directories.
     """
-    # Lazy import hiphive here to avoid hard dependency at import-time
-    try:
-        from hiphive import ClusterSpace, ForceConstantPotential
-        from hiphive.self_consistent_phonons import self_consistent_harmonic_model
-    except ImportError as e:
-        raise ImportError(
-            "Failed to import hiphive. Please install hiphive package first. "
-            "You can install it using: pip install hiphive"
-        ) from e
-
     # Setup parameters
     cutoff_list = [cutoff]
     cluster_space = ClusterSpace(structure, cutoff_list)
@@ -137,23 +132,26 @@ def run_scph(
             QM_statistics=use_qm_statistics,
             imag_freq_factor=imaginary_frequency_factor,
         )
-        force_constant_potential = ForceConstantPotential(cluster_space, parameter_trajectory[-1])
-        force_constant_potential.get_force_constants(supercell).write_to_phonopy(
-            f"fcps/{temperature}_FORCE_CONSTANTS", format="text"
+        force_constant_potential = ForceConstantPotential(
+            cluster_space, parameter_trajectory[-1]
         )
+        fc_filename = (
+            f"fcps/{temperature}_FORCE_CONSTANTS"
+            if output_format == "text"
+            else f"fcps/{temperature}_fc.hdf5"
+        )
+        force_constant_potential.get_force_constants(supercell).write_to_phonopy(
+            fc_filename, format=output_format
+        )
+        typer.echo(f"Force constants written to {fc_filename}")
 
         force_constant_potential.write(f"fcps/scph_T{temperature}.fcp")
-        np.savetxt(f"scph_trajs/scph_parameters_T{temperature}", np.array(parameter_trajectory))
+        np.savetxt(
+            f"scph_trajs/scph_parameters_T{temperature}", np.array(parameter_trajectory)
+        )
         analyze_scph_convergence(temperature)
 
 
-# Create the main app
-app = typer.Typer(
-    help="Run self-consistent phonon (SCPH) calculations using ML potentials."
-)
-
-
-@app.command()
 def scph(
     na: int = typer.Argument(
         ...,
@@ -244,10 +242,16 @@ def scph(
         "-t",
         help="Data type: float32 or float64",
     ),
+    output_format: str = typer.Option(
+        "text",
+        "--output-format",
+        "-f",
+        help="Output format for force constants: text or hdf5",
+    ),
 ):
     """
     Run self-consistent phonon (SCPH) calculation with any registered calculator.
-    
+
     Example:
         scph 2 2 2 --calculator nep --potential model.nep --temperatures 100,200,300 --cutoff 5.0
         scph 2 2 2 --calculator dp --potential model.pb --temperatures 100,200 --cutoff 5.0
@@ -255,27 +259,27 @@ def scph(
     """
     # Parse temperatures
     temperature_list = parse_temperatures(temperatures)
-    
+
     # Read structure and build supercell
     typer.echo(f"Reading structure from {structure_file}")
     structure = StructureData.from_file(structure_file)
     structure_atoms = structure.to_atoms()
-    
+
     # Build supercell using na, nb, nc
     supercell_structure = structure.make_supercell(na, nb, nc)
     supercell_atoms = supercell_structure.to_atoms()
     supercell_atoms.write("scph_SPOSCAR", format="vasp", direct=True)
     typer.echo("Supercell written to scph_SPOSCAR")
-    
+
     # Build calculator arguments - pass all parameters, calculators use what they need
     calculator_kwargs = {
         "potential": potential,
         "device": device,
         "dtype": dtype,
-        "supercell": supercell_atoms, 
+        "supercell": supercell_atoms,
         "structure": structure_atoms,
     }
-    
+
     # Create calculator
     typer.echo(f"Creating {calculator_type} calculator...")
     try:
@@ -284,9 +288,11 @@ def scph(
     except (ValueError, ImportError) as e:
         typer.secho(f"✗ Error creating calculator: {e}", fg=typer.colors.RED)
         sys.exit(1)
-    
+
     # Run SCPH
-    typer.echo(f"Starting SCPH calculation with {len(temperature_list)} temperature(s)...")
+    typer.echo(
+        f"Starting SCPH calculation with {len(temperature_list)} temperature(s)..."
+    )
     try:
         run_scph(
             structure=structure_atoms,
@@ -299,12 +305,9 @@ def scph(
             num_structures=num_structures,
             use_qm_statistics=use_qm_statistics,
             imaginary_frequency_factor=imaginary_frequency_factor,
+            output_format=output_format,
         )
         typer.secho("✓ SCPH calculation completed successfully", fg=typer.colors.GREEN)
     except Exception as e:
         typer.secho(f"✗ SCPH calculation failed: {e}", fg=typer.colors.RED)
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    app()

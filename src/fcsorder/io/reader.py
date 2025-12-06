@@ -11,15 +11,16 @@ import copy
 import numpy as np
 from ase import Atoms
 import ase.io
-import ase.build 
+import ase.build
 
 from phonopy.structure.atoms import PhonopyAtoms
+
 
 class StructureData:
     """
     Data structure class to represent crystal structure with conversion between
     ASE Atoms and internal fcs-order format.
-    
+
     Internal format dict keys:
       - lattvec: 3x3 lattice vectors in nm (transposed from ASE cell)
       - elements: list[str] of element symbols (grouped by consecutive blocks)
@@ -27,15 +28,15 @@ class StructureData:
       - positions: 3xN fractional coordinates (transposed from ASE scaled_positions)
       - types: list[int] mapping each atom to element index
     """
-    
+
     def __init__(self, atoms: Optional[Atoms] = None, data_dict: Optional[dict] = None):
         """
         Initialize StructureData from either ASE Atoms or internal dict.
-        
+
         Args:
             atoms: ASE Atoms object
             data_dict: Internal format dict (lattvec, elements, numbers, positions, types)
-        
+
         Raises:
             ValueError: If neither atoms nor data_dict is provided, or both are provided.
         """
@@ -43,33 +44,33 @@ class StructureData:
             raise ValueError("Provide either atoms or data_dict, not both")
         if atoms is None and data_dict is None:
             raise ValueError("Must provide either atoms or data_dict")
-        
+
         if atoms is not None:
             self.atoms = atoms
             self._data_dict = None
         else:
             self.atoms = None
             self._data_dict = data_dict
-        
+
         self._calc = None
-    
+
     def to_dict(self) -> dict:
         """
         Convert to internal fcs-order format dict.
-        
+
         Returns:
             dict with keys: lattvec, elements, numbers, positions, types
         """
         if self._data_dict is not None:
             return self._data_dict.copy()
-        
+
         # Convert from ASE Atoms to internal format
         atoms = self.atoms
         result: dict = {}
-        
+
         # fcs-order uses nm units; ASE uses Angstrom (1 Angstrom = 0.1 nm)
         result["lattvec"] = 0.1 * atoms.get_cell().T
-        
+
         # Group consecutive same symbols like POSCAR species blocks
         chemical_symbols = atoms.get_chemical_symbols()
         elements: list[str] = []
@@ -90,32 +91,36 @@ class StructureData:
         if last is not None:
             elements.append(last)
             numbers.append(count)
-        
+
         result["elements"] = elements
         result["numbers"] = np.array(numbers, dtype=np.intc)
-        
+
         positions = atoms.get_scaled_positions()
         result["positions"] = np.asarray(positions).T
-        
+
         result["types"] = np.repeat(
             range(len(result["numbers"])), result["numbers"]
         ).tolist()
-        
+
         return result
-    
+
     @classmethod
     def from_dict(cls, data_dict: dict) -> StructureData:
         """
         Create StructureData from internal format dict.
-        
+
         Args:
             data_dict: Internal format dict (lattvec, elements, numbers, positions, types)
-        
+
         Returns:
             StructureData instance
         """
-        # Convert internal dict to ASE Atoms
-        symbols = np.repeat(data_dict["elements"], data_dict["numbers"]).tolist()
+        # Use types list to correctly map each atom to its element symbol
+        # This handles atoms in any order, not just grouped by element type
+        types = data_dict["types"]
+        elements = data_dict["elements"]
+        symbols = [elements[t] for t in types]
+
         atoms = Atoms(
             symbols=symbols,
             scaled_positions=data_dict["positions"].T,
@@ -123,19 +128,22 @@ class StructureData:
             pbc=True,
         )
         return cls(atoms=atoms)
-    
+
     def to_atoms(self) -> Atoms:
         """
         Get ASE Atoms object. Converts from dict if needed.
-        
+
         Returns:
             ASE Atoms object
         """
         if self.atoms is not None:
             return self.atoms
-        
-        # Convert from dict to Atoms
-        symbols = np.repeat(self._data_dict["elements"], self._data_dict["numbers"]).tolist()
+
+        # Convert from dict to Atoms using types list for correct symbol mapping
+        types = self._data_dict["types"]
+        elements = self._data_dict["elements"]
+        symbols = [elements[t] for t in types]
+
         atoms = Atoms(
             symbols=symbols,
             scaled_positions=self._data_dict["positions"].T,
@@ -144,12 +152,12 @@ class StructureData:
         )
         self.atoms = atoms
         return atoms
-    
+
     @property
     def calc(self) -> Optional[object]:
         """
         Get the calculator attached to this structure.
-        
+
         Returns:
             The calculator object, or None if not set
         """
@@ -158,28 +166,30 @@ class StructureData:
         if self.atoms is not None:
             return self.atoms.calc
         return None
-    
+
     @calc.setter
     def calc(self, calculator: Optional[object]) -> None:
         """
         Set the calculator for this structure.
-        
+
         Args:
             calculator: ASE calculator object or None
         """
         self._calc = calculator
         if self.atoms is not None:
             self.atoms.calc = calculator
-    
-    def make_supercell(self, na: int, nb: int, nc: int, order="atom-major") -> StructureData:
+
+    def make_supercell(
+        self, na: int, nb: int, nc: int, order="atom-major"
+    ) -> StructureData:
         """
         Create a supercell by replicating the structure along lattice vectors.
-        
+
         Args:
             na: Repetition count along first lattice vector
             nb: Repetition count along second lattice vector
             nc: Repetition count along third lattice vector
-                order: str (default: "cell-major")
+                order: str (default: "atom-major")
 
         how to order the atoms in the supercell
             "cell-major":
@@ -194,27 +204,85 @@ class StructureData:
         Returns:
             New StructureData instance representing the supercell
         """
-        atoms=self.to_atoms()
-        supercell_atoms=ase.build.make_supercell(atoms,[[na,0,0],[0,nb,0],[0,0,nc]],order=order)
+        atoms = self.to_atoms()
+        supercell_atoms = ase.build.make_supercell(
+            atoms, [[na, 0, 0], [0, nb, 0], [0, 0, nc]], order=order
+        )
 
         return StructureData(atoms=supercell_atoms)
-    
+
+    def to_supercell_dict(self, na: int, nb: int, nc: int) -> dict:
+        """
+        Create a supercell dictionary in the internal thirdorder_core format.
+
+        This method generates a supercell with the specific atom ordering required
+        by thirdorder_core functions like normalize_SPOSCAR, calc_dists, and Wedge.
+
+        The atom ordering follows: for each cell shift (varying i, j, k in order
+        of nc->nb->na), iterate through all atoms in the primitive cell.
+
+        Args:
+            na: Repetition count along first lattice vector
+            nb: Repetition count along second lattice vector
+            nc: Repetition count along third lattice vector
+
+        Returns:
+            dict with keys: na, nb, nc, lattvec, elements, numbers, positions, types
+            Compatible with thirdorder_core internal format.
+        """
+        import numpy as np
+
+        poscar = self.to_dict()
+        natoms_prim = poscar["positions"].shape[1]
+
+        sposcar = {}
+        sposcar["na"] = na
+        sposcar["nb"] = nb
+        sposcar["nc"] = nc
+
+        # Scale lattice vectors
+        sposcar["lattvec"] = np.array(poscar["lattvec"])
+        sposcar["lattvec"][:, 0] *= na
+        sposcar["lattvec"][:, 1] *= nb
+        sposcar["lattvec"][:, 2] *= nc
+
+        sposcar["elements"] = copy.copy(poscar["elements"])
+        sposcar["numbers"] = na * nb * nc * poscar["numbers"]
+
+        # Generate positions with thirdorder_core ordering: (nc, nb, na, natoms)
+        sposcar["positions"] = np.empty((3, natoms_prim * na * nb * nc))
+        for pos, (k, j, i, iat) in enumerate(
+            itertools.product(range(nc), range(nb), range(na), range(natoms_prim))
+        ):
+            sposcar["positions"][:, pos] = (poscar["positions"][:, iat] + [i, j, k]) / [
+                na,
+                nb,
+                nc,
+            ]
+
+        # Extend types list for all supercell atoms
+        sposcar["types"] = []
+        for _ in range(na * nb * nc):
+            sposcar["types"].extend(poscar["types"])
+
+        return sposcar
+
     def to_file(self, filename: str, out_format: str = "vasp") -> None:
         """
         Write structure to file using ASE.
-        
+
         Supported out_format:
           - "vasp" (alias: "poscar"): VASP POSCAR with direct coordinates
           - "cif": CIF format
           - "xyz": XYZ format
-        
+
         Args:
             filename: Output file path (without extension, will be added automatically)
             out_format: Output format specification (default: "vasp")
         """
         out_format = out_format.lower()
         atoms = self.to_atoms()
-        
+
         # Map format to file extension
         format_ext_map = {
             "vasp": "vasp",
@@ -222,42 +290,81 @@ class StructureData:
             "cif": "cif",
             "xyz": "xyz",
         }
-        
+
         if out_format not in format_ext_map:
             raise ValueError(
                 f"Unsupported format '{out_format}'. "
                 f"Must be one of: {', '.join(sorted(format_ext_map.keys()))}"
             )
-        
+
         # Add extension if not already present
         ext = Path(filename).suffix.lower()
         target_ext = f".{format_ext_map[out_format]}"
         if ext != target_ext:
             filename = f"{filename}{target_ext}"
-        
+
         # Write file
         if out_format in ("vasp", "poscar"):
             # Ensure direct coordinates for VASP
             ase.io.write(filename, atoms, format="vasp", direct=True)
         else:
             ase.io.write(filename, atoms, format=out_format)
-    
-    @classmethod
-    def to_phonopy_atoms(self):
-        atoms=self.to_atoms()
-        return PhonopyAtoms(
-            numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions
+
+    def to_phonopy_atoms(self) -> PhonopyAtoms:
+        """
+        Convert StructureData to PhonopyAtoms format.
+
+        This method converts the internal structure representation to PhonopyAtoms,
+        which is used by Phonopy for phonon calculations. The atomic masses are
+        preserved during conversion.
+
+        Returns:
+            PhonopyAtoms object with the same structure data.
+        """
+        atoms = self.to_atoms()
+        phonopy_atoms = PhonopyAtoms(
+            numbers=atoms.numbers,
+            cell=atoms.cell,
+            positions=atoms.positions,
         )
-    
+        # Preserve atomic masses from ASE Atoms
+        phonopy_atoms.masses = atoms.get_masses()
+        return phonopy_atoms
+
+    @classmethod
+    def from_phonopy_atoms(cls, phonopy_atoms: PhonopyAtoms) -> StructureData:
+        """
+        Create StructureData from PhonopyAtoms.
+
+        This method converts PhonopyAtoms (used by Phonopy) to StructureData,
+        enabling seamless integration between Phonopy and fcs-order workflows.
+
+        Args:
+            phonopy_atoms: PhonopyAtoms object to convert.
+
+        Returns:
+            StructureData instance with the same structure data.
+        """
+        atoms = Atoms(
+            cell=phonopy_atoms.cell,
+            numbers=phonopy_atoms.numbers,
+            positions=phonopy_atoms.positions,
+            pbc=True,
+        )
+        # Preserve atomic masses if available
+        if hasattr(phonopy_atoms, "masses") and phonopy_atoms.masses is not None:
+            atoms.set_masses(phonopy_atoms.masses)
+        return cls(atoms=atoms)
+
     @classmethod
     def from_file(cls, path: str, in_format: str = "auto") -> StructureData:
         """
         Read structure from file using ASE and create StructureData.
-        
+
         Args:
             path: File path
             in_format: Format specification ("auto" for auto-detection)
-        
+
         Returns:
             StructureData instance
         """

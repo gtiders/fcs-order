@@ -3,6 +3,8 @@
 
 """CLI for generating rattled structures using simple random displacements."""
 
+from __future__ import annotations
+
 import numpy as np
 import typer
 
