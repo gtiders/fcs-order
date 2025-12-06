@@ -11,7 +11,9 @@ import copy
 import numpy as np
 from ase import Atoms
 import ase.io
+import ase.build 
 
+from phonopy.structure.atoms import PhonopyAtoms
 
 class StructureData:
     """
@@ -169,7 +171,7 @@ class StructureData:
         if self.atoms is not None:
             self.atoms.calc = calculator
     
-    def make_supercell(self, na: int, nb: int, nc: int) -> StructureData:
+    def make_supercell(self, na: int, nb: int, nc: int, order="atom-major") -> StructureData:
         """
         Create a supercell by replicating the structure along lattice vectors.
         
@@ -177,48 +179,25 @@ class StructureData:
             na: Repetition count along first lattice vector
             nb: Repetition count along second lattice vector
             nc: Repetition count along third lattice vector
-        
+                order: str (default: "cell-major")
+
+        how to order the atoms in the supercell
+            "cell-major":
+            [atom1_shift1, atom2_shift1, ..., atom1_shift2, atom2_shift2, ...]
+            i.e. run first over all the atoms in cell1 and then move to cell2.
+
+            "atom-major":
+            [atom1_shift1, atom1_shift2, ..., atom2_shift1, atom2_shift2, ...]
+            i.e. run first over atom1 in all the cells and then move to atom2.
+            This may be the order preferred by most VASP users.
+
         Returns:
             New StructureData instance representing the supercell
         """
-        poscar = self.to_dict()
-        
-        supercell_dict = {}
-        supercell_dict["na"] = na
-        supercell_dict["nb"] = nb
-        supercell_dict["nc"] = nc
-        
-        # Scale lattice vectors
-        supercell_dict["lattvec"] = np.array(poscar["lattvec"])
-        supercell_dict["lattvec"][:, 0] *= na
-        supercell_dict["lattvec"][:, 1] *= nb
-        supercell_dict["lattvec"][:, 2] *= nc
-        
-        # Copy element symbols
-        supercell_dict["elements"] = copy.copy(poscar["elements"])
-        
-        # Scale atom counts
-        supercell_dict["numbers"] = na * nb * nc * poscar["numbers"]
-        
-        # Generate supercell positions
-        supercell_dict["positions"] = np.empty(
-            (3, poscar["positions"].shape[1] * na * nb * nc)
-        )
-        for pos, (k, j, i, iat) in enumerate(
-            itertools.product(
-                range(nc), range(nb), range(na), range(poscar["positions"].shape[1])
-            )
-        ):
-            supercell_dict["positions"][:, pos] = (
-                poscar["positions"][:, iat] + np.array([i, j, k])
-            ) / np.array([na, nb, nc])
-        
-        # Replicate types
-        supercell_dict["types"] = []
-        for _ in range(na * nb * nc):
-            supercell_dict["types"].extend(poscar["types"])
-        
-        return StructureData(data_dict=supercell_dict)
+        atoms=self.to_atoms()
+        supercell_atoms=ase.build.make_supercell(atoms,[[na,0,0],[0,nb,0],[0,0,nc]],order=order)
+
+        return StructureData(atoms=supercell_atoms)
     
     def to_file(self, filename: str, out_format: str = "vasp") -> None:
         """
@@ -262,6 +241,13 @@ class StructureData:
             ase.io.write(filename, atoms, format="vasp", direct=True)
         else:
             ase.io.write(filename, atoms, format=out_format)
+    
+    @classmethod
+    def to_phonopy_atoms(self):
+        atoms=self.to_atoms()
+        return PhonopyAtoms(
+            numbers=atoms.numbers, cell=atoms.cell, positions=atoms.positions
+        )
     
     @classmethod
     def from_file(cls, path: str, in_format: str = "auto") -> StructureData:
