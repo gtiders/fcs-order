@@ -7,16 +7,18 @@ import io
 import itertools
 
 import numpy as np
+from hiphive import ForceConstants
+from ase import Atoms
 
 
 def write_ifcs3(
-    phifull: np.ndarray,
-    poscar: dict,
-    sposcar: dict,
-    dmin: np.ndarray,
-    nequi: np.ndarray,
-    shifts: np.ndarray,
-    frange: float,
+    phi_full: np.ndarray,
+    primitive_dict: dict,
+    supercell_dict: dict,
+    min_distances: np.ndarray,
+    n_equivalent: np.ndarray,
+    cell_shifts: np.ndarray,
+    force_range: float,
     filename: str,
 ) -> None:
     """
@@ -24,88 +26,110 @@ def write_ifcs3(
     taking the force cutoff into account.
 
     Args:
-        phifull: Full IFCS tensor.
-        poscar: Primitive cell dictionary.
-        sposcar: Supercell dictionary.
-        dmin: Minimum distance matrix.
-        nequi: Number of equivalent images matrix.
-        shifts: Cell shifts matrix.
-        frange: Force range cutoff.
+        phi_full: Full IFCS tensor.
+        primitive_dict: Primitive cell dictionary.
+        supercell_dict: Supercell dictionary.
+        min_distances: Minimum distance matrix.
+        n_equivalent: Number of equivalent images matrix.
+        cell_shifts: Cell shifts matrix.
+        force_range: Force range cutoff.
         filename: Output filename.
     """
-    natoms = len(poscar["types"])
-    ntot = len(sposcar["types"])
+    n_atoms = len(primitive_dict["types"])
+    n_total = len(supercell_dict["types"])
 
-    shifts27 = list(itertools.product(range(-1, 2), range(-1, 2), range(-1, 2)))
-    frange2 = frange * frange
+    shifts_27 = list(itertools.product(range(-1, 2), range(-1, 2), range(-1, 2)))
+    force_range_sq = force_range * force_range
 
-    nblocks = 0
+    n_blocks = 0
     f = io.StringIO()
-    for ii, jj in itertools.product(range(natoms), range(ntot)):
-        if dmin[ii, jj] >= frange:
+    for atom_i, atom_j in itertools.product(range(n_atoms), range(n_total)):
+        if min_distances[atom_i, atom_j] >= force_range:
             continue
-        jatom = jj % natoms
-        shiftsij = [shifts27[i] for i in shifts[ii, jj, : nequi[ii, jj]]]
-        for kk in range(ntot):
-            if dmin[ii, kk] >= frange:
+        j_atom_indices = atom_j % n_atoms
+        shifts_ij = [
+            shifts_27[i]
+            for i in cell_shifts[atom_i, atom_j, : n_equivalent[atom_i, atom_j]]
+        ]
+        for atom_k in range(n_total):
+            if min_distances[atom_i, atom_k] >= force_range:
                 continue
-            katom = kk % natoms
-            shiftsik = [shifts27[i] for i in shifts[ii, kk, : nequi[ii, kk]]]
-            d2min = np.inf
-            best2 = None
-            best3 = None
-            for shift2 in shiftsij:
-                carj = np.dot(sposcar["lattvec"], shift2 + sposcar["positions"][:, jj])
-                for shift3 in shiftsik:
-                    cark = np.dot(
-                        sposcar["lattvec"], shift3 + sposcar["positions"][:, kk]
+            k_atom_indices = atom_k % n_atoms
+            shifts_ik = [
+                shifts_27[i]
+                for i in cell_shifts[atom_i, atom_k, : n_equivalent[atom_i, atom_k]]
+            ]
+            d2_min = np.inf
+            best_2 = None
+            best_3 = None
+            for shift_2 in shifts_ij:
+                car_j = np.dot(
+                    supercell_dict["lattvec"],
+                    shift_2 + supercell_dict["positions"][:, atom_j],
+                )
+                for shift_3 in shifts_ik:
+                    car_k = np.dot(
+                        supercell_dict["lattvec"],
+                        shift_3 + supercell_dict["positions"][:, atom_k],
                     )
-                    d2 = ((carj - cark) ** 2).sum()
-                    if d2 < d2min:
-                        best2 = shift2
-                        best3 = shift3
-                        d2min = d2
-            if d2min >= frange2:
+                    d2 = ((car_j - car_k) ** 2).sum()
+                    if d2 < d2_min:
+                        best_2 = shift_2
+                        best_3 = shift_3
+                        d2_min = d2
+            if d2_min >= force_range_sq:
                 continue
-            nblocks += 1
-            Rj = np.dot(
-                sposcar["lattvec"],
-                best2 + sposcar["positions"][:, jj] - sposcar["positions"][:, jatom],
+            n_blocks += 1
+            R_j = np.dot(
+                supercell_dict["lattvec"],
+                best_2
+                + supercell_dict["positions"][:, atom_j]
+                - supercell_dict["positions"][:, j_atom_indices],
             )
-            Rk = np.dot(
-                sposcar["lattvec"],
-                best3 + sposcar["positions"][:, kk] - sposcar["positions"][:, katom],
+            R_k = np.dot(
+                supercell_dict["lattvec"],
+                best_3
+                + supercell_dict["positions"][:, atom_k]
+                - supercell_dict["positions"][:, k_atom_indices],
             )
             f.write("\n")
-            f.write("{:>5}\n".format(nblocks))
+            f.write("{:>5}\n".format(n_blocks))
             f.write(
-                "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(list(10.0 * Rj))
+                "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(
+                    list(10.0 * R_j)
+                )
             )
             f.write(
-                "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(list(10.0 * Rk))
+                "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(
+                    list(10.0 * R_k)
+                )
             )
-            f.write("{:>6d} {:>6d} {:>6d}\n".format(ii + 1, jatom + 1, katom + 1))
-            for ll, mm, nn in itertools.product(range(3), range(3), range(3)):
+            f.write(
+                "{:>6d} {:>6d} {:>6d}\n".format(
+                    atom_i + 1, j_atom_indices + 1, k_atom_indices + 1
+                )
+            )
+            for a, b, c in itertools.product(range(3), range(3), range(3)):
                 f.write(
                     "{:>2d} {:>2d} {:>2d} {:>20.10e}\n".format(
-                        ll + 1, mm + 1, nn + 1, phifull[ll, mm, nn, ii, jj, kk]
+                        a + 1, b + 1, c + 1, phi_full[a, b, c, atom_i, atom_j, atom_k]
                     )
                 )
 
     with open(filename, "w") as ffinal:
-        ffinal.write("{:>5}\n".format(nblocks))
+        ffinal.write("{:>5}\n".format(n_blocks))
         ffinal.write(f.getvalue())
     f.close()
 
 
 def write_ifcs4(
-    phifull: np.ndarray,
-    poscar: dict,
-    sposcar: dict,
-    dmin: np.ndarray,
-    nequi: np.ndarray,
-    shifts: np.ndarray,
-    frange: float,
+    phi_full: np.ndarray,
+    primitive_dict: dict,
+    supercell_dict: dict,
+    min_distances: np.ndarray,
+    n_equivalent: np.ndarray,
+    cell_shifts: np.ndarray,
+    force_range: float,
     filename: str,
 ) -> None:
     """
@@ -113,122 +137,154 @@ def write_ifcs4(
     taking the force cutoff into account.
 
     Args:
-        phifull: Full IFCS tensor.
-        poscar: Primitive cell dictionary.
-        sposcar: Supercell dictionary.
-        dmin: Minimum distance matrix.
-        nequi: Number of equivalent images matrix.
-        shifts: Cell shifts matrix.
-        frange: Force range cutoff.
+        phi_full: Full IFCS tensor.
+        primitive_dict: Primitive cell dictionary.
+        supercell_dict: Supercell dictionary.
+        min_distances: Minimum distance matrix.
+        n_equivalent: Number of equivalent images matrix.
+        cell_shifts: Cell shifts matrix.
+        force_range: Force range cutoff.
         filename: Output filename.
     """
-    natoms = len(poscar["types"])
-    ntot = len(sposcar["types"])
+    n_atoms = len(primitive_dict["types"])
+    n_total = len(supercell_dict["types"])
 
-    shifts27 = list(itertools.product(range(-1, 2), range(-1, 2), range(-1, 2)))
-    frange2 = frange * frange
+    shifts_27 = list(itertools.product(range(-1, 2), range(-1, 2), range(-1, 2)))
+    force_range_sq = force_range * force_range
 
-    nblocks = 0
+    n_blocks = 0
     f = io.StringIO()
-    for ii, jj in itertools.product(range(natoms), range(ntot)):
-        if dmin[ii, jj] >= frange:
+    for atom_i, atom_j in itertools.product(range(n_atoms), range(n_total)):
+        if min_distances[atom_i, atom_j] >= force_range:
             continue
-        jatom = jj % natoms
-        shiftsij = [shifts27[i] for i in shifts[ii, jj, : nequi[ii, jj]]]
-        for kk in range(ntot):
-            if dmin[ii, kk] >= frange:
+        j_atom_indices = atom_j % n_atoms
+        shifts_ij = [
+            shifts_27[i]
+            for i in cell_shifts[atom_i, atom_j, : n_equivalent[atom_i, atom_j]]
+        ]
+        for atom_k in range(n_total):
+            if min_distances[atom_i, atom_k] >= force_range:
                 continue
-            katom = kk % natoms
-            shiftsik = [shifts27[i] for i in shifts[ii, kk, : nequi[ii, kk]]]
-            for ll in range(ntot):
-                if dmin[ii, ll] >= frange:
+            k_atom_indices = atom_k % n_atoms
+            shifts_ik = [
+                shifts_27[i]
+                for i in cell_shifts[atom_i, atom_k, : n_equivalent[atom_i, atom_k]]
+            ]
+            for atom_l in range(n_total):
+                if min_distances[atom_i, atom_l] >= force_range:
                     continue
-                latom = ll % natoms
-                shiftsil = [shifts27[i] for i in shifts[ii, ll, : nequi[ii, ll]]]
+                l_atom_indices = atom_l % n_atoms
+                shifts_il = [
+                    shifts_27[i]
+                    for i in cell_shifts[atom_i, atom_l, : n_equivalent[atom_i, atom_l]]
+                ]
 
-                d2min = np.inf
-                best2 = None
-                best3 = None
-                best4 = None
+                d2_min = np.inf
+                best_2 = None
+                best_3 = None
+                best_4 = None
 
-                for shift2 in shiftsij:
-                    carj = np.dot(
-                        sposcar["lattvec"], shift2 + sposcar["positions"][:, jj]
+                for shift_2 in shifts_ij:
+                    car_j = np.dot(
+                        supercell_dict["lattvec"],
+                        shift_2 + supercell_dict["positions"][:, atom_j],
                     )
-                    for shift3 in shiftsik:
-                        cark = np.dot(
-                            sposcar["lattvec"], shift3 + sposcar["positions"][:, kk]
+                    for shift_3 in shifts_ik:
+                        car_k = np.dot(
+                            supercell_dict["lattvec"],
+                            shift_3 + supercell_dict["positions"][:, atom_k],
                         )
-                        for shift4 in shiftsil:
-                            carl = np.dot(
-                                sposcar["lattvec"], shift4 + sposcar["positions"][:, ll]
+                        for shift_4 in shifts_il:
+                            car_l = np.dot(
+                                supercell_dict["lattvec"],
+                                shift_4 + supercell_dict["positions"][:, atom_l],
                             )
-                            d2_1 = ((carj - cark) ** 2).sum()
-                            d2_2 = ((carj - carl) ** 2).sum()
-                            d2_3 = ((cark - carl) ** 2).sum()
+                            d2_1 = ((car_j - car_k) ** 2).sum()
+                            d2_2 = ((car_j - car_l) ** 2).sum()
+                            d2_3 = ((car_k - car_l) ** 2).sum()
                             d2 = max(d2_1, d2_2, d2_3)
-                            if d2 < d2min:
-                                best2 = shift2
-                                best3 = shift3
-                                best4 = shift4
-                                d2min = d2
-                if d2min >= frange2:
+                            if d2 < d2_min:
+                                best_2 = shift_2
+                                best_3 = shift_3
+                                best_4 = shift_4
+                                d2_min = d2
+                if d2_min >= force_range_sq:
                     continue
-                nblocks += 1
-                Rj = np.dot(
-                    sposcar["lattvec"],
-                    best2
-                    + sposcar["positions"][:, jj]
-                    - sposcar["positions"][:, jatom],
+                n_blocks += 1
+                R_j = np.dot(
+                    supercell_dict["lattvec"],
+                    best_2
+                    + supercell_dict["positions"][:, atom_j]
+                    - supercell_dict["positions"][:, j_atom_indices],
                 )
-                Rk = np.dot(
-                    sposcar["lattvec"],
-                    best3
-                    + sposcar["positions"][:, kk]
-                    - sposcar["positions"][:, katom],
+                R_k = np.dot(
+                    supercell_dict["lattvec"],
+                    best_3
+                    + supercell_dict["positions"][:, atom_k]
+                    - supercell_dict["positions"][:, k_atom_indices],
                 )
-                Rl = np.dot(
-                    sposcar["lattvec"],
-                    best4
-                    + sposcar["positions"][:, ll]
-                    - sposcar["positions"][:, latom],
+                R_l = np.dot(
+                    supercell_dict["lattvec"],
+                    best_4
+                    + supercell_dict["positions"][:, atom_l]
+                    - supercell_dict["positions"][:, l_atom_indices],
                 )
                 f.write("\n")
-                f.write("{:>5}\n".format(nblocks))
+                f.write("{:>5}\n".format(n_blocks))
                 f.write(
                     "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(
-                        list(10.0 * Rj)
+                        list(10.0 * R_j)
                     )
                 )
                 f.write(
                     "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(
-                        list(10.0 * Rk)
+                        list(10.0 * R_k)
                     )
                 )
                 f.write(
                     "{0[0]:>15.10e} {0[1]:>15.10e} {0[2]:>15.10e}\n".format(
-                        list(10.0 * Rl)
+                        list(10.0 * R_l)
                     )
                 )
                 f.write(
                     "{:>6d} {:>6d} {:>6d} {:>6d}\n".format(
-                        ii + 1, jatom + 1, katom + 1, latom + 1
+                        atom_i + 1,
+                        j_atom_indices + 1,
+                        k_atom_indices + 1,
+                        l_atom_indices + 1,
                     )
                 )
-                for mm, nn, oo, pp in itertools.product(
+                for m, n, o, p in itertools.product(
                     range(3), range(3), range(3), range(3)
                 ):
                     f.write(
                         "{:>2d} {:>2d} {:>2d} {:>2d} {:>20.10f}\n".format(
-                            mm + 1,
-                            nn + 1,
-                            oo + 1,
-                            pp + 1,
-                            phifull[mm, nn, oo, pp, ii, jj, kk, ll],
+                            m + 1,
+                            n + 1,
+                            o + 1,
+                            p + 1,
+                            phi_full[m, n, o, p, atom_i, atom_j, atom_k, atom_l],
                         )
                     )
 
     with open(filename, "w") as ffinal:
-        ffinal.write("{:>5}\n".format(nblocks))
+        ffinal.write("{:>5}\n".format(n_blocks))
         ffinal.write(f.getvalue())
     f.close()
+
+
+def write_fc3_hdf5(
+    primitive: Atoms, supercell: Atoms, shengbte_filename: str, hdf5_filename: str
+) -> None:
+    """
+    Write out the full third-order force constant matrix in phono3py HDF5 format
+    using hiphive for reading ShengBTE files and writing to HDF5.
+
+    Args:
+        primitive: Primitive cell structure (ASE Atoms).
+        supercell: Supercell structure (ASE Atoms).
+        shengbte_filename: Path to the ShengBTE format force constants file.
+        hdf5_filename: Output HDF5 filename.
+    """
+    fcs = ForceConstants.read_shengBTE(supercell, shengbte_filename, primitive)
+    fcs.write_to_phono3py(hdf5_filename)

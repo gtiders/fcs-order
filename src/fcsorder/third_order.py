@@ -19,7 +19,7 @@ from rich.progress import Progress
 
 from fcsorder.calc.calculators import CalculatorFactory
 from fcsorder.core import thirdorder_core
-from fcsorder.io.writer import write_ifcs3
+from fcsorder.io.writer import write_ifcs3, write_fc3_hdf5
 from fcsorder.core.symmetry import SymmetryOperations
 from fcsorder.io.reader import StructureData
 
@@ -265,6 +265,7 @@ def calculate_fc3(
     calc: Calculator,
     supercell_matrix: Tuple[int, int, int],
     cutoff: str,
+    output_format: str = "text",
     save_intermediate: bool = False,
     h: float = H_DEFAULT,
     symprec: float = SYMPREC_DEFAULT,
@@ -381,6 +382,16 @@ def calculate_fc3(
         "FORCE_CONSTANTS_3RD",
     )
 
+    if output_format == "hdf5":
+        typer.echo("Converting output to fc3.hdf5 (using hiphive)")
+        # Convert internal dicts to ASE Atoms for hiphive
+        primitive_atoms = StructureData.from_dict(primitive_dict).to_atoms()
+        supercell_atoms = StructureData.from_dict(supercell_dict).to_atoms()
+
+        write_fc3_hdf5(
+            primitive_atoms, supercell_atoms, "FORCE_CONSTANTS_3RD", "fc3.hdf5"
+        )
+
 
 def fc3(
     na: int = typer.Argument(
@@ -451,6 +462,12 @@ def fc3(
         "--symprec",
         help="Symmetry precision tolerance",
     ),
+    output_format: str = typer.Option(
+        "text",
+        "--output-format",
+        "-f",
+        help="Output format: text or hdf5",
+    ),
 ):
     """
     Calculate third-order force constants using any registered calculator.
@@ -498,6 +515,7 @@ def fc3(
             calc=calc,
             supercell_matrix=(na, nb, nc),
             cutoff=cutoff,
+            output_format=output_format,
             save_intermediate=save_intermediate,
             h=h,
             symprec=symprec,
