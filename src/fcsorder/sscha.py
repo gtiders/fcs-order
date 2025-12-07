@@ -161,10 +161,10 @@ def self_consistent_harmonic_model_anderson(
 
         if i == 0 and np.allclose(parameters, 0):
             # Initial iteration with zero parameters: use logic similar to hiphive's cold start
-            # Standard rattle with 0.05 A std dev (typical guess)
-            typer.echo("    Generating initial random rattled structures (std=0.01 A)")
+            # Standard rattle with 0.015 A std dev (typical guess)
+            typer.echo("    Generating initial random rattled structures (std=0.015 A)")
             atoms_list_raw = generate_rattled_structures(
-                atoms_ideal, n_structures, 0.01
+                atoms_ideal, n_structures, 0.015
             )
         else:
             # Phonon rattled structures
@@ -194,16 +194,7 @@ def self_consistent_harmonic_model_anderson(
             typer.echo(f"  Error preparing structures: {e}")
             break
 
-        # 2. Calculate forces
-        # prepare_structures already calculated forces if calc was passed.
-        # But we force calculation again if needed? No, prepare_structures does it.
-        # We just verify efficient calculation.
-        # Original code:
-        # phonon_rattled_structures = prepare_structures(phonon_rattled_structures, atoms_ideal, calc, False)
-        # prepare_structures implementation loops and calls get_forces().
-        pass
-
-        # 3. Fit new parameters
+        # 2. Fit new parameters
         sc = StructureContainer(cs)
         for atoms in atoms_list:
             sc.add_structure(atoms)
@@ -233,7 +224,7 @@ def self_consistent_harmonic_model_anderson(
         )
 
         # Convergence check (simple)
-        if diff < 1e-5:  # Adjustable tolerance
+        if diff < 1e-3:  # Adjustable tolerance
             typer.echo("  Converged!")
             break
 
