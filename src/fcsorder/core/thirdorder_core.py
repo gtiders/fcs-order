@@ -13,7 +13,7 @@ This module provides:
 from __future__ import annotations
 
 from math import fabs
-from typing import TYPE_CHECKING, Tuple
+from typing import Tuple
 
 import numpy as np
 import scipy as sp
@@ -24,9 +24,6 @@ from numba.typed import List
 from rich.progress import Progress
 
 from fcsorder.core.symmetry import SymmetryOperations
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
 
 
 # =============================================================================

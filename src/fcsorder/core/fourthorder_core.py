@@ -13,7 +13,7 @@ This module provides:
 from __future__ import annotations
 
 from math import fabs
-from typing import TYPE_CHECKING, Tuple
+from typing import Tuple
 
 import numpy as np
 import scipy as sp
@@ -24,9 +24,6 @@ from numba.typed import List
 from rich.progress import Progress
 
 from fcsorder.core.symmetry import SymmetryOperations
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
 
 
 # =============================================================================
@@ -63,7 +60,7 @@ QUARTET_PERMUTATIONS = np.array(
         [3, 2, 0, 1],
         [3, 2, 1, 0],
     ],
-    dtype=np.intc,
+    dtype=np.int64,
 )
 
 
@@ -76,9 +73,9 @@ QUARTET_PERMUTATIONS = np.array(
 def gaussian_elimination(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Find independent IFC basis via Gaussian elimination."""
     n_rows, n_cols = matrix.shape
-    dependent = np.empty(n_cols, dtype=np.intc)
-    independent = np.empty(n_cols, dtype=np.intc)
-    basis_transform = np.zeros((n_cols, n_cols), dtype=np.double)
+    dependent = np.empty(n_cols, dtype=np.int64)
+    independent = np.empty(n_cols, dtype=np.int64)
+    basis_transform = np.zeros((n_cols, n_cols), dtype=np.float64)
 
     current_row = 0
     n_dependent = 0
@@ -171,8 +168,8 @@ def _index_to_cell_atom(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Create mapping from linear index to (cell, species)."""
     n_total = grid[0] * grid[1] * grid[2] * n_species
-    cell_indices = np.empty((3, n_total), dtype=np.intc)
-    species_indices = np.empty(n_total, dtype=np.intc)
+    cell_indices = np.empty((3, n_total), dtype=np.int64)
+    species_indices = np.empty(n_total, dtype=np.int64)
     for idx in range(n_total):
         tmp, species_indices[idx] = divmod(idx, n_species)
         tmp, cell_indices[0, idx] = divmod(tmp, grid[0])
@@ -356,20 +353,22 @@ class QuartetWedge:
         if self._alloc_size == 0:
             self._alloc_size = 32
             max_equiv = 24 * self.symmetry_ops.nsyms
-            self.nequi = np.empty(self._alloc_size, dtype=np.intc)
-            self.allequilist = np.empty((4, max_equiv, self._alloc_size), dtype=np.intc)
+            self.nequi = np.empty(self._alloc_size, dtype=np.int64)
+            self.allequilist = np.empty(
+                (4, max_equiv, self._alloc_size), dtype=np.int64
+            )
             self.transformationarray = np.empty(
-                (81, 81, max_equiv, self._alloc_size), dtype=np.double
+                (81, 81, max_equiv, self._alloc_size), dtype=np.float64
             )
             self._transformation = np.empty(
-                (81, 81, max_equiv, self._alloc_size), dtype=np.double
+                (81, 81, max_equiv, self._alloc_size), dtype=np.float64
             )
             self._transformation_aux = np.empty(
-                (81, 81, self._alloc_size), dtype=np.double
+                (81, 81, self._alloc_size), dtype=np.float64
             )
-            self.nindependentbasis = np.empty(self._alloc_size, dtype=np.intc)
-            self.independentbasis = np.empty((81, self._alloc_size), dtype=np.intc)
-            self.llist = np.empty((4, self._alloc_size), dtype=np.intc)
+            self.nindependentbasis = np.empty(self._alloc_size, dtype=np.int64)
+            self.independentbasis = np.empty((81, self._alloc_size), dtype=np.int64)
+            self.llist = np.empty((4, self._alloc_size), dtype=np.int64)
         else:
             self._alloc_size *= 2
             self.nequi = np.concatenate((self.nequi, self.nequi), axis=-1)
@@ -396,7 +395,7 @@ class QuartetWedge:
     def _expand_all_list(self) -> None:
         if self._all_alloc_size == 0:
             self._all_alloc_size = 512
-            self._all_list = np.empty((4, self._all_alloc_size), dtype=np.intc)
+            self._all_list = np.empty((4, self._all_alloc_size), dtype=np.int64)
         else:
             self._all_alloc_size *= 2
             self._all_list = np.concatenate((self._all_list, self._all_list), axis=-1)
@@ -409,7 +408,7 @@ class QuartetWedge:
                 self.supercell_dict["nb"],
                 self.supercell_dict["nc"],
             ],
-            dtype=np.intc,
+            dtype=np.int64,
         )
         n_sym = self.symmetry_ops.nsyms
         n_atoms = len(self.primitive_dict["types"])
@@ -428,7 +427,7 @@ class QuartetWedge:
                 for j in range(-1, 2)
                 for k in range(-1, 2)
             ],
-            dtype=np.intc,
+            dtype=np.int64,
         )
         equiv_atom_map = self.symmetry_ops.map_supercell(self.supercell_dict)
         cell_indices, species_indices = _index_to_cell_atom(grid, n_atoms)
@@ -436,14 +435,14 @@ class QuartetWedge:
             self._build_rotation_matrices(n_sym, rotation_tensors)
         )
 
-        quartet = np.empty(4, dtype=np.intc)
-        quartet_permuted = np.empty(4, dtype=np.intc)
-        quartet_symmetric = np.empty(4, dtype=np.intc)
-        equiv_quartets = np.empty((4, n_sym * 24), dtype=np.intc)
-        coeff_matrix = np.empty((24 * n_sym * 81, 81), dtype=np.double)
-        shift_j = np.empty((3, 27), dtype=np.intc)
-        shift_k = np.empty((3, 27), dtype=np.intc)
-        shift_l = np.empty((3, 27), dtype=np.intc)
+        quartet = np.empty(4, dtype=np.int64)
+        quartet_permuted = np.empty(4, dtype=np.int64)
+        quartet_symmetric = np.empty(4, dtype=np.int64)
+        equiv_quartets = np.empty((4, n_sym * 24), dtype=np.int64)
+        coeff_matrix = np.empty((24 * n_sym * 81, 81), dtype=np.float64)
+        shift_j = np.empty((3, 27), dtype=np.int64)
+        shift_k = np.empty((3, 27), dtype=np.int64)
+        shift_l = np.empty((3, 27), dtype=np.int64)
 
         with Progress() as progress:
             task = progress.add_task("Scanning atom quartets", total=n_atoms)
@@ -600,7 +599,7 @@ class QuartetWedge:
                                                 n_nonzero += 1
 
                             coeff_reduced = np.ascontiguousarray(
-                                np.zeros((max(n_nonzero, 81), 81), dtype=np.double)
+                                np.zeros((max(n_nonzero, 81), 81), dtype=np.float64)
                             )
                             coeff_reduced[:n_nonzero, :] = coeff_matrix[:n_nonzero, :]
                             basis_transform, independent = gaussian_elimination(
@@ -625,7 +624,7 @@ class QuartetWedge:
     def _build_rotation_matrices(
         self, n_sym: int, rotation_tensors: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        rot = np.empty((24, n_sym, 81, 81), dtype=np.double)
+        rot = np.empty((24, n_sym, 81, 81), dtype=np.float64)
         for perm_idx in range(24):
             perm = QUARTET_PERMUTATIONS[perm_idx]
             for sym_idx in range(n_sym):
@@ -656,7 +655,7 @@ class QuartetWedge:
                                                 )
 
         rot_diff = rot.copy()
-        has_nonzero = np.zeros((24, n_sym, 81), dtype=np.intc)
+        has_nonzero = np.zeros((24, n_sym, 81), dtype=np.int64)
         for perm_idx in range(24):
             for sym_idx in range(n_sym):
                 for idx_p in range(81):
@@ -718,7 +717,7 @@ def reconstruct_ifcs(
         (3, 3, 3, 3, n_atoms, n_total, n_total, n_total), format="dok"
     )
     accumulated = np.insert(
-        np.cumsum(wedge.nindependentbasis[:n_list], dtype=np.intc), 0, 0
+        np.cumsum(wedge.nindependentbasis[:n_list], dtype=np.int64), 0, 0
     )
     n_total_indep = accumulated[-1]
 
@@ -749,10 +748,10 @@ def reconstruct_ifcs(
                     ]
                 )
             progress.update(task, advance=1)
-    phi_values = np.array(phi_list, dtype=np.double)
+    phi_values = np.array(phi_list, dtype=np.float64)
 
-    quartet_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.intc)
-    equiv_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.intc)
+    quartet_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.int64)
+    equiv_class_idx = -np.ones((n_atoms, n_total, n_total, n_total), dtype=np.int64)
     equiv_list = wedge.allequilist
     for idx in range(n_list):
         for eq in range(wedge.nequi[idx]):
@@ -802,7 +801,7 @@ def reconstruct_ifcs(
     )
     return sparse.COO(
         final_coords,
-        np.array(coords[8], dtype=np.double),
+        np.array(coords[8], dtype=np.float64),
         shape=(3, 3, 3, 3, n_atoms, n_total, n_total, n_total),
         has_duplicates=True,
     )
