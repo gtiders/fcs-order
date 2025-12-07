@@ -483,11 +483,10 @@ def fc3(
     structure_atoms = structure.to_atoms()
 
     # Build supercell using StructureData's make_supercell method
-    supercell_structure = structure.make_supercell(na, nb, nc)
+    supercell_dict = structure.to_supercell_dict(na, nb, nc)
+    supercell_structure = structure.from_dict(supercell_dict)
     supercell_atoms = supercell_structure.to_atoms()
-    supercell_atoms.write("fc3_SPOSCAR", format="vasp", direct=True)
     typer.echo(f"Supercell matrix: {na} x {nb} x {nc}")
-    typer.echo("Supercell written to fc3_SPOSCAR")
 
     # Build calculator arguments
     calculator_kwargs = {
