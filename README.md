@@ -19,7 +19,7 @@ pip install fcs-order
 - **Hiphive**: `pip install hiphive`
 - **TACE**: `pip install tace`
 - **Phonopy**: `pip install phonopy` (Required for fc2/scph)
-
+- **MACE** reference the officical document of mace
 ## CLI Usage
 
 The main command is `fcsorder` (or `forcekit`).
