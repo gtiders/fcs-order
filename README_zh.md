@@ -17,6 +17,7 @@ pip install fcs-order
 - **Hiphive**: `pip install hiphive`
 - **TACE**: `pip install tace`
 - **Phonopy**: `pip install phonopy` (计算 fc2/scph 必需)
+- **MACE**: 请参考mace的官方文档
 
 ## CLI 使用说明
 
