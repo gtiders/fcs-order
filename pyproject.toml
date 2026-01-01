@@ -1,19 +1,43 @@
+[build-system]
+requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "mlfcs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Machine Learning Force Constant Suite - 计算非谐IFCs的工具"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "ase>=3.27.0",
-    "cython>=3.2.3",
-    "llvmlite>=0.46.0",
+    "calorine>=3.2",
     "numpy>=2.4.0",
     "scipy>=1.16.3",
-    "setuptools>=80.9.0",
     "spglib>=2.7.0",
 ]
+
+[project.scripts]
+mlfcs = "mlfcs.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+[tool.uv.workspace]
+members = [
+    ".",
+    ".",
+    ".",
+    ".",
+]
+
+[tool.uv.sources]
+mlfcs = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "mlfcs",
+]
