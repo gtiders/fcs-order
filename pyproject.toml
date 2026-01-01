@@ -1,0 +1,19 @@
+[project]
+name = "mlfcs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ase>=3.27.0",
+    "cython>=3.2.3",
+    "llvmlite>=0.46.0",
+    "numpy>=2.4.0",
+    "scipy>=1.16.3",
+    "setuptools>=80.9.0",
+    "spglib>=2.7.0",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
