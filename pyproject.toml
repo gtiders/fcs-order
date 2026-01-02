@@ -17,7 +17,8 @@ dependencies = [
 ]
 
 [project.scripts]
-mlfcs = "mlfcs.cli:main"
+thirdorder = "mlfcs.thirdorder.core:main"
+fourthorder = "mlfcs.fourthorder.core:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -26,18 +27,7 @@ where = ["src"]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
-[tool.uv.workspace]
-members = [
-    ".",
-    ".",
-    ".",
-    ".",
-]
 
 [tool.uv.sources]
 mlfcs = { workspace = true }
 
-[dependency-groups]
-dev = [
-    "mlfcs",
-]
