@@ -2,10 +2,7 @@
 
 __version__ = "0.1.0"
 
-# 暴露主要子模块
-from . import cli
-from . import file_io
-from . import thirdorder
-from . import fourthorder
+from .thirdorder import ThirdOrderRun
+from .fourthorder import FourthOrderRun
 
-__all__ = ["cli", "file_io", "thirdorder", "fourthorder", "__version__"]
+__all__ = ["ThirdOrderRun", "FourthOrderRun"]
