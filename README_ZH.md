@@ -125,6 +125,33 @@ runner.run_calculator(calc)
 runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
 ```
 
+### 自洽谐波计算 (SSCHA)
+
+您可以使用 `MLPSSCHA` 类结合任意 ASE 计算器（如 NEP）进行 SSCHA 计算。
+
+```python
+from mlfcs.sscha import MLPSSCHA
+from calorine.calculators import CPUNEP
+
+# 初始化计算器
+calc = CPUNEP("nep.txt")
+
+# 设置 SSCHA 运行参数
+sscha = MLPSSCHA(
+    unitcell="./POSCAR",         # 原胞文件路径
+    supercell_matrix=[3, 3, 3],  # 超胞扩倍矩阵
+    calculator=calc,             # ASE 计算器
+    temperature=300,             # 温度 (K)
+    number_of_snapshots=1000,    # 每次迭代生成的结构数
+    max_iterations=20,           # 最大迭代次数
+    avg_n_last_steps=5,          # 取最后 5 步结果平均作为最终输出
+    fc_output="FORCE_CONSTANTS"  # 输出文件名
+)
+
+# 运行计算
+sscha.run()
+```
+
 ### 最佳实践：防止计算器缓存问题
 
 如果您选择手动遍历结构进行计算（而不是使用 `runner.run_calculator`），请务必注意 ASE 计算器的缓存机制。为了防止 `write` 操作意外触发重算或写入旧数据，建议使用 `SinglePointCalculator` "冻结" 结果。

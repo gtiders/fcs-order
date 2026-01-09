@@ -10,21 +10,23 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "ase>=3.27.0",
-    "numpy>=2.4.0",
-    "scipy>=1.16.3",
-    "spglib>=2.7.0",
+    "numpy>=1.26.0",
+    "phonopy>=2.20.0",
+    "scipy>=1.10.0",
+    "spglib>=2.3.0",
+    "symfc>=1.6.0",
 ]
 
 [project.scripts]
 thirdorder = "mlfcs.thirdorder.core:main"
 fourthorder = "mlfcs.fourthorder.core:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 
 [tool.uv.sources]

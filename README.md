@@ -129,6 +129,33 @@ You can customize the displacement step (`h`) and symmetry precision (`symprec`)
 runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
 ```
 
+### Self-Consistent Harmonic Approximation (SSCHA)
+
+You can use the `MLPSSCHA` class to perform SSCHA calculations using any ASE calculator (e.g., NEP).
+
+```python
+from mlfcs.sscha import MLPSSCHA
+from calorine.calculators import CPUNEP
+
+# Initialize calculator
+calc = CPUNEP("nep.txt")
+
+# Setup SSCHA run
+sscha = MLPSSCHA(
+    unitcell="./POSCAR",         # Path to primitive cell
+    supercell_matrix=[3, 3, 3],  # Supercell expansion
+    calculator=calc,             # ASE Calculator
+    temperature=300,             # Temperature in K
+    number_of_snapshots=1000,    # Structures per iteration
+    max_iterations=20,           # Max iterations
+    avg_n_last_steps=5,          # Average last 5 steps for final result
+    fc_output="FORCE_CONSTANTS"  # Output filename
+)
+
+# Run calculation
+sscha.run()
+```
+
 ### Best Practice: Preventing Calculator Caching Issues
 
 If you choose to manually loop through structures for calculation (instead of using `runner.run_calculator`), be mindful of the ASE calculator's caching mechanism. To prevent `write` operations from accidentally triggering re-calculation or writing old data, it is recommended to "freeze" results using `SinglePointCalculator`.
