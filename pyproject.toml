@@ -22,13 +22,24 @@ thirdorder = "mlfcs.thirdorder.core:main"
 fourthorder = "mlfcs.fourthorder.core:main"
 
 [[tool.uv.index]]
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+url = "https://mirrors.ustc.edu.cn/pypi/web/simple"
 default = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[dependency-groups]
+dev = [
+    "mlfcs",
+]
+
 
 [tool.uv.sources]
 mlfcs = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    ".",
+    ".",
+]
 

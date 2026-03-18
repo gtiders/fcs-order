@@ -251,7 +251,7 @@ def write_ifcs(phifull, poscar, sposcar, dmin, nequi, shifts, frange, filename):
             )
             f.write("{:>6d} {:>6d} {:>6d}\n".format(ii + 1, jatom + 1, katom + 1))
             for ll, mm, nn in itertools.product(xrange(3), xrange(3), xrange(3)):
-                if isinstance(phifull, dict):
+                if hasattr(phifull, 'get'):
                     val = phifull.get((ll, mm, nn, ii, jj, kk), 0.0)
                 else:
                     val = phifull[ll, mm, nn, ii, jj, kk]

@@ -7,6 +7,33 @@ MLFCS 是一个现代化的非谐力常数（Anharmonic Force Constants）计算
 
 本项目基于经典的 `thirdorder.py` 和 `fourthorder.py` 进行了深度重构与优化。
 
+## 🤖 AI 辅助文档
+
+**初次使用？** 您可以：
+
+*   📖 **将本 README 喂给 AI 助手**（如 ChatGPT、Claude、DeepSeek 等），快速了解用法并上手。
+*   💻 **将整个代码库喂给 AI 助手**，深入理解实现细节和高级用法。
+
+同时欢迎社区贡献：
+*   🐛 **报告 Bug 或提出功能需求**：[提交 Issue](https://github.com/gtiders/mlfcs/issues)
+*   🔧 **提交改进**：欢迎 [Pull Requests](https://github.com/gtiders/mlfcs/pulls)！
+*   📧 **邮件联系**：gtiders@qq.com
+
+## ⚠️ 版本说明
+
+`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化），可能未经过充分测试。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
+
+## 📋 输出格式
+
+MLFCS 以原生格式输出力常数。**不提供 phono3py 格式的内置支持。** 如需 phono3py 兼容格式，可使用 [hiPhive](https://hiphive.materialsmodeling.org/) 进行格式转换。示例：
+
+```python
+from hiphive import ForceConstants
+
+# 读取 MLFCS 输出并转换为 phono3py 格式
+# 详见 hiphive 文档
+```
+
 ## ✨ 核心特性
 
 *   **纯 Python 实现**：彻底移除了对 `syplib` C 扩展库的依赖，解决了繁琐的编译和依赖问题。
@@ -24,6 +51,21 @@ MLFCS 是一个现代化的非谐力常数（Anharmonic Force Constants）计算
 ```bash
 git clone https://github.com/gtiders/mlfcs.git
 cd mlfcs
+pip install .
+```
+
+### ⚠️ 古老系统注意事项 (CentOS 7 等)
+
+在编译器版本较低的系统上（GCC < 9），NumPy 2.0+ 可能导致编译问题。安装前请修改 `pyproject.toml`：
+
+```diff
+- requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
++ requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy<2.0.0"]
+```
+
+然后执行安装：
+
+```bash
 pip install .
 ```
 
@@ -123,6 +165,40 @@ runner.run_calculator(calc)
 # h: 位移步长 (默认通常为 0.001 或类似值，具体取决于阶数)
 # symprec: 对称性判断精度 (默认 1e-5)
 runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
+```
+
+### 谐波声子计算 (MLPHONON)
+
+您可以使用 `MLPHONON` 类结合任意 ASE 计算器计算谐波力常数。
+
+```python
+from mlfcs.phonon import MLPHONON
+from ase.io import read
+from calorine.calculators import CPUNEP
+
+# 读取结构
+structure = read("POSCAR")
+
+# 初始化计算器
+calc = CPUNEP("nep.txt")
+
+# 设置声子计算
+phonon = MLPHONON(
+    structure=structure,
+    calculator=calc,
+    supercell_matrix=[2, 2, 2],  # 超胞扩倍矩阵
+    kwargs_generate_displacements={"distance": 0.01}  # 可选参数
+)
+
+# 运行计算
+phonon.run()
+
+# 导出力常数到文件
+phonon.write("FORCE_CONSTANTS")
+
+# 访问 Phonopy 对象进行后续分析
+phonon.phonopy.run_mesh([20, 20, 20])
+phonon.phonopy.run_total_dos()
 ```
 
 ### 自洽谐波计算 (SSCHA)
