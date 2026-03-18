@@ -23,7 +23,7 @@ We also welcome community contributions:
 
 ## ⚠️ Version Notice
 
-The `main` branch contains ongoing development and experimental features (e.g., C++ `unordered_map` optimization) that may not be fully tested. For production use, stick to the [releases](https://github.com/gtiders/mlfcs/releases).
+The `main` branch contains ongoing development and experimental features (e.g., C++ `unordered_map` optimization). For production use, stick to the [releases](https://github.com/gtiders/mlfcs/releases).
 
 ## 📋 Output Format
 

@@ -21,7 +21,7 @@ MLFCS 是一个现代化的非谐力常数（Anharmonic Force Constants）计算
 
 ## ⚠️ 版本说明
 
-`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化），可能未经过充分测试。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
+`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化）。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
 
 ## 📋 输出格式
 
