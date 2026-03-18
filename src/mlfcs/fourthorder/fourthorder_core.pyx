@@ -28,6 +28,9 @@ import sys
 
 from libc.stdlib cimport malloc,free
 from libc.math cimport floor,fabs
+from libcpp.unordered_map cimport unordered_map
+from libcpp.pair cimport pair
+from cython.operator cimport dereference, preincrement
 
 import sys
 import copy
@@ -79,6 +82,68 @@ cdef int[:,:] permutations=np.array([
     [3,1,2,0],
     [3,2,0,1],
     [3,2,1,0]],dtype=np.intc)
+
+
+ctypedef long long key_t
+
+cdef class IFCMap:
+    cdef unordered_map[key_t, double] _data
+    cdef key_t _make_key(self, int a, int b, int c, int d, int e, int f, int g, int h) noexcept nogil:
+        return ((<key_t>a << 56) | (<key_t>b << 48) | (<key_t>c << 40) | 
+                (<key_t>d << 32) | (<key_t>e << 24) | (<key_t>f << 16) |
+                (<key_t>g << 8) | <key_t>h)
+    
+    cdef void set_item(self, int a, int b, int c, int d, int e, int f, int g, int h, double val) noexcept nogil:
+        self._data[self._make_key(a, b, c, d, e, f, g, h)] = val
+    
+    cdef double get_item(self, int a, int b, int c, int d, int e, int f, int g, int h) noexcept nogil:
+        cdef key_t k = self._make_key(a, b, c, d, e, f, g, h)
+        if self._data.count(k):
+            return self._data[k]
+        return 0.0
+    
+    cdef void add_item(self, int a, int b, int c, int d, int e, int f, int g, int h, double val) noexcept nogil:
+        cdef key_t k = self._make_key(a, b, c, d, e, f, g, h)
+        self._data[k] = self._data[k] + val
+    
+    cdef void clear(self) noexcept:
+        self._data.clear()
+    
+    cdef size_t size(self) noexcept:
+        return self._data.size()
+    
+    def __getitem__(self, tuple key):
+        return self.get_item(key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7])
+    
+    def __setitem__(self, tuple key, double value):
+        self.set_item(key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], value)
+    
+    def get(self, tuple key, double default=0.0):
+        cdef double val = self.get_item(key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7])
+        return val
+    
+    def __contains__(self, tuple key):
+        cdef key_t k = self._make_key(key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7])
+        return self._data.count(k) > 0
+    
+    def items(self):
+        cdef list result = []
+        cdef unordered_map[key_t, double].iterator it = self._data.begin()
+        cdef key_t k
+        cdef int a, b, c, d, e, f, g, h
+        while it != self._data.end():
+            k = dereference(it).first
+            h = k & 0xFF
+            g = (k >> 8) & 0xFF
+            f = (k >> 16) & 0xFF
+            e = (k >> 24) & 0xFF
+            d = (k >> 32) & 0xFF
+            c = (k >> 40) & 0xFF
+            b = (k >> 48) & 0xFF
+            a = (k >> 56) & 0xFF
+            result.append(((a, b, c, d, e, f, g, h), dereference(it).second))
+            preincrement(it)
+        return result
 
 
 @cython.boundscheck(False)
@@ -166,13 +231,13 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
     cdef double[:] aphilist
     cdef double[:,:] vaa
     cdef double[:,:,:] vphipart
-    cdef object vnruter # Use sparse storage
-    from collections import defaultdict
+    cdef IFCMap vnruter
+    cdef double val
 
     nlist=wedge.nlist
     natoms=len(poscar["types"])
     ntot=len(sposcar["types"])
-    vnruter=defaultdict(float)
+    vnruter=IFCMap()
     
     naccumindependent=np.insert(np.cumsum(
         wedge.nindependentbasis[:nlist],dtype=np.intc),0,
@@ -182,12 +247,11 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
     nlist6=len(list4)
     for ii in range(nlist6):
         e0,e1,e2,e3,e4,e5=list4[ii]
-        # vnruter[e3,e4,e5,:,e0,e1,e2,:]=vphipart[:,ii,:]
         for k in range(3):
             for l in range(ntot):
                 val = vphipart[k, ii, l]
                 if val != 0.0:
-                    vnruter[(e3, e4, e5, k, e0, e1, e2, l)] = val
+                    vnruter.set_item(e3, e4, e5, k, e0, e1, e2, l, val)
     philist=[]
     for ii in range(nlist):
         for jj in range(wedge.nindependentbasis[ii]):
@@ -195,11 +259,11 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
             ll=wedge.independentbasis[jj,ii]%27//9
             mm=wedge.independentbasis[jj,ii]%9//3
             nn=wedge.independentbasis[jj,ii]%3
-            val = vnruter[(kk,ll,mm,nn,
+            val = vnruter.get_item(kk,ll,mm,nn,
                           wedge.llist[0,ii],
                           wedge.llist[1,ii],
                           wedge.llist[2,ii],
-                          wedge.llist[3,ii])]
+                          wedge.llist[3,ii])
             philist.append(val)
     aphilist=np.array(philist,dtype=np.double)
     vind1=-np.ones((natoms,ntot,ntot,ntot),dtype=np.intc)
@@ -274,7 +338,6 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
 
     aphilist+=compensation
 
-    # Build the final, full set of 4th-order IFCs.
     vnruter.clear()
     for ii in range(nlist):
         for jj in range(wedge.nequi[ii]):
@@ -288,11 +351,11 @@ def reconstruct_ifcs(phipart,wedge,list4,poscar,sposcar):
                                         tribasisindex,ix,jj,ii]*aphilist[
                                             naccumindependent[ii]+ix]
                                 if val != 0.0:
-                                    vnruter[(ll,mm,nn,aa1,
+                                    vnruter.add_item(ll,mm,nn,aa1,
                                             vequilist[0,jj,ii],
                                             vequilist[1,jj,ii],
                                             vequilist[2,jj,ii],
-                                            vequilist[3,jj,ii])] += val
+                                            vequilist[3,jj,ii], val)
 
     return vnruter
 

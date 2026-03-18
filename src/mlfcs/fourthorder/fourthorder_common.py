@@ -445,13 +445,17 @@ def write_ifcs(phifull, poscar, sposcar, dmin, nequi, shifts, frange, filename):
                 for mm, nn, oo, pp in itertools.product(
                     range(3), range(3), range(3), range(3)
                 ):
+                    if hasattr(phifull, 'get'):
+                        val = phifull.get((mm, nn, oo, pp, ii, jj, kk, ll), 0.0)
+                    else:
+                        val = phifull[mm, nn, oo, pp, ii, jj, kk, ll]
                     f.write(
                         "{:>2d} {:>2d} {:>2d} {:>2d} {:>20.10f}\n".format(
                             mm + 1,
                             nn + 1,
                             oo + 1,
                             pp + 1,
-                            phifull[mm, nn, oo, pp, ii, jj, kk, ll],
+                            val,
                         )
                     )
     ffinal = open(filename, "w")

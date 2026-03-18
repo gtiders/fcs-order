@@ -306,6 +306,11 @@ dependencies = [
     { name = "symfc" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "mlfcs" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "ase", specifier = ">=3.27.0" },
@@ -315,6 +320,9 @@ requires-dist = [
     { name = "spglib", specifier = ">=2.3.0" },
     { name = "symfc", specifier = ">=1.6.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "mlfcs", editable = "." }]
 
 [[package]]
 name = "numpy"

@@ -9,6 +9,33 @@ MLFCS is a modern suite for calculating Anharmonic Force Constants, designed to 
 
 This project is a deep refactoring and optimization based on the classic `thirdorder.py` and `fourthorder.py`.
 
+## 🤖 AI-Powered Documentation
+
+**New to this project?** You can:
+
+*   📖 **Feed this README to an AI assistant** (e.g., ChatGPT, Claude, DeepSeek) to quickly understand the usage and get started.
+*   💻 **Feed the entire codebase to an AI assistant** for in-depth understanding of implementation details and advanced usage.
+
+We also welcome community contributions:
+*   🐛 **Report bugs or request features**: [Open an Issue](https://github.com/gtiders/mlfcs/issues)
+*   🔧 **Submit improvements**: [Pull Requests](https://github.com/gtiders/mlfcs/pulls) are always welcome!
+*   📧 **Contact via email**: gtiders@qq.com
+
+## ⚠️ Version Notice
+
+The `main` branch contains ongoing development and experimental features (e.g., C++ `unordered_map` optimization) that may not be fully tested. For production use, stick to the [releases](https://github.com/gtiders/mlfcs/releases).
+
+## 📋 Output Format
+
+MLFCS outputs force constants in its native format. **It does not provide built-in support for phono3py format.** If you need phono3py-compatible output, you can use [hiPhive](https://hiphive.materialsmodeling.org/) for format conversion. Example:
+
+```python
+from hiphive import ForceConstants
+
+# Read MLFCS output and convert to phono3py format
+# See hiphive documentation for details
+```
+
 ## ✨ Key Features
 
 *   **Pure Python**: Completely removed the dependency on `syplib` C extensions, solving tedious compilation and dependency issues.
@@ -26,6 +53,21 @@ You can install this project directly via pip:
 ```bash
 git clone https://github.com/gtiders/mlfcs.git
 cd mlfcs
+pip install .
+```
+
+### ⚠️ For Legacy Systems (CentOS 7, etc.)
+
+On older systems with outdated compilers (GCC < 9), NumPy 2.0+ may cause compilation issues. Before installing, modify `pyproject.toml`:
+
+```diff
+- requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
++ requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy<2.0.0"]
+```
+
+Then install:
+
+```bash
 pip install .
 ```
 
@@ -127,6 +169,40 @@ You can customize the displacement step (`h`) and symmetry precision (`symprec`)
 # h: displacement step (default usually 0.04 or similar, depends on order)
 # symprec: symmetry precision (default 1e-5)
 runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
+```
+
+### Harmonic Phonon Calculation (MLPHONON)
+
+You can use the `MLPHONON` class to calculate harmonic force constants using any ASE calculator.
+
+```python
+from mlfcs.phonon import MLPHONON
+from ase.io import read
+from calorine.calculators import CPUNEP
+
+# Read structure
+structure = read("POSCAR")
+
+# Initialize calculator
+calc = CPUNEP("nep.txt")
+
+# Setup phonon calculation
+phonon = MLPHONON(
+    structure=structure,
+    calculator=calc,
+    supercell_matrix=[2, 2, 2],  # Supercell expansion
+    kwargs_generate_displacements={"distance": 0.01}  # Optional
+)
+
+# Run calculation
+phonon.run()
+
+# Write force constants to file
+phonon.write("FORCE_CONSTANTS")
+
+# Access Phonopy object for further analysis
+phonon.phonopy.run_mesh([20, 20, 20])
+phonon.phonopy.run_total_dos()
 ```
 
 ### Self-Consistent Harmonic Approximation (SSCHA)
