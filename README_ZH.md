@@ -91,7 +91,7 @@ pip install .
 | `-i, --input` | 否 | 全部 | 输入结构文件，默认 `POSCAR`。 |
 | `--interface` | 否 | 全部 | 结构读取接口，默认 `vasp`。请显式设置与输入匹配的接口，如 `abacus`、`qe`、`cp2k`、`aims`。 |
 | `--symprec` | 否 | 全部 | 对称性判定精度，默认来自代码常量（当前为 `1e-5`）。 |
-| `--hstep` | 否 | 全部 | 位移步长，默认来自代码常量（当前为 `0.001`）。 |
+| `--hstep` | 否 | 全部 | 位移步长（单位 **nm**），默认来自代码常量（当前为 `0.001`）。 |
 | `-f, --format` | 否 | sow | 位移结构输出格式：`vasp`（多个 `*.POSCAR.*` 文件）或 `xyz`（单个位移轨迹文件），默认 `vasp`。 |
 | `--forces` | `reap` 必填 | reap | 一个或多个力输出文件/通配符模式（支持 glob）。**CLI 不支持** `xyz/extxyz` 力轨迹输入。 |
 | `--forces-interface` | 否 | reap | `reap` 解析力文件使用的接口；默认复用 `--interface`。 |
@@ -137,7 +137,7 @@ thirdorder sow 4 4 4 --cutoff 5.0
 # 输出为 xyz 格式 (推荐用于机器学习势)
 thirdorder sow 4 4 4 --cutoff -3 --format xyz
 
-# 自定义参数: 位移步长 0.001, 对称性精度 1e-4
+# 自定义参数: 位移步长 0.001 nm, 对称性精度 1e-4
 thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
 ```
 
@@ -262,7 +262,7 @@ runner.run_calculator(calc)
 您可以在初始化时自定义位移步长 (`h`) 和对称性精度 (`symprec`)：
 
 ```python
-# h: 位移步长 (默认通常为 0.001 或类似值，具体取决于阶数)
+# h: 位移步长，单位 nm (默认通常为 0.001 或类似值，具体取决于阶数)
 # symprec: 对称性判断精度 (默认 1e-5)
 runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
 ```

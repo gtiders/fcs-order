@@ -46,7 +46,7 @@ def build_sow_reap_parser(
         "--hstep",
         type=float,
         default=hstep_default,
-        help=f"Displacement step size (default: {hstep_default})",
+        help=f"Displacement step size in nm (default: {hstep_default})",
     )
     parser.add_argument(
         "-f",
