@@ -81,6 +81,21 @@ pip install .
 - ABACUS 的 `STRU` 文件请使用 `--interface abacus`。
 - 若读取失败，MLFCS 会打印 phonopy 支持的接口列表（如 `abacus`、`vasp`、`qe`、`cp2k`、`aims`）。
 
+### CLI 参数说明（`thirdorder` / `fourthorder`）
+
+| 参数 | 是否必填 | 适用范围 | 说明 |
+| --- | --- | --- | --- |
+| `command` | 是 | 全部 | 子命令：`sow` 或 `reap`。 |
+| `na nb nc` | 是 | 全部 | 超胞在 `a/b/c` 方向的扩展倍数，例如 `4 4 4`。 |
+| `--cutoff` | 是 | 全部 | 截断规则。负整数表示近邻层数（如 `-3` 表示第 3 近邻）；正数表示距离截断。 |
+| `-i, --input` | 否 | 全部 | 输入结构文件，默认 `POSCAR`。 |
+| `--interface` | 否 | 全部 | 结构读取接口，默认 `vasp`。请显式设置与输入匹配的接口，如 `abacus`、`qe`、`cp2k`、`aims`。 |
+| `--symprec` | 否 | 全部 | 对称性判定精度，默认来自代码常量（当前为 `1e-5`）。 |
+| `--hstep` | 否 | 全部 | 位移步长，默认来自代码常量（当前为 `0.001`）。 |
+| `-f, --format` | 否 | sow | 位移结构输出格式：`vasp`（多个 `*.POSCAR.*` 文件）或 `xyz`（单个位移轨迹文件），默认 `vasp`。 |
+| `--forces` | `reap` 必填 | reap | 一个或多个力输出文件/通配符模式（支持 glob）。**CLI 不支持** `xyz/extxyz` 力轨迹输入。 |
+| `--forces-interface` | 否 | reap | `reap` 解析力文件使用的接口；默认复用 `--interface`。 |
+
 ### 最小完整流程（Sow -> 计算 -> Reap）
 
 ```bash
