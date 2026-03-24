@@ -52,8 +52,11 @@ def build_sow_reap_parser(
         "-f",
         "--format",
         default="vasp",
-        choices=["vasp", "xyz"],
-        help="[Sow] Output format: vasp (multiple files) or xyz (single file)",
+        choices=["vasp", "xyz", "same"],
+        help=(
+            "[Sow] Output format: vasp (multiple files), xyz (single file), "
+            "or same (write using --interface)."
+        ),
     )
     parser.add_argument("--forces", nargs="+", help=forces_help)
     parser.add_argument(

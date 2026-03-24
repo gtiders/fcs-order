@@ -182,15 +182,31 @@ class ThirdOrderRun:
         """
         print(sowblock)
 
+        if output_format == "same":
+            structure_format = self.interface
+        else:
+            structure_format = output_format
+
         # Write undisplaced supercell
         print("Writing undisplaced supercell structure")
         s_struct = Structure(data_dict=normalize_SPOSCAR(self.sposcar))
-        if output_format == "vasp":
+        if structure_format == "vasp":
             write_structure(s_struct, "3RD.SPOSCAR", out_format="vasp")
+        elif structure_format != "xyz":
+            write_structure(
+                s_struct,
+                f"3RD.SUPERCELL.{structure_format}",
+                out_format=structure_format,
+            )
 
         displaced_structures = []
         width = len(str(4 * (len(self.list4) + 1)))
-        namepattern = "3RD.POSCAR.{{0:0{0}d}}".format(width)
+        if structure_format == "vasp":
+            namepattern = "3RD.POSCAR.{{0:0{0}d}}".format(width)
+        elif structure_format == "xyz":
+            namepattern = ""
+        else:
+            namepattern = f"3RD.{structure_format}.{{0:0{width}d}}"
 
         print("Generating displaced structures...")
         count = 0
@@ -208,14 +224,14 @@ class ThirdOrderRun:
 
                 number = self.nirred * n + i + 1
 
-                if output_format == "vasp":
+                if structure_format != "xyz":
                     filename = namepattern.format(number)
-                    write_structure(d_struct, filename, out_format="vasp")
+                    write_structure(d_struct, filename, out_format=structure_format)
                 else:
                     displaced_structures.append((number, d_struct))
                 count += 1
 
-        if output_format == "xyz" and displaced_structures:
+        if structure_format == "xyz" and displaced_structures:
             outfile = "3RD.displacements.xyz"
             n_written = write_xyz_trajectory(displaced_structures, outfile)
             print(f"Writing {n_written} structures to {outfile}")

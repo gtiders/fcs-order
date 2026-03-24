@@ -82,8 +82,33 @@ def read_structure(path: str, interface: str = "vasp") -> Structure:
 
 
 def write_structure(structure: Structure, filename: str, out_format: str = "vasp") -> None:
-    """Write one structure with the existing Structure writer."""
-    structure.to_file(filename, out_format=out_format)
+    """Write one structure using VASP writer or phonopy interface writers."""
+    if out_format == "vasp":
+        structure.to_file(filename, out_format="vasp")
+        return
+
+    try:
+        from phonopy.interface.calculator import write_crystal_structure
+        from phonopy.structure.atoms import PhonopyAtoms
+    except Exception as e:
+        raise ValueError(
+            f"Cannot write out_format='{out_format}' because phonopy writer is unavailable: {e}"
+        ) from e
+
+    atoms = structure.to_atoms()
+    ph_atoms = PhonopyAtoms(
+        symbols=atoms.get_chemical_symbols(),
+        cell=atoms.cell.array,
+        scaled_positions=atoms.get_scaled_positions(),
+    )
+    try:
+        write_crystal_structure(filename, ph_atoms, interface_mode=out_format)
+    except Exception as e:
+        raise ValueError(
+            f"Failed to write structure with interface '{out_format}': {e}. "
+            "Try '--format vasp' (or '--format xyz') if this interface needs "
+            "extra template information."
+        ) from e
 
 
 def write_xyz_trajectory(
