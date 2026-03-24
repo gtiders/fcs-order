@@ -83,6 +83,21 @@ Structure reading now uses an explicit `--interface` option:
 - For ABACUS `STRU`, use `--interface abacus`.
 - If parsing fails, MLFCS prints supported interfaces (from phonopy), e.g. `abacus`, `vasp`, `qe`, `cp2k`, `aims`.
 
+### CLI Parameter Reference (`thirdorder` / `fourthorder`)
+
+| Parameter | Required | Scope | Description |
+| --- | --- | --- | --- |
+| `command` | Yes | all | Subcommand: `sow` or `reap`. |
+| `na nb nc` | Yes | all | Supercell size along `a/b/c` directions, e.g. `4 4 4`. |
+| `--cutoff` | Yes | all | Cutoff rule. Negative integer means neighbor shell index (e.g. `-3` = 3rd neighbor). Positive number means distance cutoff. |
+| `-i, --input` | No | all | Input structure file. Default: `POSCAR`. |
+| `--interface` | No | all | Structure parsing interface. Default: `vasp`. Use explicit values matching your input, e.g. `abacus`, `qe`, `cp2k`, `aims`. |
+| `--symprec` | No | all | Symmetry precision. Default from code constants (currently `1e-5`). |
+| `--hstep` | No | all | Displacement step size. Default from code constants (currently `0.001`). |
+| `-f, --format` | No | sow | Displacement output format: `vasp` (multiple `*.POSCAR.*` files) or `xyz` (single displacement trajectory file). Default: `vasp`. |
+| `--forces` | Yes for `reap` | reap | One or more force-output files/patterns (glob is supported). **Not supported in CLI:** `xyz/extxyz` force trajectories. |
+| `--forces-interface` | No | reap | Interface used to parse force files. Default: reuse `--interface`. |
+
 ### Minimal End-to-End Workflow (Sow -> Calculate -> Reap)
 
 ```bash

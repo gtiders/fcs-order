@@ -387,7 +387,10 @@ def main():
         description="fourthorder: Fourth-order Anharmonic IFC calculator",
         symprec_default=SYMPREC,
         hstep_default=H,
-        forces_help="[Reap] Input force files or single xyz file",
+        forces_help=(
+            "[Reap] Input force files/patterns (e.g. vasprun.xml*). "
+            "xyz/extxyz are not supported in CLI reap."
+        ),
     )
 
     args = parser.parse_args()
