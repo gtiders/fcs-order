@@ -93,7 +93,7 @@ Structure reading now uses an explicit `--interface` option:
 | `-i, --input` | No | all | Input structure file. Default: `POSCAR`. |
 | `--interface` | No | all | Structure parsing interface. Default: `vasp`. Use explicit values matching your input, e.g. `abacus`, `qe`, `cp2k`, `aims`. |
 | `--symprec` | No | all | Symmetry precision. Default from code constants (currently `1e-5`). |
-| `--hstep` | No | all | Displacement step size. Default from code constants (currently `0.001`). |
+| `--hstep` | No | all | Displacement step size in **nm**. Default from code constants (currently `0.001`). |
 | `-f, --format` | No | sow | Displacement output format: `vasp` (multiple `*.POSCAR.*` files) or `xyz` (single displacement trajectory file). Default: `vasp`. |
 | `--forces` | Yes for `reap` | reap | One or more force-output files/patterns (glob is supported). **Not supported in CLI:** `xyz/extxyz` force trajectories. |
 | `--forces-interface` | No | reap | Interface used to parse force files. Default: reuse `--interface`. |
@@ -139,7 +139,7 @@ thirdorder sow 4 4 4 --cutoff 5.0
 # Output in xyz format (Recommended for ML Potentials)
 thirdorder sow 4 4 4 --cutoff -3 --format xyz
 
-# Custom parameters: displacement step 0.001, symmetry precision 1e-4
+# Custom parameters: displacement step 0.001 nm, symmetry precision 1e-4
 thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
 ```
 
