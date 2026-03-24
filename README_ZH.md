@@ -7,33 +7,6 @@ MLFCS 是一个现代化的非谐力常数（Anharmonic Force Constants）计算
 
 本项目基于经典的 `thirdorder.py` 和 `fourthorder.py` 进行了深度重构与优化。
 
-## 🤖 AI 辅助文档
-
-**初次使用？** 您可以：
-
-*   📖 **将本 README 喂给 AI 助手**（如 ChatGPT、Claude、DeepSeek 等），快速了解用法并上手。
-*   💻 **将整个代码库喂给 AI 助手**，深入理解实现细节和高级用法。
-
-同时欢迎社区贡献：
-*   🐛 **报告 Bug 或提出功能需求**：[提交 Issue](https://github.com/gtiders/mlfcs/issues)
-*   🔧 **提交改进**：欢迎 [Pull Requests](https://github.com/gtiders/mlfcs/pulls)！
-*   📧 **邮件联系**：gtiders@qq.com
-
-## ⚠️ 版本说明
-
-`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化）。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
-
-## 📋 输出格式
-
-MLFCS 以原生格式输出力常数。**不提供 phono3py 格式的内置支持。** 如需 phono3py 兼容格式，可使用 [hiPhive](https://hiphive.materialsmodeling.org/) 进行格式转换。示例：
-
-```python
-from hiphive import ForceConstants
-
-# 读取 MLFCS 输出并转换为 phono3py 格式
-# 详见 hiphive 文档
-```
-
 ## ✨ 核心特性
 
 *   **纯 Python 实现**：彻底移除了对 `syplib` C 扩展库的依赖，解决了繁琐的编译和依赖问题。
@@ -80,6 +53,7 @@ pip install .
 - 默认是 `--interface vasp`。
 - ABACUS 的 `STRU` 文件请使用 `--interface abacus`。
 - 若读取失败，MLFCS 会打印 phonopy 支持的接口列表（如 `abacus`、`vasp`、`qe`、`cp2k`、`aims`）。
+- 对 `sow --format same`，写出会走 phonopy 对应接口。某些接口（特别是 `cp2k`）可能需要额外模板信息；若报错可改用 `--format vasp` 或 `--format xyz`。
 
 ### CLI 参数说明（`thirdorder` / `fourthorder`）
 
@@ -92,7 +66,7 @@ pip install .
 | `--interface` | 否 | 全部 | 结构读取接口，默认 `vasp`。请显式设置与输入匹配的接口，如 `abacus`、`qe`、`cp2k`、`aims`。 |
 | `--symprec` | 否 | 全部 | 对称性判定精度，默认来自代码常量（当前为 `1e-5`）。 |
 | `--hstep` | 否 | 全部 | 位移步长（单位 **nm**），默认来自代码常量（当前为 `0.001`）。 |
-| `-f, --format` | 否 | sow | 位移结构输出格式：`vasp`（多个 `*.POSCAR.*` 文件）或 `xyz`（单个位移轨迹文件），默认 `vasp`。 |
+| `-f, --format` | 否 | sow | 位移结构输出格式：`vasp`（多文件）、`xyz`（单轨迹文件）或 `same`（按 `--interface` 写出），默认 `vasp`。 |
 | `--forces` | `reap` 必填 | reap | 一个或多个力输出文件/通配符模式（支持 glob）。**CLI 不支持** `xyz/extxyz` 力轨迹输入。 |
 | `--forces-interface` | 否 | reap | `reap` 解析力文件使用的接口；默认复用 `--interface`。 |
 
@@ -137,15 +111,24 @@ thirdorder sow 4 4 4 --cutoff 5.0
 # 输出为 xyz 格式 (推荐用于机器学习势)
 thirdorder sow 4 4 4 --cutoff -3 --format xyz
 
+# 按输入接口写出位移结构
+thirdorder sow 4 4 4 --cutoff -3 --interface abacus --format same
+
 # 自定义参数: 位移步长 0.001 nm, 对称性精度 1e-4
 thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
 ```
+
+生成结果说明：
+- `--format vasp`：`3RD.SPOSCAR` + `3RD.POSCAR.*`
+- `--format xyz`：`3RD.displacements.xyz`
+- `--format same`（例如 `--interface abacus`）：`3RD.SUPERCELL.<interface>` + `3RD.<interface>.*`
 
 #### 2. 计算力 (外部步骤)
 
 请对 `sow` 生成的每个位移结构执行力计算：
 - 若 `sow --format vasp`：对 `3RD.POSCAR.*` 逐个计算。
 - 若 `sow --format xyz`：从 `3RD.displacements.xyz` 生成并计算（常用于 Python 工作流）。
+- 若 `sow --format same`：对接口写出的 `3RD.<interface>.*` 文件逐个计算。
 
 **关键点**：CLI `reap` 使用 phonopy 接口解析输出文件，务必保证文件命名/顺序可确定。
 
@@ -217,7 +200,10 @@ fourthorder sow 3 3 3 --cutoff -2 -i qe.in --interface qe
 fourthorder sow 3 3 3 --cutoff -2 -i cp2k.inp --interface cp2k
 ```
 
-这将生成 `4TH.POSCAR.*` 文件。
+生成结果说明：
+- `--format vasp`：`4TH.SPOSCAR` + `4TH.POSCAR.*`
+- `--format xyz`：`4TH.displacements.xyz`
+- `--format same`：`4TH.SUPERCELL.<interface>` + `4TH.<interface>.*`
 
 #### 2. 计算力常数 (Reap)
 
@@ -348,6 +334,33 @@ atoms.calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
 # 现在可以安全写入
 write("forces.xyz", atoms, format="extxyz", append=True)
 ```
+
+## 📋 输出格式
+
+MLFCS 以原生格式输出力常数。**不提供 phono3py 格式的内置支持。** 如需 phono3py 兼容格式，可使用 [hiPhive](https://hiphive.materialsmodeling.org/) 进行格式转换。示例：
+
+```python
+from hiphive import ForceConstants
+
+# 读取 MLFCS 输出并转换为 phono3py 格式
+# 详见 hiphive 文档
+```
+
+## ⚠️ 版本说明
+
+`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化）。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
+
+## 🤖 AI 辅助文档
+
+**初次使用？** 您可以：
+
+*   📖 **将本 README 喂给 AI 助手**（如 ChatGPT、Claude、DeepSeek 等），快速了解用法并上手。
+*   💻 **将整个代码库喂给 AI 助手**，深入理解实现细节和高级用法。
+
+同时欢迎社区贡献：
+*   🐛 **报告 Bug 或提出功能需求**：[提交 Issue](https://github.com/gtiders/mlfcs/issues)
+*   🔧 **提交改进**：欢迎 [Pull Requests](https://github.com/gtiders/mlfcs/pulls)！
+*   📧 **邮件联系**：gtiders@qq.com
 
 ## 🙏 致谢
 
