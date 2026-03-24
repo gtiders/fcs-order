@@ -12,12 +12,15 @@ from __future__ import print_function
 import sys
 import copy
 import numpy as np
-import os
-import glob
-import argparse
-from ase.io import read, write
 
 from mlfcs.fourthorder import fourthorder_core
+from mlfcs.cli_common import build_sow_reap_parser
+from mlfcs.io_ops import (
+    read_structure,
+    write_structure,
+    write_xyz_trajectory,
+    load_forces_with_phonopy,
+)
 from mlfcs.fourthorder.fourthorder_common import (
     H,
     SYMPREC,
@@ -69,12 +72,21 @@ class FourthOrderRun:
     """
 
     def __init__(
-        self, na, nb, nc, cutoff, structure_file="POSCAR", symprec=SYMPREC, h=H
+        self,
+        na,
+        nb,
+        nc,
+        cutoff,
+        structure_file="POSCAR",
+        symprec=SYMPREC,
+        h=H,
+        interface="vasp",
     ):
         self.na = na
         self.nb = nb
         self.nc = nc
         self.structure_file = structure_file
+        self.interface = interface
         self.symprec = symprec
         self.h = h
 
@@ -99,7 +111,10 @@ class FourthOrderRun:
 
         # 2. Read Input Structure
         print(f"Reading input structure from {self.structure_file}")
-        self.structure = Structure.from_file(self.structure_file)
+        self.structure = read_structure(
+            self.structure_file,
+            interface=self.interface,
+        )
         self.poscar = self.structure.to_dict()
         self.natoms = len(self.poscar["types"])
 
@@ -159,9 +174,9 @@ class FourthOrderRun:
         print("Writing undisplaced supercell structure")
         s_struct = Structure(data_dict=normalize_SPOSCAR(self.sposcar))
         if output_format == "vasp":
-            s_struct.to_file("4TH.SPOSCAR", out_format="vasp")
+            write_structure(s_struct, "4TH.SPOSCAR", out_format="vasp")
 
-        displaced_atoms_list = []
+        displaced_structures = []
         width = len(str(8 * (len(self.list6) + 1)))
         namepattern = "4TH.POSCAR.{{0:0{0}d}}".format(width)
 
@@ -193,21 +208,19 @@ class FourthOrderRun:
 
                 if output_format == "vasp":
                     filename = namepattern.format(number)
-                    d_struct.to_file(filename, out_format="vasp")
+                    write_structure(d_struct, filename, out_format="vasp")
                 else:
-                    atoms = d_struct.to_atoms()
-                    atoms.info["config_id"] = number
-                    displaced_atoms_list.append(atoms)
+                    displaced_structures.append((number, d_struct))
                 count += 1
 
-        if output_format == "xyz" and displaced_atoms_list:
+        if output_format == "xyz" and displaced_structures:
             outfile = "4TH.displacements.xyz"
-            print(f"Writing {len(displaced_atoms_list)} structures to {outfile}")
-            write(outfile, displaced_atoms_list, format="extxyz")
+            n_written = write_xyz_trajectory(displaced_structures, outfile)
+            print(f"Writing {n_written} structures to {outfile}")
 
         print("Sow finished.")
 
-    def reap(self, forces_files):
+    def reap(self, forces_files, forces_interface="vasp"):
         """
         Calculate IFCs from forces.
         """
@@ -216,71 +229,26 @@ class FourthOrderRun:
         if forces_files is None:
             sys.exit("Error: No force files provided for reap mode.")
 
-        if isinstance(forces_files, str):
-            forces_files = [forces_files]
+        # Build unpermutation map.
+        p = build_unpermutation(self.sposcar)
 
-        all_files = []
-        for f in forces_files:
-            all_files.extend(glob.glob(f))
+        try:
+            all_files, force_map_raw = load_forces_with_phonopy(
+                files_or_patterns=forces_files,
+                num_atoms=self.ntot,
+                interface=forces_interface,
+            )
+        except Exception as e:
+            sys.exit(f"Error loading forces via phonopy: {e}")
 
-        # Sort files to ensure deterministic behaviour
-        all_files.sort()
+        if len(all_files) != self.nruns or len(force_map_raw) != self.nruns:
+            sys.exit(
+                f"Error: Expected {self.nruns} force files/sets, got files={len(all_files)}, parsed={len(force_map_raw)}."
+            )
 
         print(f"Processing forces from {len(all_files)} files/patterns")
-
-        # Build unpermutation map
-        p = build_unpermutation(self.sposcar)
-        force_map = {}
-
-        if len(all_files) == 1 and (
-            all_files[0].endswith(".xyz") or all_files[0].endswith(".extxyz")
-        ):
-            print(f"Reading forces from single trajectory file: {all_files[0]}")
-            traj = read(all_files[0], index=":")
-
-            print(f"Reading {len(traj)} frames...")
-            for atoms in traj:
-                if "config_id" not in atoms.info:
-                    print(
-                        "Error: Atoms missing 'config_id'. processing relies on valid config_ids."
-                    )
-                    continue
-
-                cid = int(atoms.info["config_id"])
-                raw_f = atoms.get_forces()
-                unperm_f = raw_f[p, :]
-                force_map[cid] = unperm_f
-        else:
-            # Multiple files mode, assuming 4TH.POSCAR.00001 style or just a list of ordered files
-            # NOTE: Original code read files from stdin list. Here we assume alphabetical list maps to 0..N-1
-            # Caution: if user provides files, they better be in order if config_id is not used.
-            # Ideally VASP OUTCARs/vaspruns don't have config_id inside.
-            # We trace files to index.
-
-            # Fallback assume files are ordered 4TH.POSCAR.00001, 00002...
-            # Actually, original code: "Waiting for a list of vasprun.xml files on stdin... nfiles=nruns"
-            # So original STRICTLY required N files in order.
-
-            if len(all_files) != self.nruns:
-                sys.exit(f"Error: Expected {self.nruns} files, found {len(all_files)}")
-
-            print("Reading forces from multiple files...")
-            for i, fname in enumerate(all_files):
-                if not os.path.isfile(fname):
-                    sys.exit(f"Error: {fname} is not a file")
-
-                try:
-                    atoms = read(fname)
-                    raw_f = atoms.get_forces()
-                except Exception as e:
-                    sys.exit(f"Error reading {fname}: {e}")
-
-                # Use index + 1 as config_id
-                unperm_f = raw_f[p, :]
-                force_map[i + 1] = unperm_f  # 1-based ID
-                if i % 100 == 0:
-                    print(f"- Read {i + 1}/{self.nruns} files...", end="\r")
-            print()
+        # Preserve strict file-order -> config_id mapping, then unpermute.
+        force_map = {cid: forces[p, :] for cid, forces in force_map_raw.items()}
 
         print(f"Mapped {len(force_map)} force sets.")
 
@@ -415,61 +383,28 @@ class FourthOrderRun:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="fourthorder: Fourth-order Anharmonic IFC calculator"
-    )
-
-    parser.add_argument(
-        "command", choices=["sow", "reap"], help="Sub-command: sow or reap"
-    )
-    parser.add_argument("na", type=int, help="Supercell A")
-    parser.add_argument("nb", type=int, help="Supercell B")
-    parser.add_argument("nc", type=int, help="Supercell C")
-    parser.add_argument(
-        "cutoff",
-        type=str,
-        help="Cutoff in nm (positive) or neighbor index (negative integer)",
-    )
-    parser.add_argument(
-        "-i", "--input", default="POSCAR", help="Input structure file (default: POSCAR)"
-    )
-    parser.add_argument(
-        "--symprec",
-        type=float,
-        default=SYMPREC,
-        help=f"Symmetry precision (default: {SYMPREC})",
-    )
-    parser.add_argument(
-        "--hstep", type=float, default=H, help=f"Displacement step size (default: {H})"
-    )
-
-    # Sow args
-    parser.add_argument(
-        "-f",
-        "--format",
-        default="vasp",
-        choices=["vasp", "xyz"],
-        help="[Sow] Output format: vasp (multiple files) or xyz (single file)",
-    )
-
-    # Reap args
-    parser.add_argument(
-        "--forces",
-        nargs="+",
-        help="[Reap] Input force files or single xyz file",
+    parser = build_sow_reap_parser(
+        description="fourthorder: Fourth-order Anharmonic IFC calculator",
+        symprec_default=SYMPREC,
+        hstep_default=H,
+        forces_help="[Reap] Input force files or single xyz file",
     )
 
     args = parser.parse_args()
 
-    runner = FourthOrderRun(
-        args.na,
-        args.nb,
-        args.nc,
-        args.cutoff,
-        args.input,
-        symprec=args.symprec,
-        h=args.hstep,
-    )
+    try:
+        runner = FourthOrderRun(
+            args.na,
+            args.nb,
+            args.nc,
+            args.cutoff,
+            args.input,
+            interface=args.interface,
+            symprec=args.symprec,
+            h=args.hstep,
+        )
+    except Exception as e:
+        sys.exit(f"Error: {e}")
 
     if args.command == "sow":
         runner.sow(output_format=args.format)
@@ -477,7 +412,10 @@ def main():
     elif args.command == "reap":
         if not args.forces:
             sys.exit("Error: 'reap' command requires --forces argument.")
-        runner.reap(forces_files=args.forces)
+        runner.reap(
+            forces_files=args.forces,
+            forces_interface=args.forces_interface or args.interface,
+        )
 
 
 if __name__ == "__main__":

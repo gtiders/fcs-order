@@ -73,6 +73,30 @@ pip install .
 
 本套件包含两个主要命令：`thirdorder` 和 `fourthorder`。每个命令都包含 `sow`（生成位移）和 `reap`（收集力并计算力常数）两个子命令。
 
+### 接口选择（非 VASP 输入必须显式指定）
+
+结构读取使用显式 `--interface` 参数：
+
+- 默认是 `--interface vasp`。
+- ABACUS 的 `STRU` 文件请使用 `--interface abacus`。
+- 若读取失败，MLFCS 会打印 phonopy 支持的接口列表（如 `abacus`、`vasp`、`qe`、`cp2k`、`aims`）。
+
+### 最小完整流程（Sow -> 计算 -> Reap）
+
+```bash
+# 1) 生成位移结构
+thirdorder sow 4 4 4 --cutoff -3 --format vasp
+
+# 2) 对每个位移结构做外部力计算
+# 推荐目录：按 sow 编号建子目录
+# 例如 3RD_runs/0001/vasprun.xml, 3RD_runs/0002/vasprun.xml, ...
+
+# 3) 收集三阶力常数（排序后的目录顺序 -> 位移编号顺序）
+thirdorder reap 4 4 4 --cutoff -3 \
+  --forces $(find ./3RD_runs -name "vasprun.xml" | sort -V) \
+  --forces-interface vasp
+```
+
 ### 三阶力常数计算 (Thirdorder)
 
 #### 1. 生成位移结构 (Sow)
@@ -81,23 +105,34 @@ pip install .
 
 ```bash
 # 基本用法：生成 4x4x4 超胞，截断半径第 3 近邻 (负数表示近邻层数)
-thirdorder sow 4 4 4 -3
+thirdorder sow 4 4 4 --cutoff -3
+
+# ABACUS 输入 (STRU)
+thirdorder sow 4 4 4 --cutoff -3 -i STRU --interface abacus
+
+# QE 输入示例
+thirdorder sow 4 4 4 --cutoff -3 -i qe.in --interface qe
+
+# CP2K 输入示例
+thirdorder sow 4 4 4 --cutoff -3 -i cp2k.inp --interface cp2k
 
 # 指定截断半径为 5.0 nm (正数表示距离)
-thirdorder sow 4 4 4 5.0
+thirdorder sow 4 4 4 --cutoff 5.0
 
 # 输出为 xyz 格式 (推荐用于机器学习势)
-thirdorder sow 4 4 4 -3 --format xyz
+thirdorder sow 4 4 4 --cutoff -3 --format xyz
 
 # 自定义参数: 位移步长 0.001, 对称性精度 1e-4
-thirdorder sow 4 4 4 -3 --hstep 0.001 --symprec 1e-4
+thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
 ```
 
 #### 2. 计算力 (外部步骤)
 
-如果您使用了 `xyz` 格式，您需要使用自己的计算器（如 VASP, LAMMPS, 或者机器学习势）计算 `3RD.displacements.xyz` 中所有结构的力。
+请对 `sow` 生成的每个位移结构执行力计算：
+- 若 `sow --format vasp`：对 `3RD.POSCAR.*` 逐个计算。
+- 若 `sow --format xyz`：从 `3RD.displacements.xyz` 生成并计算（常用于 Python 工作流）。
 
-**关键点**：确保计算后的文件包含力信息，并且结构顺序保持不变（或者包含 `config_id` 属性）。
+**关键点**：CLI `reap` 使用 phonopy 接口解析输出文件，务必保证文件命名/顺序可确定。
 
 #### 3. 收集力常数 (Reap)
 
@@ -105,14 +140,47 @@ thirdorder sow 4 4 4 -3 --hstep 0.001 --symprec 1e-4
 
 ```bash
 # 基本用法：从 VASP xml/OUTCAR 文件中提取
-thirdorder reap 4 4 4 -3 --forces vasprun.xml.*
+thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
 
-# 进阶用法：从计算好的 XYZ 文件中提取 (例如：calculated_forces.xyz)
-# 注意：如果 sow 时使用了非默认的 hstep，reap 时必须指定相同的 hstep
-thirdorder reap 4 4 4 -3 --forces calculated_forces.xyz --hstep 0.001
+# ABACUS 输出日志
+thirdorder reap 4 4 4 --cutoff -3 --forces running_scf.log.* --forces-interface abacus
 ```
 
 结果将输出到 `FORCE_CONSTANTS_3RD` 文件。
+
+说明：
+- CLI 的 `reap` 现在通过 phonopy 接口解析力文件，不再接受 `xyz/extxyz`。
+- 若要使用 `xyz` 力轨迹，请使用 Python 库函数工作流。
+
+##### Reap 多文件顺序规则
+
+`reap` 会将“排序后的文件顺序”映射到位移编号（`1..N`），所以请确保输入顺序是确定的。
+推荐按 `sow` 输出编号组织目录（如 `0001/`、`0002/` 等）。
+
+```bash
+# VASP: 简单通配符（文件名有补零或天然有序时可用）
+thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
+
+# ABACUS: 显式 find + 版本排序
+thirdorder reap 4 4 4 --cutoff -3 \
+  --forces $(find ./abacus_runs -name "running_scf.log.*" | sort -V) \
+  --forces-interface abacus
+
+# QE: 收集 pw.x 输出
+thirdorder reap 4 4 4 --cutoff -3 \
+  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
+  --forces-interface qe
+
+# CP2K: 收集输出日志
+thirdorder reap 4 4 4 --cutoff -3 \
+  --forces $(find ./cp2k_runs -name "*.out" | sort -V) \
+  --forces-interface cp2k
+```
+
+如果不确定顺序，先打印确认：
+```bash
+find ./abacus_runs -name "running_scf.log.*" | sort -V
+```
 
 ### 四阶力常数计算 (Fourthorder)
 
@@ -122,7 +190,16 @@ thirdorder reap 4 4 4 -3 --forces calculated_forces.xyz --hstep 0.001
 
 ```bash
 # 生成 3x3x3 超胞，第 2 近邻截断
-fourthorder sow 3 3 3 -2
+fourthorder sow 3 3 3 --cutoff -2
+
+# ABACUS 输入 (STRU)
+fourthorder sow 3 3 3 --cutoff -2 -i STRU --interface abacus
+
+# QE 输入示例
+fourthorder sow 3 3 3 --cutoff -2 -i qe.in --interface qe
+
+# CP2K 输入示例
+fourthorder sow 3 3 3 --cutoff -2 -i cp2k.inp --interface cp2k
 ```
 
 这将生成 `4TH.POSCAR.*` 文件。
@@ -130,7 +207,15 @@ fourthorder sow 3 3 3 -2
 #### 2. 计算力常数 (Reap)
 
 ```bash
-fourthorder reap 3 3 3 -2 --forces vasprun.xml.*
+fourthorder reap 3 3 3 --cutoff -2 --forces vasprun.xml.* --forces-interface vasp
+
+# ABACUS 输出日志
+fourthorder reap 3 3 3 --cutoff -2 --forces running_scf.log.* --forces-interface abacus
+
+# QE 输出（顺序规则同 thirdorder）
+fourthorder reap 3 3 3 --cutoff -2 \
+  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
+  --forces-interface qe
 ```
 
 结果将输出到 `FORCE_CONSTANTS_4TH` 文件。
