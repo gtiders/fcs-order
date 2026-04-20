@@ -1,15 +1,18 @@
 [build-system]
-requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
+requires = ["setuptools>=80.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlfcs"
-version = "0.1.0"
+version = "2.0.0"
 description = "Machine Learning Force Constant Suite - 计算非谐IFCs的工具"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "ase>=3.27.0",
+    "calorine>=3.3",
+    "hiphive>=1.5",
+    "numba>=0.65.0",
     "numpy>=1.26.0",
     "phonopy>=2.20.0",
     "scipy>=1.10.0",
@@ -33,13 +36,5 @@ dev = [
     "mlfcs",
 ]
 
-
 [tool.uv.sources]
 mlfcs = { workspace = true }
-
-[tool.uv.workspace]
-members = [
-    ".",
-    ".",
-]
-
