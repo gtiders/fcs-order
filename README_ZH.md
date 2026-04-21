@@ -110,7 +110,29 @@ fourthorder reap 3 3 3 --cutoff -2 \
   --forces "./4TH_runs/*/vasprun.xml"
 ```
 
-### 3) Python API：`MLPHONON`（二阶）
+### 3) Python API：`ThirdOrderRun`（三阶，ASE 计算器）
+
+```python
+from mlfcs.thirdorder import ThirdOrderRun
+from calorine.calculators import CPUNEP
+
+calc = CPUNEP("nep.txt")
+runner = ThirdOrderRun(na=3, nb=3, nc=3, cutoff=-3, structure_file="POSCAR")
+runner.run_calculator(calc)  # 输出 FORCE_CONSTANTS_3RD
+```
+
+### 4) Python API：`FourthOrderRun`（四阶，ASE 计算器）
+
+```python
+from mlfcs.fourthorder import FourthOrderRun
+from calorine.calculators import CPUNEP
+
+calc = CPUNEP("nep.txt")
+runner = FourthOrderRun(na=3, nb=3, nc=3, cutoff=-2, structure_file="POSCAR")
+runner.run_calculator(calc)  # 输出 FORCE_CONSTANTS_4TH
+```
+
+### 5) Python API：`MLPHONON`（二阶）
 
 ```python
 from ase.io import read
@@ -131,7 +153,7 @@ phonon.write("FORCE_CONSTANTS")  # text
 phonon.write("fc2.hdf5")         # hdf5
 ```
 
-### 4) Python API：`MLPSSCHA`
+### 6) Python API：`MLPSSCHA`
 
 ```python
 from ase.io import read
@@ -155,7 +177,7 @@ sscha = MLPSSCHA(
 sscha.run()
 ```
 
-### 5) Python API：`HifinitRun`
+### 7) Python API：`HifinitRun`
 
 ```python
 from ase.io import read
