@@ -3,3 +3,5 @@
 __pycache__
 *.c
 *.so
+.codex
+nep.txt

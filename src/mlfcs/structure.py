@@ -25,7 +25,7 @@ class Structure:
 
     def __init__(self, atoms: Optional[Atoms] = None, data_dict: Optional[dict] = None):
         """
-        Initialize StructureData from either ASE Atoms or internal dict.
+        Initialize Structure from either ASE Atoms or internal dict.
 
         Args:
             atoms: ASE Atoms object
@@ -101,13 +101,13 @@ class Structure:
     @classmethod
     def from_dict(cls, data_dict: dict) -> Structure:
         """
-        Create StructureData from internal format dict.
+        Create Structure from internal format dict.
 
         Args:
             data_dict: Internal format dict (lattvec, elements, numbers, positions, types)
 
         Returns:
-            StructureData instance
+            Structure instance
         """
         # Use types list to correctly map each atom to its element symbol
         # This handles atoms in any order, not just grouped by element type
@@ -126,13 +126,13 @@ class Structure:
     @classmethod
     def from_atoms(cls, atoms: Atoms) -> Structure:
         """
-        Create StructureData from ASE Atoms object.
+        Create Structure from ASE Atoms object.
 
         Args:
             atoms: ASE Atoms object
 
         Returns:
-            StructureData instance
+            Structure instance
         """
         return cls(atoms=atoms)
 
@@ -179,14 +179,14 @@ class Structure:
     @classmethod
     def from_file(cls, path: str, in_format: str = "auto") -> Structure:
         """
-        Read structure from file using ASE and create StructureData.
+        Read structure from file using ASE and create Structure.
 
         Args:
             path: File path
             in_format: Format specification ("auto" for auto-detection)
 
         Returns:
-            StructureData instance
+            Structure instance
         """
         fmt = None if in_format == "auto" else in_format
         atoms = ase.io.read(path, format=fmt)

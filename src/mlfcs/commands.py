@@ -14,14 +14,16 @@ def build_sow_reap_parser(
     """Create a parser for the shared sow/reap CLI shape."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        "command", choices=["sow", "reap"], help="Sub-command: sow or reap"
+        "command",
+        choices=["sow", "reap", "interfaces"],
+        help="Sub-command: sow, reap, or interfaces",
     )
-    parser.add_argument("na", type=int, help="Supercell A")
-    parser.add_argument("nb", type=int, help="Supercell B")
-    parser.add_argument("nc", type=int, help="Supercell C")
+    parser.add_argument("na", type=int, nargs="?", help="Supercell A")
+    parser.add_argument("nb", type=int, nargs="?", help="Supercell B")
+    parser.add_argument("nc", type=int, nargs="?", help="Supercell C")
     parser.add_argument(
         "--cutoff",
-        required=True,
+        required=False,
         type=str,
         help="Cutoff in nm (positive) or neighbor index (negative integer), e.g. --cutoff -3",
     )
@@ -52,9 +54,9 @@ def build_sow_reap_parser(
         "-f",
         "--format",
         default="vasp",
-        choices=["vasp", "xyz", "same"],
+        choices=["vasp", "same"],
         help=(
-            "[Sow] Output format: vasp (multiple files), xyz (single file), "
+            "[Sow] Output format: vasp (multiple files), "
             "or same (write using --interface)."
         ),
     )
@@ -68,3 +70,28 @@ def build_sow_reap_parser(
         ),
     )
     return parser
+
+
+def print_cli_interface_capabilities(tool_name: str, interfaces: list[str]) -> None:
+    """Print CLI interface capabilities for the discovered phonopy interfaces."""
+    print(f"{tool_name} CLI interface capabilities")
+    print("")
+    print("Columns:")
+    print("  read   = structure read via --interface")
+    print("  write  = sow --format same via phonopy writer")
+    print("  forces = reap force parsing via --forces-interface")
+    print("")
+    print(f"{'interface':<16} {'read':<6} {'write':<6} {'forces':<7} notes")
+    print(f"{'-' * 16} {'-' * 6} {'-' * 6} {'-' * 7} {'-' * 24}")
+
+    for name in interfaces:
+        note = ""
+        if name == "cp2k":
+            note = "writer may need template info"
+        print(f"{name:<16} {'yes':<6} {'yes':<6} {'yes':<7} {note}")
+
+    print("")
+    print("Extra CLI formats:")
+    print("  sow --format vasp : always available")
+    print("")
+    print("Use '--interface <name>' for structure, '--forces-interface <name>' for reap.")

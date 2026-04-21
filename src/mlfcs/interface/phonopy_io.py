@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import glob
 import os
-from typing import Iterable
 
 import numpy as np
 from ase import Atoms
-from ase.io import write
 
-from mlfcs.ase2dict import Structure
+from mlfcs.structure import Structure
+from mlfcs.interface import (
+    list_supported_phonopy_interfaces,
+    parse_forces_with_interface,
+    read_structure_with_interface,
+    validate_phonopy_interface,
+    write_structure_with_interface,
+)
 
 
 def _structure_from_ase(path: str, in_format: str) -> Structure:
@@ -18,28 +23,11 @@ def _structure_from_ase(path: str, in_format: str) -> Structure:
 
 
 def list_supported_interfaces() -> list[str]:
-    try:
-        from phonopy.interface.calculator import calculator_info
-    except Exception:
-        return []
-    return sorted(calculator_info.keys())
+    return list_supported_phonopy_interfaces()
 
 
 def _structure_from_phonopy(path: str, interface_mode: str) -> Structure:
-    from phonopy.interface.calculator import read_crystal_structure
-
-    cell, _ = read_crystal_structure(path, interface_mode=interface_mode)
-    if cell is None:
-        raise ValueError(
-            f"phonopy failed to read structure from {path} with interface='{interface_mode}'"
-        )
-
-    atoms = Atoms(
-        symbols=cell.symbols,
-        cell=cell.cell,
-        scaled_positions=cell.scaled_positions,
-        pbc=True,
-    )
+    atoms = read_structure_with_interface(path, interface=interface_mode)
     return Structure.from_atoms(atoms)
 
 
@@ -51,7 +39,9 @@ def read_structure(path: str, interface: str = "vasp") -> Structure:
     includes supported phonopy interfaces.
     """
     supported = list_supported_interfaces()
-    if supported and interface not in supported:
+    try:
+        validate_phonopy_interface(interface)
+    except ValueError:
         hint = ", ".join(supported)
         raise ValueError(
             f"Unsupported interface '{interface}'. Supported interfaces: {hint}. "
@@ -87,44 +77,15 @@ def write_structure(structure: Structure, filename: str, out_format: str = "vasp
         structure.to_file(filename, out_format="vasp")
         return
 
-    try:
-        from phonopy.interface.calculator import write_crystal_structure
-        from phonopy.structure.atoms import PhonopyAtoms
-    except Exception as e:
-        raise ValueError(
-            f"Cannot write out_format='{out_format}' because phonopy writer is unavailable: {e}"
-        ) from e
-
     atoms = structure.to_atoms()
-    ph_atoms = PhonopyAtoms(
-        symbols=atoms.get_chemical_symbols(),
-        cell=atoms.cell.array,
-        scaled_positions=atoms.get_scaled_positions(),
-    )
     try:
-        write_crystal_structure(filename, ph_atoms, interface_mode=out_format)
+        write_structure_with_interface(atoms, filename, interface=out_format)
     except Exception as e:
         raise ValueError(
             f"Failed to write structure with interface '{out_format}': {e}. "
-            "Try '--format vasp' (or '--format xyz') if this interface needs "
+            "Try '--format vasp' if this interface needs "
             "extra template information."
         ) from e
-
-
-def write_xyz_trajectory(
-    structures_with_id: Iterable[tuple[int, Structure]],
-    outfile: str,
-) -> int:
-    """Write displacement structures to one extxyz file with config_id."""
-    atoms_list = []
-    for config_id, structure in structures_with_id:
-        atoms = structure.to_atoms()
-        atoms.info["config_id"] = config_id
-        atoms_list.append(atoms)
-
-    if atoms_list:
-        write(outfile, atoms_list, format="extxyz")
-    return len(atoms_list)
 
 
 def _expand_file_patterns(files_or_patterns: list[str]) -> list[str]:
@@ -157,34 +118,15 @@ def load_forces_with_phonopy(
         lower = fname.lower()
         if lower.endswith(".xyz") or lower.endswith(".extxyz"):
             raise ValueError(
-                "CLI reap no longer supports xyz/extxyz. "
-                "Use phonopy-supported calculator outputs with --forces-interface, "
-                "or use Python library workflow for xyz force inputs."
+                "CLI reap does not support xyz/extxyz force trajectories. "
+                "Use phonopy-supported calculator outputs with --forces-interface."
             )
         if not os.path.isfile(fname):
             raise ValueError(f"{fname} is not a file")
 
-    from phonopy.interface.calculator import get_calc_dataset
-
-    dataset = get_calc_dataset(
-        interface_mode=interface,
-        num_atoms=num_atoms,
-        force_filenames=all_files,
-        verbose=True,
+    forces = parse_forces_with_interface(
+        all_files, num_atoms=num_atoms, interface=interface
     )
-
-    if not isinstance(dataset, dict) or "forces" not in dataset:
-        raise ValueError(
-            f"Phonopy failed to parse forces with interface='{interface}'. "
-            "Check --forces-interface and force file format."
-        )
-
-    forces = np.asarray(dataset["forces"], dtype=float)
-    if forces.ndim != 3 or forces.shape[1] != num_atoms or forces.shape[2] != 3:
-        raise ValueError(
-            "Parsed force array has invalid shape. "
-            f"Got {forces.shape}, expected (nfiles, {num_atoms}, 3)."
-        )
 
     force_map = {i + 1: forces[i] for i in range(forces.shape[0])}
     return all_files, force_map

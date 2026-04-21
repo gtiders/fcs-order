@@ -1,25 +1,76 @@
-# MLFCS (Machine Learning Force Constant Suite)
+# MLFCS
 
-![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+<p align="center">
+  <strong>Machine Learning Force Constant Suite</strong><br/>
+  面向二阶/三阶/四阶力常数计算的实用工具套件（CLI + Python API）
+</p>
 
-MLFCS 是一个现代化的非谐力常数（Anharmonic Force Constants）计算工具套件，旨在为高通量材料计算提供高效、易用的解决方案。
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-blue.svg">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-0A7EA4.svg">
+</p>
 
-本项目基于经典的 `thirdorder.py` 和 `fourthorder.py` 进行了深度重构与优化。
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="docs/quickstart.md">快速上手</a>
+</p>
 
-## ✨ 核心特性
+## 项目定位
 
-*   **纯 Python 实现**：彻底移除了对 `syplib` C 扩展库的依赖，解决了繁琐的编译和依赖问题。
-*   **极致性能**：
-    *   🚀 **速度提升 5 倍**：经过算法优化，计算速度大幅提升。
-    *   💾 **内存占用仅 1%**：内存管理极大优化，轻松处理大规模超胞体系。
-    *   📦 **极简安装**：支持标准的 `pip` 安装流程，开箱即用。
-*   **功能完备**：支持三阶（Third-order）和四阶（Fourth-order）力常数的生成（Sow）与提取（Reap）。
-*   **多格式支持**：兼容 **VASP** 和 **XYZ/ExtXYZ** 格式，方便与多种计算代码（如 ASE calculators）集成。
+MLFCS 是一个面向材料热学与非谐声子研究的力常数计算套件，当前围绕三条主线：
 
-## 🛠️ 安装
+- `thirdorder` / `fourthorder` 命令行流程：`sow` + `reap`，适合传统文件工作流。
+- `secondorder` Python API：`MLPHONON`、`MLPSSCHA`，适合直接调用 ASE 计算器。
+- `hifinit` 单类接口：`HifinitRun`，先用有限差分直接计算目标阶数力常数，再投影到 hiPhive 参数空间；相比纯拟合法更容易控制阶间解耦，避免高阶/低阶参数相互“污染”。
 
-您可以直接通过 pip 安装本项目：
+目标是：在保证物理流程清晰的前提下，提高可脚本化能力、接口清晰度和工程可维护性。
+
+## 为什么使用 MLFCS
+
+- 一套代码覆盖 2nd / 3rd / 4th 阶力常数。
+- 同时支持 CLI 文件流与 Python 直连计算流。
+- 显式接口控制：结构读写与力解析均可通过 phonopy 接口指定。
+- 输出兼容 phonopy / phono3py / ShengBTE 常见后处理路径。
+
+## HIFINIT 设计说明
+
+`HifinitRun` 的核心思路不是“直接把一组力数据拿去全局拟合”，而是：
+
+1. 用有限差分在轨道原型上直接构造各阶力常数张量。
+2. 再将结果映射到 hiPhive 的参数化空间，用于施加对称性与声学求和规则（ASR）等约束。
+
+这种流程的主要价值：
+- 各阶物理量来源更清晰：每一阶来自对应阶的有限差分构造，而不是由全局拟合共同分配。
+- 降低阶间耦合误差：能更好避免纯拟合法里常见的“低阶/高阶互相吸收误差”问题。
+- 仍保留 hiPhive 的工程优势：对称性处理、参数空间组织和下游输出兼容性。
+
+### 与纯拟合法 workflow 对比
+
+| 维度 | HIFINIT（MLFCS） | 纯拟合法（常见 hiPhive 用法） |
+|---|---|---|
+| 力常数来源 | 先有限差分直算，再投影到参数空间 | 由训练数据全局拟合参数 |
+| ASR/对称约束 | 在 hiPhive 参数空间中显式施加，数值精度内严格满足 ASR 与对称约束（含平移/旋转相关约束） | 依赖拟合设置与数据质量，可能出现约束漂移或阶间误差再分配 |
+| 阶间可分辨性 | 更强，低阶/高阶来源路径清晰 | 相对更弱，易出现阶间“吸收误差” |
+| 计算成本 | 很高（高阶和大超胞下尤甚） | 相对更低（取决于数据规模与模型） |
+| 计算器建议 | 强烈建议使用 ASE 机器学习势（NEP/MACE/DP/GAP 等） | DFT 与 MLP 均可，按场景选择 |
+
+工程实践建议：
+- 对三阶/四阶或更大体系，`HifinitRun` 通常应配合机器学习势函数；直接 DFT 全流程成本往往过高。
+- 若目标是高精度且强约束（ASR/对称性）的一致满足，优先考虑 HIFINIT 路线。
+
+## 重要说明（范围边界）
+
+- MLFCS 的 `interface` 能力是对 I/O 与力解析的工程扩展。
+- 它不会替代三阶/四阶核心重构算法本身。
+- 可用接口名称取决于你本地安装的 phonopy 版本，建议先执行：
+
+```bash
+thirdorder interfaces
+fourthorder interfaces
+```
+
+## 安装
 
 ```bash
 git clone https://github.com/gtiders/mlfcs.git
@@ -27,350 +78,173 @@ cd mlfcs
 pip install .
 ```
 
-### ⚠️ 古老系统注意事项 (CentOS 7 等)
+环境要求：
+- Python `>= 3.12`
+- 依赖见 [`pyproject.toml`](pyproject.toml)
 
-在编译器版本较低的系统上（GCC < 9），NumPy 2.0+ 可能导致编译问题。安装前请修改 `pyproject.toml`：
+## 快速开始
 
-```diff
-- requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
-+ requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy<2.0.0"]
-```
-
-然后执行安装：
+### 1) 三阶 CLI
 
 ```bash
-pip install .
-```
+# 生成位移超胞
+thirdorder sow 4 4 4 --cutoff -3 --interface vasp --format vasp
 
-## 📖 使用指南
+# 对每个位移结构做外部力计算
 
-本套件包含两个主要命令：`thirdorder` 和 `fourthorder`。每个命令都包含 `sow`（生成位移）和 `reap`（收集力并计算力常数）两个子命令。
-
-### 接口选择（非 VASP 输入必须显式指定）
-
-结构读取使用显式 `--interface` 参数：
-
-- 默认是 `--interface vasp`。
-- ABACUS 的 `STRU` 文件请使用 `--interface abacus`。
-- 若读取失败，MLFCS 会打印 phonopy 支持的接口列表（如 `abacus`、`vasp`、`qe`、`cp2k`、`aims`）。
-- 对 `sow --format same`，写出会走 phonopy 对应接口。某些接口（特别是 `cp2k`）可能需要额外模板信息；若报错可改用 `--format vasp` 或 `--format xyz`。
-
-### CLI 参数说明（`thirdorder` / `fourthorder`）
-
-| 参数 | 是否必填 | 适用范围 | 说明 |
-| --- | --- | --- | --- |
-| `command` | 是 | 全部 | 子命令：`sow` 或 `reap`。 |
-| `na nb nc` | 是 | 全部 | 超胞在 `a/b/c` 方向的扩展倍数，例如 `4 4 4`。 |
-| `--cutoff` | 是 | 全部 | 截断规则。负整数表示近邻层数（如 `-3` 表示第 3 近邻）；正数表示距离截断。 |
-| `-i, --input` | 否 | 全部 | 输入结构文件，默认 `POSCAR`。 |
-| `--interface` | 否 | 全部 | 结构读取接口，默认 `vasp`。请显式设置与输入匹配的接口，如 `abacus`、`qe`、`cp2k`、`aims`。 |
-| `--symprec` | 否 | 全部 | 对称性判定精度，默认来自代码常量（当前为 `1e-5`）。 |
-| `--hstep` | 否 | 全部 | 位移步长（单位 **nm**），默认来自代码常量（当前为 `0.001`）。 |
-| `-f, --format` | 否 | sow | 位移结构输出格式：`vasp`（多文件）、`xyz`（单轨迹文件）或 `same`（按 `--interface` 写出），默认 `vasp`。 |
-| `--forces` | `reap` 必填 | reap | 一个或多个力输出文件/通配符模式（支持 glob）。**CLI 不支持** `xyz/extxyz` 力轨迹输入。 |
-| `--forces-interface` | 否 | reap | `reap` 解析力文件使用的接口；默认复用 `--interface`。 |
-
-### 最小完整流程（Sow -> 计算 -> Reap）
-
-```bash
-# 1) 生成位移结构
-thirdorder sow 4 4 4 --cutoff -3 --format vasp
-
-# 2) 对每个位移结构做外部力计算
-# 推荐目录：按 sow 编号建子目录
-# 例如 3RD_runs/0001/vasprun.xml, 3RD_runs/0002/vasprun.xml, ...
-
-# 3) 收集三阶力常数（排序后的目录顺序 -> 位移编号顺序）
+# 回收并重构三阶力常数
 thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./3RD_runs -name "vasprun.xml" | sort -V) \
-  --forces-interface vasp
+  --interface vasp \
+  --forces-interface vasp \
+  --forces "./3RD_runs/*/vasprun.xml"
 ```
 
-### 三阶力常数计算 (Thirdorder)
-
-#### 1. 生成位移结构 (Sow)
-
-生成用于计算三阶力常数的超胞位移结构。
+### 2) 四阶 CLI
 
 ```bash
-# 基本用法：生成 4x4x4 超胞，截断半径第 3 近邻 (负数表示近邻层数)
-thirdorder sow 4 4 4 --cutoff -3
+fourthorder sow 3 3 3 --cutoff -2 --interface vasp --format vasp
 
-# ABACUS 输入 (STRU)
-thirdorder sow 4 4 4 --cutoff -3 -i STRU --interface abacus
-
-# QE 输入示例
-thirdorder sow 4 4 4 --cutoff -3 -i qe.in --interface qe
-
-# CP2K 输入示例
-thirdorder sow 4 4 4 --cutoff -3 -i cp2k.inp --interface cp2k
-
-# 指定截断半径为 5.0 nm (正数表示距离)
-thirdorder sow 4 4 4 --cutoff 5.0
-
-# 输出为 xyz 格式 (推荐用于机器学习势)
-thirdorder sow 4 4 4 --cutoff -3 --format xyz
-
-# 按输入接口写出位移结构
-thirdorder sow 4 4 4 --cutoff -3 --interface abacus --format same
-
-# 自定义参数: 位移步长 0.001 nm, 对称性精度 1e-4
-thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
-```
-
-生成结果说明：
-- `--format vasp`：`3RD.SPOSCAR` + `3RD.POSCAR.*`
-- `--format xyz`：`3RD.displacements.xyz`
-- `--format same`（例如 `--interface abacus`）：`3RD.SUPERCELL.<interface>` + `3RD.<interface>.*`
-
-#### 2. 计算力 (外部步骤)
-
-请对 `sow` 生成的每个位移结构执行力计算：
-- 若 `sow --format vasp`：对 `3RD.POSCAR.*` 逐个计算。
-- 若 `sow --format xyz`：从 `3RD.displacements.xyz` 生成并计算（常用于 Python 工作流）。
-- 若 `sow --format same`：对接口写出的 `3RD.<interface>.*` 文件逐个计算。
-
-**关键点**：CLI `reap` 使用 phonopy 接口解析输出文件，务必保证文件命名/顺序可确定。
-
-#### 3. 收集力常数 (Reap)
-
-使用 `reap` 命令从计算好的文件中提取力常数。
-
-```bash
-# 基本用法：从 VASP xml/OUTCAR 文件中提取
-thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS 输出日志
-thirdorder reap 4 4 4 --cutoff -3 --forces running_scf.log.* --forces-interface abacus
-```
-
-结果将输出到 `FORCE_CONSTANTS_3RD` 文件。
-
-说明：
-- CLI 的 `reap` 现在通过 phonopy 接口解析力文件，不再接受 `xyz/extxyz`。
-- 若要使用 `xyz` 力轨迹，请使用 Python 库函数工作流。
-
-##### Reap 多文件顺序规则
-
-`reap` 会将“排序后的文件顺序”映射到位移编号（`1..N`），所以请确保输入顺序是确定的。
-推荐按 `sow` 输出编号组织目录（如 `0001/`、`0002/` 等）。
-
-```bash
-# VASP: 简单通配符（文件名有补零或天然有序时可用）
-thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS: 显式 find + 版本排序
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./abacus_runs -name "running_scf.log.*" | sort -V) \
-  --forces-interface abacus
-
-# QE: 收集 pw.x 输出
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
-  --forces-interface qe
-
-# CP2K: 收集输出日志
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./cp2k_runs -name "*.out" | sort -V) \
-  --forces-interface cp2k
-```
-
-如果不确定顺序，先打印确认：
-```bash
-find ./abacus_runs -name "running_scf.log.*" | sort -V
-```
-
-### 四阶力常数计算 (Fourthorder)
-
-操作流程与三阶类似。
-
-#### 1. 生成位移结构 (Sow)
-
-```bash
-# 生成 3x3x3 超胞，第 2 近邻截断
-fourthorder sow 3 3 3 --cutoff -2
-
-# ABACUS 输入 (STRU)
-fourthorder sow 3 3 3 --cutoff -2 -i STRU --interface abacus
-
-# QE 输入示例
-fourthorder sow 3 3 3 --cutoff -2 -i qe.in --interface qe
-
-# CP2K 输入示例
-fourthorder sow 3 3 3 --cutoff -2 -i cp2k.inp --interface cp2k
-```
-
-生成结果说明：
-- `--format vasp`：`4TH.SPOSCAR` + `4TH.POSCAR.*`
-- `--format xyz`：`4TH.displacements.xyz`
-- `--format same`：`4TH.SUPERCELL.<interface>` + `4TH.<interface>.*`
-
-#### 2. 计算力常数 (Reap)
-
-```bash
-fourthorder reap 3 3 3 --cutoff -2 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS 输出日志
-fourthorder reap 3 3 3 --cutoff -2 --forces running_scf.log.* --forces-interface abacus
-
-# QE 输出（顺序规则同 thirdorder）
 fourthorder reap 3 3 3 --cutoff -2 \
-  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
-  --forces-interface qe
+  --interface vasp \
+  --forces-interface vasp \
+  --forces "./4TH_runs/*/vasprun.xml"
 ```
 
-结果将输出到 `FORCE_CONSTANTS_4TH` 文件。
-
-## 🐍 Python API 调用 (进阶用法)
-
-除了命令行工具，您也可以直接在 Python 脚本中调用核心类，这对于集成 ASE 计算器（如 NEP, GAP, MACE, DP 等）非常方便，无需中间文件读写。
-
-### 基础示例
+### 3) Python API：`MLPHONON`（二阶）
 
 ```python
-from mlfcs.thirdorder import ThirdOrderRun
-# 假设您使用 calorine 的 CPUNEP 计算器，也可以是任何 ASE Calculator
-from calorine.calculators import CPUNEP
-
-# 初始化运行器
-# 参数: na=4, nb=4, nc=4, cutoff=-3 (第3近邻)
-runner = ThirdOrderRun(4, 4, 4, -3)
-
-# 定义 ASE 计算器
-calc = CPUNEP("nep.txt")
-
-# 直接运行计算，无需手动处理文件 I/O
-runner.run_calculator(calc)
-```
-
-### 参数覆盖 (H & Symprec)
-
-您可以在初始化时自定义位移步长 (`h`) 和对称性精度 (`symprec`)：
-
-```python
-# h: 位移步长，单位 nm (默认通常为 0.001 或类似值，具体取决于阶数)
-# symprec: 对称性判断精度 (默认 1e-5)
-runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
-```
-
-### 谐波声子计算 (MLPHONON)
-
-您可以使用 `MLPHONON` 类结合任意 ASE 计算器计算谐波力常数。
-
-```python
-from mlfcs.phonon import MLPHONON
 from ase.io import read
 from calorine.calculators import CPUNEP
+from mlfcs.secondorder import MLPHONON
 
-# 读取结构
-structure = read("POSCAR")
-
-# 初始化计算器
+prim = read("POSCAR")
 calc = CPUNEP("nep.txt")
 
-# 设置声子计算
 phonon = MLPHONON(
-    structure=structure,
+    structure=prim,
     calculator=calc,
-    supercell_matrix=[2, 2, 2],  # 超胞扩倍矩阵
-    kwargs_generate_displacements={"distance": 0.01}  # 可选参数
+    supercell_matrix=[2, 2, 2],
+    kwargs_generate_displacements={"distance": 0.01},
 )
-
-# 运行计算
 phonon.run()
-
-# 导出力常数到文件
-phonon.write("FORCE_CONSTANTS")
-
-# 访问 Phonopy 对象进行后续分析
-phonon.phonopy.run_mesh([20, 20, 20])
-phonon.phonopy.run_total_dos()
+phonon.write("FORCE_CONSTANTS")  # text
+phonon.write("fc2.hdf5")         # hdf5
 ```
 
-### 自洽谐波计算 (SSCHA)
-
-您可以使用 `MLPSSCHA` 类结合任意 ASE 计算器（如 NEP）进行 SSCHA 计算。
+### 4) Python API：`MLPSSCHA`
 
 ```python
-from mlfcs.sscha import MLPSSCHA
+from ase.io import read
 from calorine.calculators import CPUNEP
+from mlfcs.secondorder import MLPSSCHA
 
-# 初始化计算器
+prim = read("POSCAR")
 calc = CPUNEP("nep.txt")
 
-# 设置 SSCHA 运行参数
 sscha = MLPSSCHA(
-    unitcell="./POSCAR",         # 原胞文件路径
-    supercell_matrix=[3, 3, 3],  # 超胞扩倍矩阵
-    calculator=calc,             # ASE 计算器
-    temperature=300,             # 温度 (K)
-    number_of_snapshots=1000,    # 每次迭代生成的结构数
-    max_iterations=20,           # 最大迭代次数
-    avg_n_last_steps=5,          # 取最后 5 步结果平均作为最终输出
-    fc_output="FORCE_CONSTANTS"  # 输出文件名
+    unitcell=prim,
+    calculator=calc,
+    supercell_matrix=[3, 3, 3],
+    temperature=300,
+    number_of_snapshots=1000,
+    max_iterations=20,
+    avg_n_last_steps=5,
+    fc_output="fc2_sscha.hdf5",
+    fc_output_format="hdf5",
 )
-
-# 运行计算
 sscha.run()
 ```
 
-### 最佳实践：防止计算器缓存问题
-
-如果您选择手动遍历结构进行计算（而不是使用 `runner.run_calculator`），请务必注意 ASE 计算器的缓存机制。为了防止 `write` 操作意外触发重算或写入旧数据，建议使用 `SinglePointCalculator` "冻结" 结果。
+### 5) Python API：`HifinitRun`
 
 ```python
-from ase.io import read, write
-from ase.calculators.singlepoint import SinglePointCalculator
+from ase.io import read
+from calorine.calculators import CPUNEP
+from mlfcs.hifinit import HifinitRun
 
-# ... 假设在循环中 ...
-atoms.calc = calc  # 挂载您的主计算器 (如 NEP, VASP 等)
-forces = atoms.get_forces()
-energy = atoms.get_potential_energy()
+prim = read("POSCAR")
+supercell = read("SPOSCAR")
+calc = CPUNEP("nep.txt")
 
-# 【关键步骤】卸载主计算器，使用 SinglePointCalculator 存储静态结果
-# 这样可以安全地写入文件，避免重触发 calc 计算，也避免多帧数据混淆
-atoms.calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
-
-# 现在可以安全写入
-write("forces.xyz", atoms, format="extxyz", append=True)
+runner = HifinitRun(
+    primitive=prim,
+    supercell=supercell,
+    calculator=calc,
+    displacement=0.005,
+    cutoffs=[None, None, 4.0],
+)
+runner.run(out_dir="./hifinit_results", verbose=True)
 ```
 
-## 📋 输出格式
+## CLI 参数说明（`thirdorder` / `fourthorder`）
 
-MLFCS 以原生格式输出力常数。**不提供 phono3py 格式的内置支持。** 如需 phono3py 兼容格式，可使用 [hiPhive](https://hiphive.materialsmodeling.org/) 进行格式转换。示例：
+两者命令形态一致：
 
-```python
-from hiphive import ForceConstants
-
-# 读取 MLFCS 输出并转换为 phono3py 格式
-# 详见 hiphive 文档
+```bash
+<tool> {sow|reap|interfaces} [na nb nc] [options]
 ```
 
-## ⚠️ 版本说明
+常用参数：
 
-`main` 分支包含正在开发和实验性的功能（如 C++ `unordered_map` 优化）。生产环境请使用 [releases](https://github.com/gtiders/mlfcs/releases) 版本。
+| 参数 | 作用阶段 | 说明 |
+|---|---|---|
+| `na nb nc` | `sow`、`reap` | 超胞在 `a/b/c` 方向倍率 |
+| `--cutoff` | `sow`、`reap` | 正数表示距离截断；负整数表示近邻壳层（例如 `-3`） |
+| `-i`, `--input` | `sow`、`reap` | 输入结构文件（默认 `POSCAR`） |
+| `--interface` | `sow`、`reap` | 结构读写接口名 |
+| `--forces-interface` | `reap` | 力文件解析接口（默认跟随 `--interface`） |
+| `--hstep` | `sow`、`reap` | 位移步长（单位 nm） |
+| `--symprec` | `sow`、`reap` | 对称性精度 |
+| `-f`, `--format` | `sow` | `vasp` 或 `same`（`same` 表示按 `--interface` 写出） |
+| `--forces` | `reap` | 力文件列表或 glob 模式 |
 
-## 🤖 AI 辅助文档
+注意：
+- `reap` 要求力文件数量与期望位移数严格匹配。
+- CLI `reap` 明确不支持 `.xyz` / `.extxyz` 轨迹输入。
 
-**初次使用？** 您可以：
+## 输出文件
 
-*   📖 **将本 README 喂给 AI 助手**（如 ChatGPT、Claude、DeepSeek 等），快速了解用法并上手。
-*   💻 **将整个代码库喂给 AI 助手**，深入理解实现细节和高级用法。
+### `thirdorder` / `fourthorder`
+- `FORCE_CONSTANTS_3RD`
+- `FORCE_CONSTANTS_4TH`
 
-同时欢迎社区贡献：
-*   🐛 **报告 Bug 或提出功能需求**：[提交 Issue](https://github.com/gtiders/mlfcs/issues)
-*   🔧 **提交改进**：欢迎 [Pull Requests](https://github.com/gtiders/mlfcs/pulls)！
-*   📧 **邮件联系**：gtiders@qq.com
+### `MLPHONON` / `MLPSSCHA`
+- 文本格式：`FORCE_CONSTANTS`
+- HDF5 格式：`*.hdf5`
 
-## 🙏 致谢
+### `HifinitRun`（写入 `out_dir`）
+- `potential.fcp`
+- `FORCE_CONSTANTS_2ND`、`fc2.hdf5`
+- `FORCE_CONSTANTS_3RD`、`fc3.hdf5`（当阶数 >= 3）
+- `FORCE_CONSTANTS_4TH`（当阶数 >= 4）
 
-本项目的开发离不开开源社区的贡献，特别感谢以下先驱项目：
+## 最佳实践
 
-*   **[ShengBTE / thirdorder.py](https://www.shengbte.org/announcements/thirdorderpyv110released)**: 感谢 Wu Li 等人开发的原始 `thirdorder.py`，为非谐声子计算奠定了基础。
-*   **[Fourthorder](https://github.com/FourPhonon/Fourthorder)**: 感谢 Han, Zherui 等人开发的四阶力常数计算代码。
+- 在脚本中显式指定 `--interface` 与 `--forces-interface`，避免跨环境歧义。
+- API 流程先用小超胞验证计算器稳定性，再放大体系。
+- 手动循环调用 ASE 计算器并写轨迹时，建议先用 `SinglePointCalculator` 冻结结果，避免缓存导致的重复计算或数据混淆。
 
-我们在这些优秀工作的基础上，重点改进了软件工程架构、安装体验以及运行效率，希望能为社区提供更好用的工具。
+## 常见问题
 
-## 📄 许可证
+### 能完全替代旧版 `thirdorder.py` / `fourthorder.py` 吗？
+核心工作流概念兼容（`sow`/`reap`），但实现是工程化重构版本，并增加了显式接口控制与 Python API。
 
-本项目遵循 GNU General Public License v3.0 (GPLv3) 许可证。
+### 支持哪些 DFT 软件接口？
+由 phonopy 在你本地环境可用的接口决定。请运行 `thirdorder interfaces` 查看实时列表。
+
+### 可以直接接机器学习势吗？
+可以。Python API 基于 ASE Calculator 抽象（示例使用 `calorine` 的 `CPUNEP`，也可替换为其他 ASE 兼容计算器）。
+
+## 致谢
+
+MLFCS 的思路与实现受以下项目启发并受益于其生态：
+- `thirdorder.py`
+- `fourthorder`
+- `phonopy`
+- `hiPhive`
+
+感谢相关作者与维护者的长期工作。
+
+## 许可证
+
+本项目使用 **GNU General Public License v3.0**。详见 [`LICENSE`](LICENSE)。
