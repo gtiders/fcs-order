@@ -40,41 +40,21 @@ import copy
 from typing import Literal
 
 import numpy as np
-
-from phonopy import Phonopy
-from phonopy.physical_units import get_physical_units
-from phonopy.structure.atoms import PhonopyAtoms
-from phonopy.file_IO import write_FORCE_CONSTANTS
 from ase import Atoms
-from ase.io import read
-from pathlib import Path
+from phonopy import Phonopy
+from phonopy.file_IO import write_FORCE_CONSTANTS, write_force_constants_to_hdf5
+from phonopy.physical_units import get_physical_units
 
-
-def phonopy_to_ase(atoms, **kwargs):
-    """Convert PhonopyAtoms to ASE Atoms (from calorine logic)."""
-    return Atoms(
-        cell=atoms.cell,
-        numbers=atoms.numbers,
-        positions=atoms.positions,
-        pbc=True,
-        **kwargs,
-    )
-
-
-def ase_to_phonopy(atoms):
-    """Convert ASE Atoms to PhonopyAtoms."""
-    return PhonopyAtoms(
-        symbols=atoms.get_chemical_symbols(), cell=atoms.cell, positions=atoms.positions
-    )
+from mlfcs.interface import AsePhonopyMLP, ase_to_phonopy_atoms
 
 
 class MLPSSCHA:
-    """Iterative approach SSCHA using ASE Calculator (replacing PhonopyMLP)."""
+    """Iterative approach SSCHA using ASE calculator via MLP adapter."""
 
     def __init__(
         self,
-        unitcell: Phonopy | Atoms | str | Path,
-        calculator,  # Changed from mlp: PhonopyMLP to calculator (ASE)
+        unitcell: Atoms,
+        calculator,
         supercell_matrix: list | np.ndarray | None = None,
         temperature: float | None = None,
         number_of_snapshots: int | Literal["auto"] | None = None,
@@ -82,60 +62,39 @@ class MLPSSCHA:
         distance: float | None = None,
         fc_calculator: str | None = None,
         fc_output: str = "FORCE_CONSTANTS",
-        avg_n_last_steps: int | None = None,  # New parameter
+        fc_output_format: Literal["text", "hdf5", "auto"] = "auto",
+        avg_n_last_steps: int | None = None,
         log_level: int = 0,
     ):
         """Init method.
 
-        unitcell : Phonopy | Atoms | str | Path
-            Phonopy instance OR ASE Atoms object OR path to structure file.
+        unitcell : Atoms
+            ASE Atoms object representing primitive cell.
         calculator : ASE Calculator
-            ASE Calculator instance (e.g. CPUNEP, Mace, etc.)
+            ASE Calculator instance (e.g. CPUNEP, MACE, etc.)
         supercell_matrix : array_like, optional
-            Supercell matrix. Required if unitcell is ASE Atoms.
-        temperature : float, optional
-            Temperature in K, by default 300.0.
-        number_of_snapshots : int, optional
-            Number of snapshots, by default 1000.
-        max_iterations : int, optional
-            Maximum number of iterations, by default 10.
-        distance : float, optional
-            Distance of displacements, by default is None, which gives 0.01.
-        fc_calculator : str, optional
-            Force constants calculator. The default is None, which means "symfc".
-        fc_output : str, optional
-            Filename to write final force constants. Default "FORCE_CONSTANTS".
-        avg_n_last_steps : int, optional
-            Number of last iterations to average force constants over. Default None (no averaging).
-        log_level : int, optional
-            Log level, by default 0.
-
+            Supercell matrix. Required for Atoms input.
         """
         if calculator is None:
             raise ValueError("ASE Calculator is not provided.")
 
-        self._calculator = calculator
+        # ===== MLFCS MOD BEGIN =====
+        # Keep library API in ASE style and build Phonopy internally.
+        if not isinstance(unitcell, Atoms):
+            raise TypeError("unitcell must be ASE Atoms.")
+        if supercell_matrix is None:
+            raise ValueError("supercell_matrix is required when input is ASE Atoms.")
+        unitcell_ph = ase_to_phonopy_atoms(unitcell, include_masses=True)
+        self._ph = Phonopy(unitcell_ph, supercell_matrix=supercell_matrix)
+        self._ph.mlp = AsePhonopyMLP(calculator)
+        # ===== MLFCS MOD END =====
+
+        # ===== MLFCS MOD BEGIN =====
+        # Optional output controls retained for backward compatibility in mlfcs.
         self._fc_output = fc_output
+        self._fc_output_format = fc_output_format
         self._avg_n_last_steps = avg_n_last_steps
-
-        # If unitcell is a path, read it
-        if isinstance(unitcell, (str, Path)):
-            unitcell = read(unitcell)
-
-        # Initialize Phonopy object
-        if isinstance(unitcell, Phonopy):
-            self._ph = unitcell.copy()
-        elif isinstance(unitcell, Atoms):
-            if supercell_matrix is None:
-                raise ValueError(
-                    "supercell_matrix is required when input is ASE Atoms."
-                )
-            unitcell_ph = ase_to_phonopy(unitcell)
-            self._ph = Phonopy(unitcell_ph, supercell_matrix=supercell_matrix)
-        else:
-            raise TypeError(
-                "unitcell must be Phonopy object, ASE Atoms object, or file path."
-            )
+        # ===== MLFCS MOD END =====
 
         if temperature is None:
             self._temperature = 300.0
@@ -149,7 +108,6 @@ class MLPSSCHA:
             self._max_iterations = 10
         else:
             self._max_iterations = max_iterations
-        self._max_iterations = max_iterations
         if distance is None:
             self._distance = 0.01
         else:
@@ -160,13 +118,11 @@ class MLPSSCHA:
             self._fc_calculator = fc_calculator
         self._log_level = log_level
 
-        # self._ph.mlp = PhonopyMLP(mlp=mlp.mlp) # Removed dependency
         self._ph.nac_params = copy.deepcopy(self._ph.nac_params)
 
         # Calculate supercell energy without displacements
         self._ph.generate_displacements(distance=0, number_of_snapshots=1)
-        self.evaluate_structure()
-
+        self._ph.evaluate_mlp()
         self._supercell_energy = float(self._ph.supercell_energies[0])
         self._ph.dataset = None
 
@@ -205,7 +161,7 @@ class MLPSSCHA:
         """Return potential energy."""
         return np.average(self._ph.supercell_energies - self._supercell_energy)
 
-    def calculate_free_energy(self, mesh: float = 100.0) -> float:
+    def calculate_free_energy(self, mesh: float = 100.0) -> None:
         """Calculate SSCHA free energy."""
         self._ph.run_mesh(mesh=mesh)
         self._ph.run_thermal_properties(temperatures=[self._temperature])
@@ -220,47 +176,54 @@ class MLPSSCHA:
 
     def run(self) -> "MLPSSCHA":
         """Run through all iterations."""
-        GREEN = "\033[32m"
-        RESET = "\033[0m"
-
+        # ===== MLFCS MOD BEGIN =====
+        # Keep free-energy history print and optional FC averaging/output behavior.
+        green = "\033[32m"
+        reset = "\033[0m"
         free_energies = []
-        fc_history = []  # Store FCs for averaging
-
+        fc_history = []
         for i in self:
-            # Calculate and print Free Energy
             self.calculate_free_energy()
             fe = float(self.free_energy)
             free_energies.append(fe)
-            print(f"{GREEN}[SSCHA] Iteration {i + 1}: Free Energy = {fe:.6f} eV{RESET}")
-
-            # Store current FC
-            fc_history.append(self._ph.force_constants.copy())
-
+            print(f"{green}[SSCHA] Iteration {i + 1}: Free Energy = {fe:.6f} eV{reset}")
+            if self._ph.force_constants is not None:
+                fc_history.append(self._ph.force_constants.copy())
             if self._log_level:
                 print("")
 
-        print(f"\n{GREEN}[SSCHA] Final Free Energy History:{RESET}")
-        print(f"{GREEN}{free_energies}{RESET}\n")
+        print(f"\n{green}[SSCHA] Final Free Energy History:{reset}")
+        print(f"{green}{free_energies}{reset}\n")
 
-        # Perform Averaging if requested
-        if self._avg_n_last_steps and self._avg_n_last_steps > 0:
+        if self._avg_n_last_steps and self._avg_n_last_steps > 0 and fc_history:
             n_avg = min(self._avg_n_last_steps, len(fc_history))
-            if n_avg > 0:
-                print(
-                    f"{GREEN}[SSCHA] Averaging Force Constants over last {n_avg} steps...{RESET}"
-                )
-                fcs_slice = fc_history[-n_avg:]
-                fc_avg = np.mean(fcs_slice, axis=0)
-                self._ph.force_constants = fc_avg
+            print(
+                f"{green}[SSCHA] Averaging Force Constants over last {n_avg} steps...{reset}"
+            )
+            self._ph.force_constants = np.mean(fc_history[-n_avg:], axis=0)
 
-        # Save final force constants
         if self._fc_output:
             if self._log_level:
-                print(
-                    f"Writing final force constants (possibly averaged) to {self._fc_output}..."
+                print(f"Writing final force constants to {self._fc_output}...")
+            out_fmt = self._fc_output_format
+            if out_fmt == "auto":
+                out_fmt = (
+                    "hdf5"
+                    if self._fc_output.lower().endswith((".hdf5", ".h5"))
+                    else "text"
                 )
-            write_FORCE_CONSTANTS(self._ph.force_constants, filename=self._fc_output)
-
+            if out_fmt == "text":
+                write_FORCE_CONSTANTS(self._ph.force_constants, filename=self._fc_output)
+            elif out_fmt == "hdf5":
+                write_force_constants_to_hdf5(
+                    self._ph.force_constants, filename=self._fc_output
+                )
+            else:
+                raise ValueError(
+                    f"Unsupported fc_output_format='{self._fc_output_format}'. "
+                    "Use 'text', 'hdf5', or 'auto'."
+                )
+        # ===== MLFCS MOD END =====
         return self
 
     def __iter__(self) -> "MLPSSCHA":
@@ -276,7 +239,7 @@ class MLPSSCHA:
         self._iter_counter += 1
         return self._iter_counter - 1
 
-    def _run(self) -> Phonopy:
+    def _run(self) -> None:
         if self._log_level and self._iter_counter == 0:
             print(
                 f"[ SSCHA initialization (rd={self._distance}, "
@@ -314,9 +277,8 @@ class MLPSSCHA:
                     )
 
         if self._log_level:
-            print("Evaluate MLP (via ASE Calculator) to obtain forces...", flush=True)
-
-        self.evaluate_structure()
+            print("Evaluate MLP to obtain forces", flush=True)
+        self._ph.evaluate_mlp()
 
         if self._log_level:
             print("Calculate force constants using symfc", flush=True)
@@ -326,45 +288,3 @@ class MLPSSCHA:
             calculate_full_force_constants=True,
             show_drift=False,
         )
-
-    def evaluate_structure(self):
-        """Evaluate structures using ASE Calculator.
-
-        Calculates supercell energies and forces for the displacements in
-        self._ph.supercells_with_displacements using the provided ASE calculator.
-        Results are stored into self._ph.supercell_energies and self._ph.dataset["forces"].
-        """
-        if self._calculator is None:
-            raise RuntimeError("ASE Calculator is not set.")
-
-        supercells = self._ph.supercells_with_displacements
-        if supercells is None:
-            raise RuntimeError("Displacements are not set. Run generate_displacements.")
-
-        energies = []
-        forces = []
-
-        for i, ph_atoms in enumerate(supercells):
-            if ph_atoms is None:
-                continue
-
-            # Convert PhonopyAtoms -> ASE Atoms
-            atoms = phonopy_to_ase(ph_atoms)
-
-            # Attach calculator and compute
-            atoms.calc = self._calculator
-
-            e = atoms.get_potential_energy()
-            f = atoms.get_forces()
-
-            energies.append(e)
-            forces.append(f)
-
-        # Update Phonopy object with results
-        self._ph.supercell_energies = np.array(energies)
-
-        # Phonopy expects forces in dataset dict
-        if self._ph.dataset is None:
-            self._ph.dataset = {}
-
-        self._ph.dataset["forces"] = np.array(forces)

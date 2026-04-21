@@ -8,36 +8,14 @@ import numpy as np
 
 try:
     from phonopy import Phonopy
-    from phonopy.structure.atoms import PhonopyAtoms
-    from phonopy.file_IO import write_FORCE_CONSTANTS
+    from phonopy.file_IO import write_FORCE_CONSTANTS, write_force_constants_to_hdf5
     phonopy_exists = True
 except ModuleNotFoundError:
     phonopy_exists = False
     Phonopy = None
-    PhonopyAtoms = None
 
 from ase import Atoms
-
-
-def ase_to_phonopy(atoms, **kwargs):
-    """Convert ASE Atoms to PhonopyAtoms."""
-    return PhonopyAtoms(
-        numbers=atoms.numbers,
-        cell=atoms.cell,
-        positions=atoms.positions,
-        **kwargs,
-    )
-
-
-def phonopy_to_ase(atoms, **kwargs):
-    """Convert PhonopyAtoms to ASE Atoms."""
-    return Atoms(
-        cell=atoms.cell,
-        numbers=atoms.numbers,
-        positions=atoms.positions,
-        pbc=True,
-        **kwargs,
-    )
+from mlfcs.interface import ase_to_phonopy_atoms, phonopy_to_ase_atoms
 
 
 class MLPHONON:
@@ -116,8 +94,7 @@ class MLPHONON:
             Self for method chaining.
 
         """
-        structure_ph = ase_to_phonopy(self._structure)
-        structure_ph.masses = self._structure.get_masses()
+        structure_ph = ase_to_phonopy_atoms(self._structure, include_masses=True)
 
         self._phonon = Phonopy(
             structure_ph, self._supercell_matrix, **self._kwargs_phonopy
@@ -126,7 +103,7 @@ class MLPHONON:
 
         forces = []
         for ph_atoms in self._phonon.supercells_with_displacements:
-            atoms = phonopy_to_ase(ph_atoms)
+            atoms = phonopy_to_ase_atoms(ph_atoms)
             atoms.calc = self._calculator
             forces.append(atoms.get_forces().copy())
 
@@ -135,15 +112,30 @@ class MLPHONON:
 
         return self
 
-    def write(self, filename: str = "FORCE_CONSTANTS"):
+    def write(self, filename: str = "FORCE_CONSTANTS", fmt: str = "auto"):
         """Write force constants to file.
 
         Parameters
         ----------
         filename : str
             Output filename. Default is "FORCE_CONSTANTS".
+        fmt : str
+            Output format: "text", "hdf5", or "auto" (infer from filename).
+            Default is "auto".
 
         """
         if self._phonon is None:
             raise RuntimeError("Run calculation first.")
-        write_FORCE_CONSTANTS(self._phonon.force_constants, filename=filename)
+
+        resolved = fmt.lower()
+        if resolved == "auto":
+            resolved = "hdf5" if filename.lower().endswith((".hdf5", ".h5")) else "text"
+
+        if resolved == "text":
+            write_FORCE_CONSTANTS(self._phonon.force_constants, filename=filename)
+            return
+        if resolved == "hdf5":
+            write_force_constants_to_hdf5(self._phonon.force_constants, filename=filename)
+            return
+
+        raise ValueError(f"Unsupported fmt='{fmt}'. Use 'text', 'hdf5', or 'auto'.")

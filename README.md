@@ -1,27 +1,77 @@
-# MLFCS (Machine Learning Force Constant Suite)
+# MLFCS
 
-![License](https://img.shields.io/badge/license-GPLv3-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+<p align="center">
+  <strong>Machine Learning Force Constant Suite</strong><br/>
+  A practical toolkit for 2nd/3rd/4th-order force constants with CLI and Python APIs.
+</p>
 
-[中文说明 (Chinese Version)](README_ZH.md)
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-blue.svg">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-0A7EA4.svg">
+</p>
 
-MLFCS is a modern suite for calculating Anharmonic Force Constants, designed to provide efficient and easy-to-use solutions for high-throughput materials calculation.
+<p align="center">
+  <a href="README_ZH.md">中文文档</a> ·
+  <a href="docs/quickstart.md">Quickstart</a>
+</p>
 
-This project is a deep refactoring and optimization based on the classic `thirdorder.py` and `fourthorder.py`.
+## What MLFCS Is
 
-## ✨ Key Features
+MLFCS is a refactored, workflow-oriented force-constant suite built around three layers:
 
-*   **Pure Python**: Completely removed the dependency on `syplib` C extensions, solving tedious compilation and dependency issues.
-*   **Extreme Performance**:
-    *   🚀 **5x Faster**: Significant speed improvements through algorithm optimization.
-    *   💾 **1% Memory Usage**: Optimized memory management to easily handle large supercell systems.
-    *   📦 **Easy Installation**: Supports standard `pip` installation, works out of the box.
-*   **Comprehensive Features**: Supports generation (Sow) and extraction (Reap) of Third-order and Fourth-order force constants.
-*   **Multi-format Support**: Compatible with **VASP** and **XYZ/ExtXYZ** formats, facilitating integration with various calculation codes (e.g., ASE calculators).
+- `thirdorder` / `fourthorder` command-line workflows (`sow` + `reap`), compatible with classic high-order finite-difference usage patterns.
+- `secondorder` Python APIs (`MLPHONON`, `MLPSSCHA`) for harmonic and SSCHA calculations using ASE calculators.
+- `hifinit` single-run API (`HifinitRun`) that computes force constants by finite differences first, then projects them into hiPhive parameter space; this helps avoid cross-order contamination often seen in pure global fitting workflows.
 
-## 🛠️ Installation
+The project focuses on reliable interfaces, scriptability, and practical integration with modern ASE-based model potentials.
 
-You can install this project directly via pip:
+## Why Use MLFCS
+
+- One codebase for 2nd, 3rd, and 4th-order force constants.
+- CLI mode for file-based DFT/force workflows.
+- Python mode for direct ASE-calculator execution.
+- Explicit phonopy interface control for structure and force parsing.
+- Output formats compatible with phonopy/phono3py/ShengBTE-style downstream tools.
+
+## HIFINIT Rationale
+
+`HifinitRun` is designed as a finite-difference-first workflow, not a pure global fitting workflow:
+
+1. Build force-constant tensors from finite differences on orbit prototypes.
+2. Project the result into hiPhive parameter space to enforce symmetry/ASR constraints.
+
+Why this matters:
+- Cleaner order separation: each order is built from its corresponding finite-difference evaluations.
+- Reduced cross-order error leakage: mitigates the common issue where fitting redistributes errors across different orders.
+- Keeps hiPhive benefits: symmetry handling, parameter organization, and practical output interoperability.
+
+### Compared to Pure Fitting Workflows
+
+| Aspect | HIFINIT (MLFCS) | Pure fitting workflow (common hiPhive usage) |
+|---|---|---|
+| FC source | Finite-difference tensors first, then projection to parameter space | Global parameter fitting from force datasets |
+| ASR/symmetry constraints | Explicitly enforced in hiPhive parameter space; ASR and symmetry constraints are satisfied within numerical precision (including translation/rotation-related constraints) | Depends more on fitting setup and data quality; can show drift or cross-order error redistribution |
+| Order separability | Stronger: low-/high-order contributions are more traceable | Weaker: order mixing/error absorption is more likely |
+| Computational cost | High, especially for higher order and larger supercells | Usually lower (depends on dataset/model size) |
+| Recommended calculator | Strongly recommended to use ASE ML potentials (NEP/MACE/DP/GAP, etc.) | DFT or ML potentials, depending on target |
+
+Practical guidance:
+- For 3rd/4th-order or large systems, `HifinitRun` is typically practical only with ML potentials.
+- If your priority is tighter ASR/symmetry-consistent force constants, HIFINIT is usually the better route.
+
+## Project Scope (Important)
+
+- The phonopy interface layer in MLFCS is an extension for structure I/O and force parsing.
+- It does **not** replace the core third-/fourth-order reconstruction logic.
+- Supported interfaces depend on your installed phonopy version. Discover them with:
+
+```bash
+thirdorder interfaces
+fourthorder interfaces
+```
+
+## Installation
 
 ```bash
 git clone https://github.com/gtiders/mlfcs.git
@@ -29,350 +79,173 @@ cd mlfcs
 pip install .
 ```
 
-### ⚠️ For Legacy Systems (CentOS 7, etc.)
+Requirements:
+- Python `>= 3.12`
+- Dependencies are defined in [`pyproject.toml`](pyproject.toml)
 
-On older systems with outdated compilers (GCC < 9), NumPy 2.0+ may cause compilation issues. Before installing, modify `pyproject.toml`:
+## Fast Start
 
-```diff
-- requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy>=2.0.0"]
-+ requires = ["setuptools>=80.0.0", "wheel", "cython>=3.0.0", "numpy<2.0.0"]
-```
-
-Then install:
+### 1) Third-order CLI
 
 ```bash
-pip install .
-```
+# Generate displaced supercells
+thirdorder sow 4 4 4 --cutoff -3 --interface vasp --format vasp
 
-## 📖 Usage Guide
+# Run external force calculations for each generated structure
 
-The suite includes two main commands: `thirdorder` and `fourthorder`. Each command contains `sow` (generate displacements) and `reap` (collect forces and calculate force constants) subcommands.
-
-### Interface Selection (Required for non-VASP inputs)
-
-Structure reading now uses an explicit `--interface` option:
-
-- Default is `--interface vasp`.
-- For ABACUS `STRU`, use `--interface abacus`.
-- If parsing fails, MLFCS prints supported interfaces (from phonopy), e.g. `abacus`, `vasp`, `qe`, `cp2k`, `aims`.
-- For `sow --format same`, writing follows `--interface` via phonopy writers. Some interfaces (notably `cp2k`) may require extra template information; if so, use `--format vasp` or `--format xyz`.
-
-### CLI Parameter Reference (`thirdorder` / `fourthorder`)
-
-| Parameter | Required | Scope | Description |
-| --- | --- | --- | --- |
-| `command` | Yes | all | Subcommand: `sow` or `reap`. |
-| `na nb nc` | Yes | all | Supercell size along `a/b/c` directions, e.g. `4 4 4`. |
-| `--cutoff` | Yes | all | Cutoff rule. Negative integer means neighbor shell index (e.g. `-3` = 3rd neighbor). Positive number means distance cutoff. |
-| `-i, --input` | No | all | Input structure file. Default: `POSCAR`. |
-| `--interface` | No | all | Structure parsing interface. Default: `vasp`. Use explicit values matching your input, e.g. `abacus`, `qe`, `cp2k`, `aims`. |
-| `--symprec` | No | all | Symmetry precision. Default from code constants (currently `1e-5`). |
-| `--hstep` | No | all | Displacement step size in **nm**. Default from code constants (currently `0.001`). |
-| `-f, --format` | No | sow | Displacement output format: `vasp` (multiple files), `xyz` (single trajectory file), or `same` (write using `--interface`). Default: `vasp`. |
-| `--forces` | Yes for `reap` | reap | One or more force-output files/patterns (glob is supported). **Not supported in CLI:** `xyz/extxyz` force trajectories. |
-| `--forces-interface` | No | reap | Interface used to parse force files. Default: reuse `--interface`. |
-
-### Minimal End-to-End Workflow (Sow -> Calculate -> Reap)
-
-```bash
-# 1) Generate displacements
-thirdorder sow 4 4 4 --cutoff -3 --format vasp
-
-# 2) Run external force calculations for each displacement
-# Recommended layout: one folder per displacement index from sow output
-# e.g. 3RD_runs/0001/vasprun.xml, 3RD_runs/0002/vasprun.xml, ...
-
-# 3) Reap force constants (sorted folder order -> displacement ID order)
+# Reconstruct FORCE_CONSTANTS_3RD
 thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./3RD_runs -name "vasprun.xml" | sort -V) \
-  --forces-interface vasp
+  --interface vasp \
+  --forces-interface vasp \
+  --forces "./3RD_runs/*/vasprun.xml"
 ```
 
-### Third-order Force Constants (Thirdorder)
-
-#### 1. Generate Displacements (Sow)
-
-Generate supercell displacement structures for third-order force constant calculations.
+### 2) Fourth-order CLI
 
 ```bash
-# Basic usage: 4x4x4 supercell, cutoff 3rd neighbor (negative for neighbor index)
-thirdorder sow 4 4 4 --cutoff -3
+fourthorder sow 3 3 3 --cutoff -2 --interface vasp --format vasp
 
-# ABACUS input (STRU)
-thirdorder sow 4 4 4 --cutoff -3 -i STRU --interface abacus
-
-# QE input example
-thirdorder sow 4 4 4 --cutoff -3 -i qe.in --interface qe
-
-# CP2K input example
-thirdorder sow 4 4 4 --cutoff -3 -i cp2k.inp --interface cp2k
-
-# Specify cutoff radius as 5.0 nm (positive for distance)
-thirdorder sow 4 4 4 --cutoff 5.0
-
-# Output in xyz format (Recommended for ML Potentials)
-thirdorder sow 4 4 4 --cutoff -3 --format xyz
-
-# Write displacement structures using the same interface as input
-thirdorder sow 4 4 4 --cutoff -3 --interface abacus --format same
-
-# Custom parameters: displacement step 0.001 nm, symmetry precision 1e-4
-thirdorder sow 4 4 4 --cutoff -3 --hstep 0.001 --symprec 1e-4
-```
-
-This will generate:
-- `--format vasp`: `3RD.SPOSCAR` + `3RD.POSCAR.*`
-- `--format xyz`: `3RD.displacements.xyz`
-- `--format same` (e.g. `--interface abacus`): `3RD.SUPERCELL.<interface>` + `3RD.<interface>.*`
-
-#### 2. Calculate Forces (External Step)
-
-Run force calculations for every displaced structure generated by `sow`:
-- If `sow --format vasp`: run your DFT/calculator jobs on `3RD.POSCAR.*`.
-- If `sow --format xyz`: run calculator jobs from `3RD.displacements.xyz` (commonly used in Python workflows).
-- If `sow --format same`: run on `3RD.<interface>.*` files generated by the selected interface writer.
-
-**Key Point**: CLI `reap` expects calculator output files parsed by phonopy interfaces; keep file naming/order deterministic.
-
-#### 3. Collect Force Constants (Reap)
-
-Use the `reap` command to extract force constants from the calculated files.
-
-```bash
-# Basic usage: Extract from VASP xml/OUTCAR files
-thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS force outputs
-thirdorder reap 4 4 4 --cutoff -3 --forces running_scf.log.* --forces-interface abacus
-```
-
-The results will be output to the `FORCE_CONSTANTS_3RD` file.
-
-Note:
-- CLI `reap` now parses force files via phonopy interfaces and does not accept `xyz/extxyz`.
-- For `xyz` force trajectories, use the Python library workflow instead.
-
-##### Reap Multi-file Ordering
-
-`reap` maps force files by sorted file order to displacement IDs (`1..N`), so ordering must be deterministic.
-Recommended: keep one directory per displacement ID (same numbering as `sow` output), e.g. `0001/`, `0002/`, ...
-
-```bash
-# VASP: simple wildcard (works when file names are zero-padded or naturally ordered)
-thirdorder reap 4 4 4 --cutoff -3 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS: explicit find + version sort
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./abacus_runs -name "running_scf.log.*" | sort -V) \
-  --forces-interface abacus
-
-# QE: collect pw.x outputs
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
-  --forces-interface qe
-
-# CP2K: collect output logs
-thirdorder reap 4 4 4 --cutoff -3 \
-  --forces $(find ./cp2k_runs -name "*.out" | sort -V) \
-  --forces-interface cp2k
-```
-
-If in doubt, print and verify ordering first:
-```bash
-find ./abacus_runs -name "running_scf.log.*" | sort -V
-```
-
-### Fourth-order Force Constants (Fourthorder)
-
-The workflow is similar to thirdorder.
-
-#### 1. Generate Displacements (Sow)
-
-```bash
-# Generate 3x3x3 supercell, 2nd neighbor cutoff
-fourthorder sow 3 3 3 --cutoff -2
-
-# ABACUS input (STRU)
-fourthorder sow 3 3 3 --cutoff -2 -i STRU --interface abacus
-
-# QE input example
-fourthorder sow 3 3 3 --cutoff -2 -i qe.in --interface qe
-
-# CP2K input example
-fourthorder sow 3 3 3 --cutoff -2 -i cp2k.inp --interface cp2k
-```
-
-This will generate:
-- `--format vasp`: `4TH.SPOSCAR` + `4TH.POSCAR.*`
-- `--format xyz`: `4TH.displacements.xyz`
-- `--format same`: `4TH.SUPERCELL.<interface>` + `4TH.<interface>.*`
-
-#### 2. Collect Force Constants (Reap)
-
-```bash
-fourthorder reap 3 3 3 --cutoff -2 --forces vasprun.xml.* --forces-interface vasp
-
-# ABACUS force outputs
-fourthorder reap 3 3 3 --cutoff -2 --forces running_scf.log.* --forces-interface abacus
-
-# QE force outputs (same ordering rule as thirdorder)
 fourthorder reap 3 3 3 --cutoff -2 \
-  --forces $(find ./qe_runs -name "pw.out.*" | sort -V) \
-  --forces-interface qe
+  --interface vasp \
+  --forces-interface vasp \
+  --forces "./4TH_runs/*/vasprun.xml"
 ```
 
-The results will be output to the `FORCE_CONSTANTS_4TH` file.
-
-## 🐍 Python API Usage (Advanced)
-
-Besides the CLI tools, you can call the core classes directly in Python scripts. This is very convenient for integrating ASE calculators (e.g., NEP, GAP, MACE, DP, etc.) without intermediate file I/O.
-
-### Basic Example
+### 3) Python API: `MLPHONON` (2nd order)
 
 ```python
-from mlfcs.thirdorder import ThirdOrderRun
-# Assuming you use calorine's CPUNEP calculator, or any ASE Calculator
-from calorine.calculators import CPUNEP
-
-# Initialize runner
-# kwargs: na=4, nb=4, nc=4, cutoff=-3 (3rd neighbor)
-runner = ThirdOrderRun(4, 4, 4, -3)
-
-# Define ASE calculator
-calc = CPUNEP("nep.txt")
-
-# Run calculation directly, no manual file I/O needed
-runner.run_calculator(calc)
-```
-
-### Parameter Overrides (H & Symprec)
-
-You can customize the displacement step (`h`) and symmetry precision (`symprec`) during initialization:
-
-```python
-# h: displacement step (default usually 0.04 or similar, depends on order)
-# symprec: symmetry precision (default 1e-5)
-runner = ThirdOrderRun(4, 4, 4, -3, h=0.001, symprec=1e-4)
-```
-
-### Harmonic Phonon Calculation (MLPHONON)
-
-You can use the `MLPHONON` class to calculate harmonic force constants using any ASE calculator.
-
-```python
-from mlfcs.phonon import MLPHONON
 from ase.io import read
 from calorine.calculators import CPUNEP
+from mlfcs.secondorder import MLPHONON
 
-# Read structure
-structure = read("POSCAR")
-
-# Initialize calculator
+prim = read("POSCAR")
 calc = CPUNEP("nep.txt")
 
-# Setup phonon calculation
 phonon = MLPHONON(
-    structure=structure,
+    structure=prim,
     calculator=calc,
-    supercell_matrix=[2, 2, 2],  # Supercell expansion
-    kwargs_generate_displacements={"distance": 0.01}  # Optional
+    supercell_matrix=[2, 2, 2],
+    kwargs_generate_displacements={"distance": 0.01},
 )
-
-# Run calculation
 phonon.run()
-
-# Write force constants to file
-phonon.write("FORCE_CONSTANTS")
-
-# Access Phonopy object for further analysis
-phonon.phonopy.run_mesh([20, 20, 20])
-phonon.phonopy.run_total_dos()
+phonon.write("FORCE_CONSTANTS")  # text
+phonon.write("fc2.hdf5")         # hdf5
 ```
 
-### Self-Consistent Harmonic Approximation (SSCHA)
-
-You can use the `MLPSSCHA` class to perform SSCHA calculations using any ASE calculator (e.g., NEP).
+### 4) Python API: `MLPSSCHA`
 
 ```python
-from mlfcs.sscha import MLPSSCHA
+from ase.io import read
 from calorine.calculators import CPUNEP
+from mlfcs.secondorder import MLPSSCHA
 
-# Initialize calculator
+prim = read("POSCAR")
 calc = CPUNEP("nep.txt")
 
-# Setup SSCHA run
 sscha = MLPSSCHA(
-    unitcell="./POSCAR",         # Path to primitive cell
-    supercell_matrix=[3, 3, 3],  # Supercell expansion
-    calculator=calc,             # ASE Calculator
-    temperature=300,             # Temperature in K
-    number_of_snapshots=1000,    # Structures per iteration
-    max_iterations=20,           # Max iterations
-    avg_n_last_steps=5,          # Average last 5 steps for final result
-    fc_output="FORCE_CONSTANTS"  # Output filename
+    unitcell=prim,
+    calculator=calc,
+    supercell_matrix=[3, 3, 3],
+    temperature=300,
+    number_of_snapshots=1000,
+    max_iterations=20,
+    avg_n_last_steps=5,
+    fc_output="fc2_sscha.hdf5",
+    fc_output_format="hdf5",
 )
-
-# Run calculation
 sscha.run()
 ```
 
-### Best Practice: Preventing Calculator Caching Issues
-
-If you choose to manually loop through structures for calculation (instead of using `runner.run_calculator`), be mindful of the ASE calculator's caching mechanism. To prevent `write` operations from accidentally triggering re-calculation or writing old data, it is recommended to "freeze" results using `SinglePointCalculator`.
+### 5) Python API: `HifinitRun`
 
 ```python
-from ase.io import read, write
-from ase.calculators.singlepoint import SinglePointCalculator
+from ase.io import read
+from calorine.calculators import CPUNEP
+from mlfcs.hifinit import HifinitRun
 
-# ... inside a manual loop ...
-atoms.calc = calc  # Attach your main calculator (NEP, VASP, etc.)
-forces = atoms.get_forces()
-energy = atoms.get_potential_energy()
+prim = read("POSCAR")
+supercell = read("SPOSCAR")
+calc = CPUNEP("nep.txt")
 
-# [Critical Step] Detach main calculator, store static results in SinglePointCalculator
-# This allows safe writing to file, avoiding re-triggering calc or mixing frame data
-atoms.calc = SinglePointCalculator(atoms, energy=energy, forces=forces)
-
-# Now safe to write
-write("forces.xyz", atoms, format="extxyz", append=True)
+runner = HifinitRun(
+    primitive=prim,
+    supercell=supercell,
+    calculator=calc,
+    displacement=0.005,
+    cutoffs=[None, None, 4.0],
+)
+runner.run(out_dir="./hifinit_results", verbose=True)
 ```
 
-## 📋 Output Format
+## CLI Reference (`thirdorder` / `fourthorder`)
 
-MLFCS outputs force constants in its native format. **It does not provide built-in support for phono3py format.** If you need phono3py-compatible output, you can use [hiPhive](https://hiphive.materialsmodeling.org/) for format conversion. Example:
+Both tools share the same command shape:
 
-```python
-from hiphive import ForceConstants
-
-# Read MLFCS output and convert to phono3py format
-# See hiphive documentation for details
+```bash
+<tool> {sow|reap|interfaces} [na nb nc] [options]
 ```
 
-## ⚠️ Version Notice
+Common options:
 
-The `main` branch contains ongoing development and experimental features (e.g., C++ `unordered_map` optimization). For production use, stick to the [releases](https://github.com/gtiders/mlfcs/releases).
+| Option | Applies to | Meaning |
+|---|---|---|
+| `na nb nc` | `sow`, `reap` | Supercell multipliers along `a`, `b`, `c` |
+| `--cutoff` | `sow`, `reap` | Positive number: distance cutoff; negative integer: neighbor shell (e.g. `-3`) |
+| `-i`, `--input` | `sow`, `reap` | Input structure path (default `POSCAR`) |
+| `--interface` | `sow`, `reap` | Structure I/O interface name |
+| `--forces-interface` | `reap` | Force parser interface (default: same as `--interface`) |
+| `--hstep` | `sow`, `reap` | Displacement step in nm |
+| `--symprec` | `sow`, `reap` | Symmetry tolerance |
+| `-f`, `--format` | `sow` | `vasp` or `same` (`same` writes using `--interface`) |
+| `--forces` | `reap` | Force files or glob patterns |
 
-## 🤖 AI-Powered Documentation
+Notes:
+- `reap` requires exactly the expected number of force sets.
+- `.xyz` / `.extxyz` trajectories are intentionally rejected in CLI `reap`.
 
-**New to this project?** You can:
+## Output Files
 
-*   📖 **Feed this README to an AI assistant** (e.g., ChatGPT, Claude, DeepSeek) to quickly understand the usage and get started.
-*   💻 **Feed the entire codebase to an AI assistant** for in-depth understanding of implementation details and advanced usage.
+### `thirdorder` / `fourthorder`
+- `FORCE_CONSTANTS_3RD`
+- `FORCE_CONSTANTS_4TH`
 
-We also welcome community contributions:
-*   🐛 **Report bugs or request features**: [Open an Issue](https://github.com/gtiders/mlfcs/issues)
-*   🔧 **Submit improvements**: [Pull Requests](https://github.com/gtiders/mlfcs/pulls) are always welcome!
-*   📧 **Contact via email**: gtiders@qq.com
+### `MLPHONON` / `MLPSSCHA`
+- Text: `FORCE_CONSTANTS`
+- HDF5: `*.hdf5`
 
-## 🙏 Acknowledgments
+### `HifinitRun` (`out_dir`)
+- `potential.fcp`
+- `FORCE_CONSTANTS_2ND`, `fc2.hdf5`
+- `FORCE_CONSTANTS_3RD`, `fc3.hdf5` (if order >= 3)
+- `FORCE_CONSTANTS_4TH` (if order >= 4)
 
-The development of this project relies on contributions from the open-source community. Special thanks to the following pioneering projects:
+## Best Practices
 
-*   **[ShengBTE / thirdorder.py](https://www.shengbte.org/announcements/thirdorderpyv110released)**: Thanks to Wu Li et al. for the original `thirdorder.py`, laying the foundation for anharmonic phonon calculations.
-*   **[Fourthorder](https://github.com/FourPhonon/Fourthorder)**: Thanks to Han, Zherui et al. for the fourth-order force constant calculation code.
+- Keep `--interface` and `--forces-interface` explicit in scripts.
+- For API workflows, validate calculator reproducibility on a small supercell first.
+- In manual ASE loops, freeze computed results with `SinglePointCalculator` before writing trajectories to avoid unintended recalculation/caching side effects.
 
-Based on these excellent works, we have focused on improving software engineering architecture, installation experience, and execution efficiency, hoping to provide better tools for the community.
+## FAQ
 
-## 📄 License
+### Is this a drop-in replacement for legacy `thirdorder.py` / `fourthorder.py`?
+It is a refactored implementation with compatible workflow concepts (`sow`/`reap`), plus explicit interface control and Python APIs.
 
-This project is licensed under the GNU General Public License v3.0 (GPLv3).
+### Which DFT codes are supported?
+MLFCS uses phonopy interface names for structure/force I/O. The concrete list depends on your installed phonopy build; use `thirdorder interfaces` to inspect what is available in your environment.
+
+### Can I use machine-learning potentials?
+Yes. Python APIs are designed to work with ASE calculators (examples use `calorine` `CPUNEP`, but the interface is ASE-calculator based).
+
+## Citation and Acknowledgements
+
+MLFCS is developed on top of ideas and workflows from:
+- `thirdorder.py` (ShengBTE ecosystem)
+- `fourthorder`
+- `phonopy`
+- `hiPhive`
+
+Thanks to all original authors and maintainers.
+
+## License
+
+This project is distributed under **GNU General Public License v3.0**. See [`LICENSE`](LICENSE).

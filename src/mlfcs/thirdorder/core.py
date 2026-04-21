@@ -27,11 +27,12 @@ import copy
 import numpy as np
 
 from mlfcs.thirdorder import thirdorder_core
-from mlfcs.cli_common import build_sow_reap_parser
-from mlfcs.io_ops import (
+from mlfcs.commands import build_sow_reap_parser
+from mlfcs.commands import print_cli_interface_capabilities
+from mlfcs.interface.phonopy_io import (
+    list_supported_interfaces,
     read_structure,
     write_structure,
-    write_xyz_trajectory,
     load_forces_with_phonopy,
 )
 from mlfcs.thirdorder.thirdorder_common import (
@@ -46,7 +47,7 @@ from mlfcs.thirdorder.thirdorder_common import (
     reapblock,
     doneblock,
 )
-from mlfcs.ase2dict import Structure
+from mlfcs.structure import Structure
 
 
 def normalize_SPOSCAR(sposcar):
@@ -192,19 +193,16 @@ class ThirdOrderRun:
         s_struct = Structure(data_dict=normalize_SPOSCAR(self.sposcar))
         if structure_format == "vasp":
             write_structure(s_struct, "3RD.SPOSCAR", out_format="vasp")
-        elif structure_format != "xyz":
+        else:
             write_structure(
                 s_struct,
                 f"3RD.SUPERCELL.{structure_format}",
                 out_format=structure_format,
             )
 
-        displaced_structures = []
         width = len(str(4 * (len(self.list4) + 1)))
         if structure_format == "vasp":
             namepattern = "3RD.POSCAR.{{0:0{0}d}}".format(width)
-        elif structure_format == "xyz":
-            namepattern = ""
         else:
             namepattern = f"3RD.{structure_format}.{{0:0{width}d}}"
 
@@ -224,17 +222,9 @@ class ThirdOrderRun:
 
                 number = self.nirred * n + i + 1
 
-                if structure_format != "xyz":
-                    filename = namepattern.format(number)
-                    write_structure(d_struct, filename, out_format=structure_format)
-                else:
-                    displaced_structures.append((number, d_struct))
+                filename = namepattern.format(number)
+                write_structure(d_struct, filename, out_format=structure_format)
                 count += 1
-
-        if structure_format == "xyz" and displaced_structures:
-            outfile = "3RD.displacements.xyz"
-            n_written = write_xyz_trajectory(displaced_structures, outfile)
-            print(f"Writing {n_written} structures to {outfile}")
 
         print("Sow finished.")
 
@@ -422,12 +412,25 @@ def main():
         symprec_default=SYMPREC,
         hstep_default=H,
         forces_help=(
-            "[Reap] Input force files/patterns (e.g. vasprun.xml*). "
-            "xyz/extxyz are not supported in CLI reap."
+            "[Reap] Input force files/patterns (e.g. vasprun.xml*)."
         ),
     )
 
     args = parser.parse_args()
+
+    if args.command == "interfaces":
+        interfaces = list_supported_interfaces()
+        if not interfaces:
+            sys.exit(
+                "Error: no phonopy interfaces discovered. Is phonopy installed correctly?"
+            )
+        print_cli_interface_capabilities("thirdorder", interfaces)
+        return
+
+    if args.na is None or args.nb is None or args.nc is None:
+        sys.exit("Error: sow/reap require positional arguments: na nb nc.")
+    if args.cutoff is None:
+        sys.exit("Error: sow/reap require --cutoff.")
 
     # Create runner instance (handles common setup)
     try:
