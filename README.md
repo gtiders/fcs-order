@@ -74,6 +74,10 @@ fc3 = calculation.reap(
 Missing IDs, extra IDs, invalid shapes, NaN/Inf, and mismatched plan hashes are rejected.
 MLFCS does not parse or assume how forces were calculated.
 
+For a negative shell cutoff, construction reports the maximum neighbor shell and cutoff radius
+enumerable under the current supercell's minimum-image convention. Requests beyond that limit
+are rejected. Pass `report_cutoff=False` to silence this message.
+
 ## Optional direct ASE Calculator use
 
 Users may supply any ASE Calculator directly. MLFCS adds no dependency on calculator packages:
@@ -127,6 +131,7 @@ Output format is always explicit:
 fc3.write("fc3.h5", format="hdf5")
 fc3.write("fc3.npz", format="numpy")
 fc3.write("FORCE_CONSTANTS_3RD", format="shengbte")
+fc2.write("FORCE_CONSTANTS_2ND", format="phonopy")
 ```
 
 Available formats:
@@ -134,6 +139,8 @@ Available formats:
 - `hdf5`: sparse cluster tensors, structure, metadata, and ordering arrays; any order.
 - `numpy` or `npz`: materialized compact NumPy tensors, subject to a memory budget.
 - `shengbte`: third- and fourth-order text output.
+- `phonopy`: full dense second-order phonopy text output (`N_supercell` by
+  `N_supercell`), with automatic conversion to phonopy atom ordering.
 
 The ShengBTE writer emits, for order 3 or 4:
 
@@ -225,6 +232,10 @@ reconstruction was about 1.06 GiB. This validates the generic high-order path bu
 the production third- and fourth-order regression suite.
 
 ## Development
+
+The architecture, numerical methods, acceleration techniques, memory measurements, and detailed
+comparison with the previous implementation are documented in
+[`docs/TECHNICAL_OVERVIEW.md`](docs/TECHNICAL_OVERVIEW.md).
 
 All commands use uv and tests run serially:
 

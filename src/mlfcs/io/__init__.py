@@ -28,6 +28,18 @@ def write_force_constants(
 
         write_numpy(target, force_constants)
         return
+    if normalized == "phonopy":
+        from mlfcs.io.phonopy import write_phonopy
+
+        selected_order = order if order is not None else max(force_constants.orders)
+        if selected_order != 2:
+            raise ValueError("phonopy text output is available only for order 2")
+        write_phonopy(
+            target,
+            force_constants.materialize(2),
+            force_constants.supercell,
+        )
+        return
     if normalized == "shengbte":
         from mlfcs.io.shengbte import write_shengbte
 

@@ -1,7 +1,12 @@
 import numpy as np
 from ase.build import bulk
 
-from mlfcs.core.geometry import _unique_distances, make_supercell, resolve_cutoff
+from mlfcs.core.geometry import (
+    _unique_distances,
+    make_supercell,
+    neighbor_shell_limit,
+    resolve_cutoff,
+)
 from mlfcs.core.symmetry import SymmetryOperations
 
 
@@ -26,3 +31,21 @@ def test_negative_cutoff_and_symmetry_mapping():
 def test_neighbor_shells_merge_small_relaxation_splittings():
     shells = _unique_distances(np.array([0.0, 2.9997637, 2.9997681, 3.66109]))
     assert shells == [2.9997637, 3.66109]
+
+
+def test_negative_cutoff_reports_shell_and_maximum_radius(capsys):
+    primitive = bulk("Si", "diamond", a=5.43)
+    supercell, index = make_supercell(primitive, (2, 2, 2))
+    maximum_shell, maximum_radius = neighbor_shell_limit(supercell, index)
+    resolve_cutoff(supercell, index, -2)
+    output = capsys.readouterr().out
+    assert f"maximum shell = {maximum_shell}" in output
+    assert f"maximum cutoff radius = {maximum_radius:.10f} Å" in output
+
+
+def test_negative_cutoff_rejects_shell_beyond_supercell_limit():
+    primitive = bulk("Si", "diamond", a=5.43)
+    supercell, index = make_supercell(primitive, (2, 2, 2))
+    maximum_shell, _ = neighbor_shell_limit(supercell, index)
+    with np.testing.assert_raises_regex(ValueError, "exceeds this supercell"):
+        resolve_cutoff(supercell, index, -(maximum_shell + 1), report=False)

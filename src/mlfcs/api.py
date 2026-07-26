@@ -31,6 +31,7 @@ class ForceConstantCalculation:
         displacement: float = 0.01,
         symprec: float = 1e-5,
         jax_platform: JaxPlatform = "auto",
+        report_cutoff: bool = True,
     ):
         configure_jax(jax_platform)
         config = RunConfig(
@@ -44,7 +45,12 @@ class ForceConstantCalculation:
         self.config = config
         self.jax_platform = jax_platform
         self.supercell, self.index = make_supercell(self.primitive, config.supercell)
-        self.cutoff = resolve_cutoff(self.supercell, self.index, config.cutoff)
+        self.cutoff = resolve_cutoff(
+            self.supercell,
+            self.index,
+            config.cutoff,
+            report=report_cutoff,
+        )
         self.symmetry = SymmetryOperations.from_atoms(
             self.primitive,
             self.supercell,

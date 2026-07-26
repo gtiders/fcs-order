@@ -73,11 +73,29 @@ def make_supercell(atoms: Atoms, repeats: tuple[int, int, int]) -> tuple[Atoms, 
     return supercell, SupercellIndex(primitive_indices, atom_translations, repeats)
 
 
-def neighbor_shell_cutoff(supercell: Atoms, index: SupercellIndex, shell: int) -> float:
+def neighbor_shell_cutoff(
+    supercell: Atoms,
+    index: SupercellIndex,
+    shell: int,
+    *,
+    report: bool = True,
+) -> float:
     """Return the midpoint after a one-based neighbor shell, in angstrom."""
     if shell < 1:
         raise ValueError("neighbor shell must be positive")
     distances = supercell.get_all_distances(mic=True)
+    maximum_shell, maximum_radius = neighbor_shell_limit(supercell, index, distances=distances)
+    if report:
+        print(
+            "Supercell neighbor limit: "
+            f"maximum shell = {maximum_shell}, "
+            f"maximum cutoff radius = {maximum_radius:.10f} Å"
+        )
+    if shell > maximum_shell:
+        raise ValueError(
+            f"neighbor shell {shell} exceeds this supercell's enumerable maximum "
+            f"of {maximum_shell} (cutoff radius {maximum_radius:.10f} Å)"
+        )
     candidates: list[float] = []
     for atom in range(index.n_primitive):
         unique = _unique_distances(distances[atom])
@@ -88,10 +106,39 @@ def neighbor_shell_cutoff(supercell: Atoms, index: SupercellIndex, shell: int) -
     return float(max(candidates))
 
 
-def resolve_cutoff(supercell: Atoms, index: SupercellIndex, cutoff: float) -> float:
+def neighbor_shell_limit(
+    supercell: Atoms,
+    index: SupercellIndex,
+    *,
+    distances: np.ndarray | None = None,
+) -> tuple[int, float]:
+    """Return the largest shell and cutoff enumerable in the MIC supercell."""
+    if distances is None:
+        distances = supercell.get_all_distances(mic=True)
+    shells = [_unique_distances(distances[atom]) for atom in range(index.n_primitive)]
+    maximum_shell = min(len(values) for values in shells)
+    if maximum_shell < 1:
+        raise ValueError("supercell is too small to contain a reliable neighbor shell")
+    boundaries = []
+    for values in shells:
+        if len(values) <= maximum_shell:
+            boundaries.append(values[-1] * 1.1)
+        else:
+            boundaries.append((values[maximum_shell - 1] + values[maximum_shell]) / 2.0)
+    maximum_radius = float(max(boundaries))
+    return maximum_shell, maximum_radius
+
+
+def resolve_cutoff(
+    supercell: Atoms,
+    index: SupercellIndex,
+    cutoff: float,
+    *,
+    report: bool = True,
+) -> float:
     value = float(cutoff)
     if value < 0 and value.is_integer():
-        return neighbor_shell_cutoff(supercell, index, -int(value))
+        return neighbor_shell_cutoff(supercell, index, -int(value), report=report)
     if value <= 0:
         raise ValueError("cutoff must be a positive distance or negative integer shell")
     return value
