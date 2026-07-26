@@ -85,6 +85,14 @@ fc3 = calculation.run(calculator)
 This evaluates the same sow list serially and passes the resulting force array to `reap()`.
 External scheduling, checkpointing, and parallel execution remain user responsibilities.
 
+To checkpoint calculator output before reconstruction:
+
+```python
+forces = calculation.evaluate(calculator)
+np.savez_compressed("forces.npz", forces=forces, plan_hash=calculation.plan.hash)
+fc3 = calculation.reap(forces, plan_hash=calculation.plan.hash)
+```
+
 ## Atom ordering
 
 The internal supercell order is:
@@ -199,6 +207,13 @@ count:
 
 The full NaS NEP run was also used to isolate the previous fourth-order double-axis ASR behavior.
 It is retained as a black-box research fixture rather than a compatibility target.
+
+An order-5 end-to-end smoke calculation was subsequently completed for NaS 2x2x2 with a
+first-neighbor cutoff. It contains 16 irreducible cluster orbits, 403 independent parameters,
+2432 force configurations, and 1686 reconstructed sparse cluster images. The HDF5 file is about
+789 KiB; its equivalent dense tensor would require 243 GiB. Peak resident memory during sparse
+reconstruction was about 1.06 GiB. This validates the generic high-order path but does not replace
+the production third- and fourth-order regression suite.
 
 ## Development
 

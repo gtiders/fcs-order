@@ -59,5 +59,7 @@ def test_grouped_force_order_and_user_calculator_path():
     grouped_forces = np.zeros((len(grouped), len(job.supercell), 3))
     result = job.reap(grouped_forces, atom_order="grouped")
     np.testing.assert_array_equal(result[3], 0.0)
-    direct = job.run(ZeroCalculator())
+    evaluated = job.evaluate(ZeroCalculator())
+    assert evaluated.shape == (len(job.plan), len(job.supercell), 3)
+    direct = job.reap(evaluated)
     np.testing.assert_array_equal(direct[3], 0.0)

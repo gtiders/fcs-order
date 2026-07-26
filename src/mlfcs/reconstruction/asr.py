@@ -50,7 +50,7 @@ def project_acoustic_sum_rule(
     orbit_space: OrbitSpace,
     pivot_values: list[np.ndarray],
     *,
-    tolerance: float = 1e-11,
+    tolerance: float = 1e-9,
 ) -> list[np.ndarray]:
     """Orthogonally project independent IFC parameters onto ``null(A)``."""
     offsets = np.cumsum([0] + [len(values) for values in pivot_values])
@@ -62,14 +62,28 @@ def project_acoustic_sum_rule(
     residual = constraints @ parameters
     scale = max(float(np.linalg.norm(parameters)), 1.0)
     if float(np.linalg.norm(residual, ord=np.inf)) > tolerance * scale:
-        correction = lsmr(
-            constraints,
-            residual,
-            atol=tolerance * 0.1,
-            btol=tolerance * 0.1,
-            maxiter=max(1000, 4 * constraints.shape[1]),
-        )[0]
-        parameters = parameters - correction
+        gram = (constraints.T @ constraints).toarray()
+        eigenvalues, eigenvectors = np.linalg.eigh(gram)
+        threshold = max(float(eigenvalues[-1]), 1.0) * tolerance
+        null_vectors = eigenvectors[:, eigenvalues <= threshold]
+        if null_vectors.shape[1] == 0:
+            raise RuntimeError("acoustic sum-rule constraints leave no independent parameters")
+        parameters = null_vectors @ (null_vectors.T @ parameters)
+
+        # Squaring A into the small Gram matrix worsens its condition number.
+        # Refine in the original sparse system to remove that numerical tail.
+        for _ in range(4):
+            residual = constraints @ parameters
+            if float(np.linalg.norm(residual, ord=np.inf)) <= tolerance * scale:
+                break
+            correction = lsmr(
+                constraints,
+                residual,
+                atol=tolerance * 0.01,
+                btol=tolerance * 0.01,
+                maxiter=max(1000, 4 * constraints.shape[1]),
+            )[0]
+            parameters = parameters - correction
 
     final_residual = constraints @ parameters
     if float(np.linalg.norm(final_residual, ord=np.inf)) > tolerance * scale:

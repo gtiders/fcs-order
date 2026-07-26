@@ -141,6 +141,20 @@ class ForceConstantCalculation:
         acoustic_sum_rule: bool = True,
     ) -> ForceConstants:
         """Evaluate the sow list serially with a user-owned ASE Calculator."""
+        forces = self.evaluate(calculator, progress=progress)
+        return self.reap(
+            forces,
+            plan_hash=self.plan.hash,
+            acoustic_sum_rule=acoustic_sum_rule,
+        )
+
+    def evaluate(
+        self,
+        calculator: Calculator,
+        *,
+        progress: Progress | None = None,
+    ) -> np.ndarray:
+        """Evaluate and return forces in the exact positional reap order."""
         if not isinstance(calculator, Calculator):
             raise TypeError("calculator must be an ASE Calculator")
         forces = np.empty((len(self.plan), len(self.supercell), 3), dtype=float)
@@ -149,11 +163,7 @@ class ForceConstantCalculation:
             forces[configuration_id] = atoms.get_forces()
             if progress is not None:
                 progress(configuration_id + 1, len(self.plan))
-        return self.reap(
-            forces,
-            plan_hash=self.plan.hash,
-            acoustic_sum_rule=acoustic_sum_rule,
-        )
+        return forces
 
     def _normalize_forces(self, forces: ForceInput) -> np.ndarray:
         if isinstance(forces, Mapping):
