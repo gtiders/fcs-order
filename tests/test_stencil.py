@@ -1,6 +1,6 @@
 import numpy as np
 
-from mlfcs.stencil import CentralDifferenceStencil
+from mlfcs.finite_difference.stencil import CentralDifferenceStencil
 
 
 def test_recursive_stencil_sizes_and_denominator():

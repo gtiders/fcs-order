@@ -3,8 +3,9 @@
 An ASE-first API for symmetry-reduced finite-difference force constants. The runtime is
 independent of phonopy, symfc, and any particular force calculator.
 
-Third- and fourth-order reconstruction is currently supported. The mixed central-difference
-stencil and ShengBTE writer are order-parameterized.
+The calculation pipeline is order-parameterized. Third- and fourth-order calculations are the
+tested production paths; higher orders use the same sparse cluster, finite-difference,
+reconstruction, and HDF5 machinery but can become combinatorially expensive.
 
 ## Units
 
@@ -37,7 +38,7 @@ structures = calculation.sow()
 
 ```python
 forces = np.asarray(load_forces_in_the_same_order())
-fc3 = calculation.reap(forces)
+fc3 = calculation.reap(forces, acoustic_sum_rule=True)
 ```
 
 The required shape is:
@@ -121,11 +122,11 @@ fc3.write("FORCE_CONSTANTS_3RD", format="shengbte")
 
 Available formats:
 
-- `hdf5`: compact tensors, structure, metadata, and ordering arrays.
-- `numpy` or `npz`: compact NumPy archive.
-- `shengbte`: order-parameterized text output.
+- `hdf5`: sparse cluster tensors, structure, metadata, and ordering arrays; any order.
+- `numpy` or `npz`: materialized compact NumPy tensors, subject to a memory budget.
+- `shengbte`: third- and fourth-order text output.
 
-The ShengBTE writer emits, for order `n`:
+The ShengBTE writer emits, for order 3 or 4:
 
 - `n - 1` lattice-translation vectors per block;
 - `n` primitive atom indices;
@@ -140,36 +141,53 @@ cell_translation
 primitive_scaled_position
 ```
 
+Reconstruction remains sparse until dense values are requested:
+
+```python
+fc5.write("fc5.h5", format="hdf5")       # no dense N**4 allocation
+dense = fc5.materialize(5)                # checks the default 2 GB budget
+dense = fc5.materialize(5, max_bytes=None)  # explicit opt-out
+```
+
+## Acoustic sum rule
+
+Translational invariance is imposed independently for each force-constant order. For order `n`,
+the first `n - 1` atom indices and all Cartesian components are fixed while the final atom index
+is summed. Permutation symmetry provides the equivalent constraints on the other atom axes.
+
+```python
+constrained = calculation.reap(forces, acoustic_sum_rule=True)
+raw = calculation.reap(forces, acoustic_sum_rule=False)
+```
+
+The constrained path constructs a sparse matrix `A` in the independent orbit-parameter space
+and orthogonally projects the measured parameters onto `null(A)` with a strict iterative solve.
+The third- and fourth-order tests require a final dense ASR residual below `1e-10`.
+
 ## Numerical reference status
 
-Writer ordering and force-constant calculation are tested separately.
+Writer ordering, orbit planning, raw force reconstruction, and ASR projection are tested
+separately.
 
 When the same captured IFC values were passed to both implementations, the previous third-order
 text format and the new order-parameterized writer matched byte-for-byte. Fourth-order block,
 translation, atom, and Cartesian-component order also matched; fourth-order numeric formatting
 is now intentionally scientific notation at the user's request.
 
-The force-constant calculations themselves are not byte-identical. For the Si 2x2x2, fifth-shell
-NEP reference used during development:
+The force-constant values are intentionally not compatible with the previous ASR projection.
+ALAMODE and hiphive both define order-`n` translational invariance as a sum over one atom axis.
+The previous fourth-order implementation sums two atom axes together, while its third-order
+implementation sums one. The previous relative-weight projection can also amplify raw IFCs.
 
-- FC3 RMS difference: `9.50e-6 eV/angstrom^3`.
-- FC4 RMS difference: `5.76e-5 eV/angstrom^4`.
-- FC4 maximum absolute difference: `5.14e-3 eV/angstrom^4`.
+For saved Si 2x2x2 fifth-shell NEP forces, the strict implementation gives:
 
-The FC4 difference comes from three periodic-image representative choices in the previous
-fourth-order traversal. Both calculations contain 41 cluster orbits and 750 independent tensor
-parameters.
+- FC3: 11 orbits, 72 configurations, maximum ASR residual `3.89e-15`.
+- FC4: 41 orbits, 1056 configurations, maximum ASR residual `2.54e-14`.
+- Strict FC4 versus previous FC4: maximum difference `1.31e-3`, RMS `5.71e-5`.
 
-An additional end-to-end file comparison uses independent pipelines: the previous calculation
-is written by its own writer, while the new calculation is written by the generic ShengBTE
-writer. Block numbers, translations, atom indices, and Cartesian-component order match exactly.
-Comparing every numeric component in the resulting files gives:
-
-- FC3: 512 blocks, maximum absolute difference `5.169151e-5`, RMS `8.735334e-6`.
-- FC4: 8072 blocks, maximum absolute difference `5.141029e-3`, RMS `5.653504e-5`.
-
-These file-level RMS values include every written component, so they differ slightly from the
-sparse reference-component metrics above.
+Strict FC3 differs substantially from the previous projected FC3 because the previous projection
+amplifies the raw maximum IFC from about `8.71` to `34.30`; the strict solution remains about
+`8.37`. This comparison is an ASR-method difference, not an atom- or file-order mismatch.
 
 Complex multi-species fourth-order planning is also checked at a three-neighbor cutoff. The new
 and reference implementations agree on the cutoff, irreducible-cluster count, and force-job
@@ -179,12 +197,8 @@ count:
 - KAsPt: 45 clusters and 2936 configurations.
 - NaS: 43 clusters and 2016 configurations.
 
-The NaS end-to-end NEP calculation was run through both independent pipelines. Its FC4 values
-are not numerically compatible: the maximum absolute difference is `11.90765 eV/angstrom^4`
-and the RMS difference is `0.182445 eV/angstrom^4`. Inspection shows that the previous FC4 ASR
-matrix sums over two atom axes together, whereas its FC3 matrix and the new order-parameterized
-implementation sum one atom axis. For the standard last-atom ASR, the new NaS FC4 residual has
-maximum/RMS `0.04261/0.000469`; the previous result has `8.03893/0.04302`.
+The full NaS NEP run was also used to isolate the previous fourth-order double-axis ASR behavior.
+It is retained as a black-box research fixture rather than a compatibility target.
 
 ## Development
 

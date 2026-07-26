@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 def write_numpy(target: str | Path, force_constants: ForceConstants) -> None:
-    arrays = {f"fc{order}": values for order, values in force_constants.arrays.items()}
+    arrays = {f"fc{order}": force_constants.materialize(order) for order in force_constants.orders}
     arrays.update(
         cell=np.asarray(force_constants.supercell.cell),
         positions=force_constants.supercell.positions,

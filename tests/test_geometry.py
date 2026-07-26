@@ -1,8 +1,8 @@
 import numpy as np
 from ase.build import bulk
 
-from mlfcs.geometry import _unique_distances, make_supercell, resolve_cutoff
-from mlfcs.symmetry import SymmetryOperations
+from mlfcs.core.geometry import _unique_distances, make_supercell, resolve_cutoff
+from mlfcs.core.symmetry import SymmetryOperations
 
 
 def test_supercell_index_roundtrip():

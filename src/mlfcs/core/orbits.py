@@ -8,16 +8,47 @@ import jax.numpy as jnp
 import numpy as np
 from ase import Atoms
 
-from mlfcs.geometry import SupercellIndex
-from mlfcs.symmetry import SymmetryOperations
+from mlfcs.core.geometry import SupercellIndex
+from mlfcs.core.symmetry import SymmetryOperations
 
 jax.config.update("jax_enable_x64", True)
 
 
 @dataclass(frozen=True, slots=True)
+class TensorAction:
+    """Matrix-free Cartesian rotation followed by an IFC-axis permutation."""
+
+    rotation: np.ndarray
+    permutation: tuple[int, ...]
+    order: int
+
+    def apply(self, tensor: np.ndarray) -> np.ndarray:
+        value = jnp.asarray(tensor, dtype=jnp.float64)
+        rotated = _rotate_tensor(value, jnp.asarray(self.rotation), self.order)
+        return np.asarray(jnp.transpose(rotated, self.permutation))
+
+    def apply_flat(self, values: np.ndarray) -> np.ndarray:
+        tensor = np.asarray(values).reshape((3,) * self.order)
+        return self.apply(tensor).reshape(-1)
+
+    def apply_columns(self, values: np.ndarray) -> np.ndarray:
+        tensors = jnp.asarray(values.T.reshape((-1,) + (3,) * self.order))
+        rotation = jnp.asarray(self.rotation)
+        transformed = jax.vmap(
+            lambda tensor: jnp.transpose(
+                _rotate_tensor(tensor, rotation, self.order), self.permutation
+            )
+        )(tensors)
+        return np.asarray(transformed.reshape(len(values.T), -1).T)
+
+    def as_matrix(self) -> np.ndarray:
+        return tensor_action_matrix(self.rotation, self.permutation, self.order)
+
+
+@dataclass(frozen=True, slots=True)
 class OrbitImage:
     cluster: tuple[int, ...]
-    transform: np.ndarray
+    action: TensorAction
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,13 +100,6 @@ def build_orbit_space(
         np.flatnonzero(distances[atom] < cutoff).tolist() for atom in range(index.n_primitive)
     ]
     axis_permutations = tuple(permutations(range(order)))
-    # Cache only rotations. Caching rotation x permutation at fourth order
-    # retains 48 * 24 * 81^2 float64 values (~58 MiB) before any orbit exists.
-    identity_permutation = tuple(range(order))
-    rotation_actions = tuple(
-        tensor_action_matrix(rotation.T, identity_permutation, order)
-        for rotation in symmetry.cartesian_rotations
-    )
     seen: set[tuple[int, ...]] = set()
     orbits: list[ClusterOrbit] = []
 
@@ -89,7 +113,7 @@ def build_orbit_space(
                 continue
             seen.update(images)
             representative = cluster
-            action_by_image: dict[tuple[int, ...], np.ndarray] = {}
+            action_by_image: dict[tuple[int, ...], TensorAction] = {}
             identity = np.eye(3**order)
             constraint_gram = np.zeros_like(identity)
             for operation in range(symmetry.size):
@@ -98,14 +122,16 @@ def build_orbit_space(
                 )
                 for axis_permutation in axis_permutations:
                     candidate = index.anchor(tuple(transformed[axis] for axis in axis_permutation))
-                    action = permute_tensor_action(
-                        rotation_actions[operation], axis_permutation, order
+                    action = TensorAction(
+                        symmetry.cartesian_rotations[operation].T,
+                        axis_permutation,
+                        order,
                     )
                     # Two mappings to one image differ by a representative
                     # stabilizer, so either acts identically on the invariant basis.
                     action_by_image.setdefault(candidate, action)
                     if candidate == representative:
-                        constraint = action - identity
+                        constraint = action.as_matrix() - identity
                         constraint_gram += constraint.T @ constraint
             basis, pivots = _null_space_from_gram(constraint_gram, tolerance)
             if basis.shape[1] == 0:

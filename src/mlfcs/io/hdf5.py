@@ -28,9 +28,20 @@ def write_hdf5(target: str | Path, force_constants: ForceConstants) -> None:
                 ordering.create_dataset(name, data=force_constants.supercell.arrays[name])
         group = handle.create_group("force_constants")
         for order, values in sorted(force_constants.arrays.items()):
+            if order in force_constants.sparse:
+                continue
             dataset = group.create_dataset(str(order), data=values, compression="gzip")
+            dataset.attrs["representation"] = "dense"
             dataset.attrs["order"] = order
             dataset.attrs["unit"] = f"eV/angstrom^{order}"
+        for order, values in sorted(force_constants.sparse.items()):
+            order_group = group.create_group(str(order))
+            order_group.attrs["representation"] = "sparse-cluster"
+            order_group.attrs["order"] = order
+            order_group.attrs["unit"] = f"eV/angstrom^{order}"
+            order_group.attrs["dense_shape"] = values.dense_shape
+            order_group.create_dataset("clusters", data=values.clusters, compression="gzip")
+            order_group.create_dataset("tensors", data=values.tensors, compression="gzip")
         for key, value in force_constants.metadata.items():
             if isinstance(value, (str, int, float, bool, np.number)):
                 handle.attrs[key] = value

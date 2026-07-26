@@ -1,8 +1,8 @@
 from ase.build import bulk
 
-from mlfcs.geometry import make_supercell, resolve_cutoff
-from mlfcs.orbits import build_orbit_space, tensor_action_matrix
-from mlfcs.symmetry import SymmetryOperations
+from mlfcs.core.geometry import make_supercell, resolve_cutoff
+from mlfcs.core.orbits import build_orbit_space, tensor_action_matrix
+from mlfcs.core.symmetry import SymmetryOperations
 
 
 def test_identity_tensor_action():

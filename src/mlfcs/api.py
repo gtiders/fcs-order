@@ -6,12 +6,12 @@ import numpy as np
 from ase import Atoms
 from ase.calculators.calculator import Calculator
 
-from mlfcs.geometry import make_supercell, resolve_cutoff
+from mlfcs.core.geometry import make_supercell, resolve_cutoff
+from mlfcs.core.orbits import OrbitSpace, build_orbit_space
+from mlfcs.core.symmetry import SymmetryOperations
+from mlfcs.finite_difference.sampling import DisplacementPlan, build_displacement_plan
 from mlfcs.model import ForceConstants, RunConfig
-from mlfcs.orbits import OrbitSpace, build_orbit_space
-from mlfcs.reconstruct import reconstruct_compact
-from mlfcs.sampling import DisplacementPlan, build_displacement_plan
-from mlfcs.symmetry import SymmetryOperations
+from mlfcs.reconstruction.solver import reconstruct_sparse
 
 Progress = Callable[[int, int], None]
 ForceInput = np.ndarray | Sequence[np.ndarray] | Mapping[int, np.ndarray]
@@ -37,11 +37,6 @@ class ForceConstantCalculation:
             displacement=displacement,
             symprec=symprec,
         )
-        if config.order > 4:
-            raise NotImplementedError(
-                "recursive stencils support arbitrary order, but symmetry reduction "
-                "currently supports orders 3 and 4"
-            )
         self.primitive = atoms.copy()
         self.config = config
         self.supercell, self.index = make_supercell(self.primitive, config.supercell)
@@ -101,6 +96,7 @@ class ForceConstantCalculation:
         *,
         atom_order: str = "internal",
         plan_hash: str | None = None,
+        acoustic_sum_rule: bool = True,
     ) -> ForceConstants:
         """Reconstruct force constants from forces supplied by the user.
 
@@ -116,9 +112,14 @@ class ForceConstantCalculation:
         elif atom_order != "internal":
             raise ValueError("atom_order must be 'internal' or 'grouped'")
         derivatives = self.plan.contract_forces(values)
-        compact = reconstruct_compact(self.orbit_space, self.index, derivatives)
+        sparse = reconstruct_sparse(
+            self.orbit_space,
+            self.index,
+            derivatives,
+            enforce_asr=acoustic_sum_rule,
+        )
         return ForceConstants(
-            {self.config.order: compact},
+            {},
             self.supercell.copy(),
             metadata={
                 "order": self.config.order,
@@ -127,7 +128,9 @@ class ForceConstantCalculation:
                 "spacegroup": self.symmetry.symbol,
                 "configurations": len(self.plan),
                 "plan_hash": self.plan.hash,
+                "acoustic_sum_rule": acoustic_sum_rule,
             },
+            sparse={self.config.order: sparse},
         )
 
     def run(
@@ -135,6 +138,7 @@ class ForceConstantCalculation:
         calculator: Calculator,
         *,
         progress: Progress | None = None,
+        acoustic_sum_rule: bool = True,
     ) -> ForceConstants:
         """Evaluate the sow list serially with a user-owned ASE Calculator."""
         if not isinstance(calculator, Calculator):
@@ -145,7 +149,11 @@ class ForceConstantCalculation:
             forces[configuration_id] = atoms.get_forces()
             if progress is not None:
                 progress(configuration_id + 1, len(self.plan))
-        return self.reap(forces, plan_hash=self.plan.hash)
+        return self.reap(
+            forces,
+            plan_hash=self.plan.hash,
+            acoustic_sum_rule=acoustic_sum_rule,
+        )
 
     def _normalize_forces(self, forces: ForceInput) -> np.ndarray:
         if isinstance(forces, Mapping):

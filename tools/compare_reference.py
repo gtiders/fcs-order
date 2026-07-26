@@ -8,6 +8,22 @@ import h5py
 import numpy as np
 
 
+def read_force_constants(handle: h5py.File, order: int) -> np.ndarray:
+    node = handle[f"force_constants/{order}"]
+    if isinstance(node, h5py.Dataset):
+        return node[:]
+    shape = tuple(int(value) for value in node.attrs["dense_shape"])
+    result = np.zeros(shape, dtype=float)
+    counts = np.zeros(shape[:order], dtype=np.int16)
+    for cluster, tensor in zip(node["clusters"], node["tensors"], strict=True):
+        key = tuple(int(atom) for atom in cluster)
+        result[key] += tensor
+        counts[key] += 1
+    nonzero = counts > 0
+    result[nonzero] /= counts[nonzero].reshape((-1,) + (1,) * order)
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("new_hdf5")
@@ -16,7 +32,7 @@ def main() -> None:
     args = parser.parse_args()
 
     with h5py.File(args.new_hdf5) as handle:
-        new = handle[f"force_constants/{args.order}"][:]
+        new = read_force_constants(handle, args.order)
     with np.load(args.legacy_npz) as legacy:
         keys = legacy["keys"]
         reference = legacy["values"]

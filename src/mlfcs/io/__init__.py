@@ -31,13 +31,13 @@ def write_force_constants(
     if normalized == "shengbte":
         from mlfcs.io.shengbte import write_shengbte
 
-        selected_order = order if order is not None else max(force_constants.arrays)
+        selected_order = order if order is not None else max(force_constants.orders)
         cutoff = force_constants.metadata.get("cutoff_angstrom")
         if cutoff is None:
             raise ValueError("cutoff_angstrom metadata is required for ShengBTE output")
         write_shengbte(
             target,
-            force_constants.arrays[selected_order],
+            force_constants.materialize(selected_order),
             force_constants.supercell,
             cutoff=float(cutoff),
         )

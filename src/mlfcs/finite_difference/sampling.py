@@ -6,8 +6,8 @@ from hashlib import sha256
 import numpy as np
 from ase import Atoms
 
-from mlfcs.orbits import OrbitSpace
-from mlfcs.stencil import CentralDifferenceStencil
+from mlfcs.core.orbits import OrbitSpace
+from mlfcs.finite_difference.stencil import CentralDifferenceStencil
 
 DisplacementKey = tuple[tuple[int, int], ...]
 

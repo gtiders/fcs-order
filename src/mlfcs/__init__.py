@@ -1,14 +1,15 @@
 """ASE-first anharmonic force-constant tools."""
 
 from mlfcs.api import Calculation, ForceConstantCalculation
-from mlfcs.model import ForceConstants
-from mlfcs.stencil import CentralDifferenceStencil
+from mlfcs.finite_difference.stencil import CentralDifferenceStencil
+from mlfcs.model import ForceConstants, SparseOrderForceConstants
 
 __all__ = [
     "Calculation",
     "CentralDifferenceStencil",
     "ForceConstantCalculation",
     "ForceConstants",
+    "SparseOrderForceConstants",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

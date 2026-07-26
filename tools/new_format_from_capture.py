@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 from ase.io import read
 
-from mlfcs.geometry import make_supercell
+from mlfcs.core.geometry import make_supercell
 from mlfcs.io.shengbte import write_shengbte
 
 

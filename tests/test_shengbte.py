@@ -1,8 +1,9 @@
 import numpy as np
+import pytest
 from ase import Atoms
 from ase.build import bulk
 
-from mlfcs.geometry import make_supercell
+from mlfcs.core.geometry import make_supercell
 from mlfcs.io.shengbte import write_shengbte
 
 
@@ -46,14 +47,10 @@ def test_fourth_order_direction_and_block_order(tmp_path):
     assert lines[-1] == " 3  3  3  3     8.0000000000e+01"
 
 
-def test_writer_is_parameterized_beyond_reconstructed_orders(tmp_path):
+def test_writer_rejects_orders_outside_shengbte_contract(tmp_path):
     atoms = Atoms("Si", positions=[[0, 0, 0]], cell=np.eye(3) * 5, pbc=True)
     supercell, _ = make_supercell(atoms, (1, 1, 1))
     values = np.arange(3**5, dtype=float).reshape((1,) * 5 + (3,) * 5)
     output = tmp_path / "FORCE_CONSTANTS_5TH"
-    write_shengbte(output, values, supercell, cutoff=1.0)
-    lines = output.read_text().splitlines()
-    assert lines[0] == "    1"
-    assert lines[7] == "     1      1      1      1      1"
-    assert lines[8] == " 1  1  1  1  1     0.0000000000e+00"
-    assert lines[-1] == " 3  3  3  3  3     2.4200000000e+02"
+    with pytest.raises(ValueError, match="third- and fourth-order"):
+        write_shengbte(output, values, supercell, cutoff=1.0)

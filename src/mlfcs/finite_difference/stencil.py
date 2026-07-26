@@ -16,7 +16,7 @@ class CentralDifferenceStencil:
 
     An order-n force constant differentiates force n-1 times, hence it has
     ``2 ** (n - 1)`` sign configurations. This representation is valid for
-    arbitrary n; symmetry reduction currently supports n <= 4.
+    arbitrary n.
     """
 
     derivative_order: int

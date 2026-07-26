@@ -22,8 +22,8 @@ def write_shengbte(
     Cartesian components. Values use scientific notation at every order.
     """
     order = force_constants.ndim // 2
-    if order < 3 or force_constants.ndim != 2 * order:
-        raise ValueError("force constants must represent an order >= 3 compact tensor")
+    if order not in {3, 4} or force_constants.ndim != 2 * order:
+        raise ValueError("ShengBTE output supports only third- and fourth-order tensors")
     n_primitive = force_constants.shape[0]
     n_supercell = len(supercell)
     expected = (n_primitive,) + (n_supercell,) * (order - 1) + (3,) * order
