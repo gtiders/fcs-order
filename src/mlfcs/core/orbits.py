@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import permutations, product
+from itertools import combinations, permutations, product
 
 import jax
 import jax.numpy as jnp
@@ -95,7 +95,11 @@ def build_orbit_space(
     """Enumerate cutoff clusters and reduce them by permutation and space group."""
     if order < 2:
         raise ValueError("order must be at least two")
-    distances = supercell.get_all_distances(mic=True)
+    distances, tail_compatibility = _legacy_cluster_geometry(
+        supercell,
+        index.n_primitive,
+        cutoff,
+    )
     neighbors = [
         np.flatnonzero(distances[atom] < cutoff).tolist() for atom in range(index.n_primitive)
     ]
@@ -106,7 +110,7 @@ def build_orbit_space(
     for first in range(index.n_primitive):
         for tail in product(neighbors[first], repeat=order - 1):
             cluster = (first, *tail)
-            if not _inside_cluster_cutoff(cluster, distances, cutoff):
+            if not _inside_cluster_cutoff(cluster, tail_compatibility):
                 continue
             images = _orbit_images(cluster, index, symmetry, axis_permutations, order)
             if cluster in seen:
@@ -145,10 +149,62 @@ def build_orbit_space(
 
 def _inside_cluster_cutoff(
     cluster: tuple[int, ...],
-    distances: np.ndarray,
-    cutoff: float,
+    tail_compatibility: np.ndarray,
 ) -> bool:
-    return all(distances[a, b] < cutoff for a, b in permutations(cluster, 2))
+    first = cluster[0]
+    return all(tail_compatibility[first, a, b] for a, b in combinations(cluster[1:], 2))
+
+
+def _legacy_cluster_geometry(
+    supercell: Atoms,
+    n_primitive: int,
+    cutoff: float,
+    *,
+    degeneracy_tolerance: float = 1e-2,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Build cutoff geometry with the joint-image convention of the old package.
+
+    Images of every tail atom are first restricted to those at the minimum
+    distance from the primitive anchor. Two tail atoms are compatible when at
+    least one pair of these anchor-minimum images is within the cutoff. The old
+    code used a squared-distance tolerance of ``1e-4 nm**2``, equivalent to
+    ``1e-2 angstrom**2``.
+    """
+    n_supercell = len(supercell)
+    shift_vectors = np.asarray(tuple(product((-1, 0, 1), repeat=3)), dtype=np.int32)
+    cartesian_shifts = shift_vectors @ np.asarray(supercell.cell)
+    positions = supercell.positions
+    distances = np.empty((n_primitive, n_supercell), dtype=float)
+    minimum_images: list[list[np.ndarray]] = []
+    for first in range(n_primitive):
+        shifted = positions[None, :, :] + cartesian_shifts[:, None, :]
+        squared = np.sum((shifted - positions[first]) ** 2, axis=2)
+        minimum = squared.min(axis=0)
+        distances[first] = np.sqrt(minimum)
+        minimum_images.append(
+            [
+                shifted[np.abs(squared[:, atom] - minimum[atom]) < degeneracy_tolerance, atom]
+                for atom in range(n_supercell)
+            ]
+        )
+
+    compatible = np.zeros((n_primitive, n_supercell, n_supercell), dtype=bool)
+    cutoff_squared = cutoff * cutoff
+    for first in range(n_primitive):
+        neighbors = np.flatnonzero(distances[first] < cutoff)
+        compatible[first, neighbors, neighbors] = True
+        for left_index, left in enumerate(neighbors):
+            left_images = minimum_images[first][left]
+            for right in neighbors[left_index + 1 :]:
+                right_images = minimum_images[first][right]
+                squared = np.sum(
+                    (left_images[:, None, :] - right_images[None, :, :]) ** 2,
+                    axis=2,
+                )
+                value = bool(np.any(squared < cutoff_squared))
+                compatible[first, left, right] = value
+                compatible[first, right, left] = value
+    return distances, compatible
 
 
 def _orbit_images(
