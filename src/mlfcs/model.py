@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -18,8 +19,8 @@ class RunConfig:
     symprec: float = 1e-5
 
     def __post_init__(self) -> None:
-        if self.order < 3:
-            raise ValueError("order must be at least 3")
+        if self.order < 2:
+            raise ValueError("order must be at least 2")
         if any(n < 1 for n in self.supercell):
             raise ValueError("supercell multipliers must be positive")
         if self.cutoff == 0:
@@ -47,12 +48,14 @@ class SparseOrderForceConstants:
         return int(np.prod(self.dense_shape, dtype=np.int64)) * self.tensors.dtype.itemsize
 
     def to_dense(self, *, max_bytes: int | None = 2_000_000_000) -> np.ndarray:
-        """Materialize the compact tensor after an explicit memory-budget check."""
+        """Materialize the compact tensor, warning when it exceeds the budget."""
         if max_bytes is not None and self.dense_nbytes > max_bytes:
             gib = self.dense_nbytes / 1024**3
-            raise MemoryError(
+            warnings.warn(
                 f"dense order-{self.order} force constants require {gib:.2f} GiB; "
-                "write HDF5 directly or increase max_bytes explicitly"
+                "materialization will continue; sparse HDF5 output is safer",
+                RuntimeWarning,
+                stacklevel=2,
             )
         result = np.zeros(self.dense_shape, dtype=self.tensors.dtype)
         counts = np.zeros(self.dense_shape[: self.order], dtype=np.int16)

@@ -12,6 +12,7 @@ from mlfcs.core.symmetry import SymmetryOperations
 from mlfcs.finite_difference.sampling import DisplacementPlan, build_displacement_plan
 from mlfcs.model import ForceConstants, RunConfig
 from mlfcs.reconstruction.solver import reconstruct_sparse
+from mlfcs.runtime import JaxPlatform, configure_jax
 
 Progress = Callable[[int, int], None]
 ForceInput = np.ndarray | Sequence[np.ndarray] | Mapping[int, np.ndarray]
@@ -29,7 +30,9 @@ class ForceConstantCalculation:
         cutoff: float = -5,
         displacement: float = 0.01,
         symprec: float = 1e-5,
+        jax_platform: JaxPlatform = "auto",
     ):
+        configure_jax(jax_platform)
         config = RunConfig(
             order=order,
             supercell=supercell,
@@ -39,6 +42,7 @@ class ForceConstantCalculation:
         )
         self.primitive = atoms.copy()
         self.config = config
+        self.jax_platform = jax_platform
         self.supercell, self.index = make_supercell(self.primitive, config.supercell)
         self.cutoff = resolve_cutoff(self.supercell, self.index, config.cutoff)
         self.symmetry = SymmetryOperations.from_atoms(
@@ -129,6 +133,7 @@ class ForceConstantCalculation:
                 "configurations": len(self.plan),
                 "plan_hash": self.plan.hash,
                 "acoustic_sum_rule": acoustic_sum_rule,
+                "jax_platform": self.jax_platform,
             },
             sparse={self.config.order: sparse},
         )

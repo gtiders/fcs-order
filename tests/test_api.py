@@ -6,6 +6,7 @@ from ase.build import bulk
 from ase.calculators.calculator import Calculator, all_changes
 
 from mlfcs import ForceConstantCalculation
+from mlfcs.runtime import configure_jax
 
 
 class ZeroCalculator(Calculator):
@@ -63,3 +64,21 @@ def test_grouped_force_order_and_user_calculator_path():
     assert evaluated.shape == (len(job.plan), len(job.supercell), 3)
     direct = job.reap(evaluated)
     np.testing.assert_array_equal(direct[3], 0.0)
+
+
+def test_second_order_uses_the_same_pipeline():
+    job = ForceConstantCalculation(
+        bulk("Si", "diamond", a=5.43),
+        order=2,
+        supercell=(2, 2, 2),
+        cutoff=-1,
+    )
+    forces = np.zeros((len(job.plan), len(job.supercell), 3))
+    result = job.reap(forces)
+    assert result.orders == (2,)
+    assert result[2].shape == (2, 16, 3, 3)
+
+
+def test_invalid_jax_platform_is_rejected():
+    with pytest.raises(ValueError, match="jax_platform"):
+        configure_jax("tpu")

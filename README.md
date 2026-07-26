@@ -29,6 +29,7 @@ calculation = ForceConstantCalculation(
     supercell=(2, 2, 2),
     cutoff=-5,
     displacement=0.01,
+    jax_platform="auto",  # "auto", "cpu", or "gpu"
 )
 
 structures = calculation.sow()
@@ -153,9 +154,13 @@ Reconstruction remains sparse until dense values are requested:
 
 ```python
 fc5.write("fc5.h5", format="hdf5")       # no dense N**4 allocation
-dense = fc5.materialize(5)                # checks the default 2 GB budget
+dense = fc5.materialize(5)                # warns above the default 2 GB budget
 dense = fc5.materialize(5, max_bytes=None)  # explicit opt-out
 ```
+
+The memory estimate is advisory: materialization emits `RuntimeWarning` above the budget and
+continues. Sparse HDF5 is strongly recommended for high orders. Selecting `jax_platform="gpu"`
+requires a CUDA-enabled JAX installation; ordinary CPU `jaxlib` cannot execute on a GPU.
 
 ## Acoustic sum rule
 
@@ -169,8 +174,12 @@ raw = calculation.reap(forces, acoustic_sum_rule=False)
 ```
 
 The constrained path constructs a sparse matrix `A` in the independent orbit-parameter space
-and orthogonally projects the measured parameters onto `null(A)` with a strict iterative solve.
+and orthogonally projects the measured parameters onto `null(A)`. A small `A.T @ A` Gram matrix
+identifies the null space; LSMR refinement in the original sparse `A` removes the numerical tail.
 The third- and fourth-order tests require a final dense ASR residual below `1e-10`.
+
+Second order uses the same pipeline and can be requested with `order=2`. ShengBTE output remains
+restricted to orders 3 and 4; second and higher-than-fourth orders should use HDF5.
 
 ## Numerical reference status
 

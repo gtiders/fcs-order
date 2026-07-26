@@ -8,6 +8,8 @@ from scipy.sparse.linalg import lsmr
 
 from mlfcs.core.orbits import OrbitSpace
 
+GRAM_MAX_PARAMETERS = 4096
+
 
 def build_translational_constraints(
     orbit_space: OrbitSpace,
@@ -61,7 +63,10 @@ def project_acoustic_sum_rule(
 
     residual = constraints @ parameters
     scale = max(float(np.linalg.norm(parameters)), 1.0)
-    if float(np.linalg.norm(residual, ord=np.inf)) > tolerance * scale:
+    if (
+        float(np.linalg.norm(residual, ord=np.inf)) > tolerance * scale
+        and constraints.shape[1] <= GRAM_MAX_PARAMETERS
+    ):
         gram = (constraints.T @ constraints).toarray()
         eigenvalues, eigenvectors = np.linalg.eigh(gram)
         threshold = max(float(eigenvalues[-1]), 1.0) * tolerance
@@ -70,20 +75,21 @@ def project_acoustic_sum_rule(
             raise RuntimeError("acoustic sum-rule constraints leave no independent parameters")
         parameters = null_vectors @ (null_vectors.T @ parameters)
 
-        # Squaring A into the small Gram matrix worsens its condition number.
-        # Refine in the original sparse system to remove that numerical tail.
-        for _ in range(4):
-            residual = constraints @ parameters
-            if float(np.linalg.norm(residual, ord=np.inf)) <= tolerance * scale:
-                break
-            correction = lsmr(
-                constraints,
-                residual,
-                atol=tolerance * 0.01,
-                btol=tolerance * 0.01,
-                maxiter=max(1000, 4 * constraints.shape[1]),
-            )[0]
-            parameters = parameters - correction
+    # Small-Gram eigenvectors need refinement because A.T @ A squares the
+    # condition number. For large parameter spaces this loop is the entire
+    # matrix-free projection and no dense Gram matrix is formed.
+    for _ in range(8):
+        residual = constraints @ parameters
+        if float(np.linalg.norm(residual, ord=np.inf)) <= tolerance * scale:
+            break
+        correction = lsmr(
+            constraints,
+            residual,
+            atol=tolerance * 0.01,
+            btol=tolerance * 0.01,
+            maxiter=max(1000, 4 * constraints.shape[1]),
+        )[0]
+        parameters = parameters - correction
 
     final_residual = constraints @ parameters
     if float(np.linalg.norm(final_residual, ord=np.inf)) > tolerance * scale:

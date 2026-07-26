@@ -27,13 +27,14 @@ def test_reap_keeps_sparse_clusters_and_hdf5_writes_them(tmp_path):
         assert group["tensors"].shape[1:] == (3, 3, 3)
 
 
-def test_dense_materialization_has_a_memory_budget():
+def test_dense_materialization_warns_but_continues():
     sparse = SparseOrderForceConstants(
-        order=5,
-        n_primitive=2,
-        n_supercell=64,
-        clusters=np.empty((0, 5), dtype=np.int32),
-        tensors=np.empty((0,) + (3,) * 5),
+        order=2,
+        n_primitive=1,
+        n_supercell=1,
+        clusters=np.empty((0, 2), dtype=np.int32),
+        tensors=np.empty((0, 3, 3)),
     )
-    with pytest.raises(MemoryError, match="write HDF5 directly"):
-        sparse.to_dense(max_bytes=1_000_000)
+    with pytest.warns(RuntimeWarning, match="materialization will continue"):
+        dense = sparse.to_dense(max_bytes=1)
+    assert dense.shape == (1, 1, 3, 3)
