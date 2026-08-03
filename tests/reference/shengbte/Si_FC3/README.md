@@ -41,3 +41,37 @@ retains only `POSCAR` and `vasprun.xml`; common `INCAR` and `KPOINTS` files are
 stored once at the method root. POTCAR and nonessential VASP outputs are not
 retained. Raw XML is intentionally excluded from Git; compact derived fixtures
 belong directly in `data/`.
+
+## Numerical comparison
+
+`data/reference.npz` is the 315 KiB CI fixture derived from the 168 current
+MLFCS `vasprun.xml` files and the original thirdorder `FORCE_CONSTANTS_3RD`.
+It contains grouped-order forces, the sow plan hash, periodic-canonical block
+translations, primitive atom indices, FC3 values, and source hashes.
+
+Both exports contain 3858 blocks. Their raw text chooses a different but
+periodically equivalent supercell image for 173 blocks. After reducing lattice
+translations modulo the 3x3x3 supercell, every block key appears in exactly the
+same order. The numerical results are:
+
+| MLFCS reconstruction | Maximum difference (eV/Angstrom^3) | RMS difference | Relative norm | Correlation |
+|---|---:|---:|---:|---:|
+| ASR disabled | 0.08693 | 0.003966 | 0.693% | 0.999976 |
+| ASR enabled | 0.08675 | 0.003619 | 0.633% | 0.999980 |
+
+The independent calculations use different symmetry-equivalent displacement
+representatives, so they do not share identical raw forces. The test therefore
+requires exact physical block ordering and bounded FC3 error, not byte-identical
+floating-point output.
+
+Fixture SHA-256:
+`a6b6f36e416145dbd59d93dd30e0f8105f96065bf453e24d228bd82c4846b44f`.
+
+Regenerate while the ignored raw VASP directories are available:
+
+```bash
+uv run python tools/generate_Si_shengbte_fixture.py \
+  tests/reference/shengbte/Si_FC3/data/vasp/mlfcs \
+  tests/reference/shengbte/Si_FC3/data/vasp/thirdorder \
+  tests/reference/shengbte/Si_FC3/data/reference.npz
+```
