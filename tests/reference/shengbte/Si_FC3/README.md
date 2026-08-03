@@ -25,3 +25,19 @@ The current implementation and the old package both request 168 calculations,
 but their irreducible representatives and positional stencil order differ.
 Therefore old `3RD.POSCAR.NNN` force files must not be fed positionally into the
 new API.
+
+## Local raw VASP provenance
+
+The cleaned raw calculations are kept locally under the ignored directory
+`data/vasp/`:
+
+- `data/vasp/mlfcs`: the current MLFCS sow plan;
+- `data/vasp/thirdorder`: the original thirdorder plan and its exported
+  `FORCE_CONSTANTS_3RD`.
+
+Both contain `calculations/000` for the undisplaced supercell and numbered
+directories `001` through `168` for displaced structures. Each calculation
+retains only `POSCAR` and `vasprun.xml`; common `INCAR` and `KPOINTS` files are
+stored once at the method root. POTCAR and nonessential VASP outputs are not
+retained. Raw XML is intentionally excluded from Git; compact derived fixtures
+belong directly in `data/`.
