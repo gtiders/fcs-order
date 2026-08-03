@@ -17,7 +17,7 @@ filename and SHA-256 of every structure. The corresponding force result for
 Regenerate into an empty directory with:
 
 ```bash
-uv run python tools/generate_Si_shengbte_fc3_sow.py \
+uv run python reference_tools/generate_Si_shengbte_fc3_sow.py \
   POSCAR tests/reference/shengbte/Si_FC3/structures
 ```
 
@@ -70,7 +70,7 @@ Fixture SHA-256:
 Regenerate while the ignored raw VASP directories are available:
 
 ```bash
-uv run python tools/generate_Si_shengbte_fixture.py \
+uv run python reference_tools/generate_Si_shengbte_fixture.py \
   tests/reference/shengbte/Si_FC3/data/vasp/mlfcs \
   tests/reference/shengbte/Si_FC3/data/vasp/thirdorder \
   tests/reference/shengbte/Si_FC3/data/reference.npz

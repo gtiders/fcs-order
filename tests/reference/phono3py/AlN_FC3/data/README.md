@@ -51,7 +51,7 @@ upstream 200-structure dataset takes several minutes and multiple gigabytes of
 temporary memory:
 
 ```bash
-uv run python tools/generate_AlN_phono3py_fixture.py \
+uv run python reference_tools/generate_AlN_phono3py_fixture.py \
   tests/reference/phono3py/AlN_FC3/data/training/phonopy_params_mp-661.yaml.xz \
   tests/reference/phono3py/AlN_FC3/data/training/polymlp.yaml \
   tests/reference/phono3py/AlN_FC3/data/reference.npz

@@ -22,7 +22,7 @@ Derived fixture SHA-256:
 Regenerate with:
 
 ```bash
-uv run python tools/generate_AlN_phonopy_fc2_fixture.py \
+uv run python reference_tools/generate_AlN_phonopy_fc2_fixture.py \
   tests/reference/phono3py/AlN_FC3/data/training/phonopy_params_mp-661.yaml.xz \
   tests/reference/phono3py/AlN_FC3/data/training/polymlp.yaml \
   tests/reference/phonopy/AlN_FC2/data/reference.npz
