@@ -1,5 +1,7 @@
 # Si FC3 ShengBTE reference
 
+English | [中文](README_ZH.md)
+
 This directory is being prepared for an external VASP-to-ShengBTE validation.
 The structures use the user-provided two-atom diamond-Si `POSCAR` with:
 

@@ -1,5 +1,7 @@
 # K4As4Pt2 FC2/FC3 validation fixture
 
+English | [中文](README_ZH.md)
+
 This independent, multi-component reference uses the supplied ten-atom
 orthorhombic K4As4Pt2 cell, a 2x2x3 supercell, 0.01 Angstrom central
 differences, and the supplied pypolymlp potential. MLFCS deliberately uses

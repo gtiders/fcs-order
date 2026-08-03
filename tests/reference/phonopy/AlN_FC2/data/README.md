@@ -1,5 +1,7 @@
 # AlN FC2 validation fixture
 
+English | [中文](README_ZH.md)
+
 `reference.npz` compares MLFCS order-2 finite differences with phonopy's
 traditional FC2 solver. It uses the same upstream AlN dataset and the same
 trained pypolymlp potential as the sibling phono3py FC3 validation:

@@ -1,5 +1,7 @@
 # AlN FC3 validation fixture
 
+English | [中文](README_ZH.md)
+
 `reference.npz` is the compact fixture used by CI. The complete upstream AlN
 training dataset and the exact trained pypolymlp potential used to derive it
 are preserved in `training/`, but ordinary CI does not retrain or reevaluate

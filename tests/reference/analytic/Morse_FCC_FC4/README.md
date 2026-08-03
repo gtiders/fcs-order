@@ -1,5 +1,7 @@
 # FCC Morse FC4 analytic reference
 
+English | [中文](README_ZH.md)
+
 This benchmark validates fourth-order force constants without using another force-constant
 fitter. ASE relaxes a one-component FCC cell with `MorsePotential`; an independent JAX
 implementation differentiates the Morse pair energy four times, and MLFCS samples forces from
