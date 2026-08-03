@@ -1,10 +1,12 @@
-# MLFCS v0.3 technical overview
+# MLFCS v0.5 technical overview
 
 ## 1. Scope and design goals
 
-MLFCS v0.3 is a clean ASE-first implementation for reconstructing force constants from
-user-supplied forces. It does not embed a force calculator, does not require phonopy or symfc,
-and has no command-line interface. The public workflow is a Python API:
+The base MLFCS pipeline is a clean ASE-first implementation for reconstructing force constants
+from user-supplied forces. It does not embed a force calculator, does not require phonopy or
+symfc, and has no command-line interface. Version 0.5 adds an isolated, optional
+`mlfcs.sscha` module that deliberately depends on phonopy and symfc for finite-temperature
+effective FC2 calculations. The main public workflow remains a Python API:
 
 ```python
 calculation = ForceConstantCalculation(
@@ -55,11 +57,17 @@ src/mlfcs/
     numpy.py                     NumPy storage
     phonopy.py                   full dense FC2 text output
     shengbte.py                  third- and fourth-order ShengBTE output
+  sscha/                         optional phonopy/symfc dependency boundary
+    core.py                      thermal sampling, ASE evaluation, and FC2 iteration
 ```
 
 This replaces the previous order-specific third- and fourth-order packages with a shared
 pipeline. Order-dependent behavior is expressed through `order`, tensor rank, permutations, and
 recursive finite-difference keys instead of duplicated source trees.
+
+The SSCHA package is intentionally separate from this generic pipeline. Importing `mlfcs` does
+not import phonopy or symfc; applications opt in with `from mlfcs.sscha import SSCHA` and install
+the `sscha` package extra.
 
 ## 3. Generic force-constant pipeline
 
@@ -87,9 +95,10 @@ conventions. Nearly split but physically equivalent shells are merged with toler
 with the previous implementation (`rtol=1e-5`, `atol=1e-8`). This is important for relaxed
 multi-species structures whose equivalent distances can differ at approximately `1e-6` angstrom.
 
-For negative cutoffs, v0.3 reports the maximum shell and cutoff radius enumerable by the current
-supercell. A request beyond that shell limit is rejected instead of silently reusing the farthest
-available distance.
+For negative cutoffs, MLFCS reports two distinct quantities. The supercell-limit line gives the
+maximum shell and cutoff radius enumerable by the current supercell. The selected-cutoff line
+gives the user-requested shell and the radius actually passed to cluster enumeration. A request
+beyond the shell limit is rejected instead of silently reusing the farthest available distance.
 
 ### 3.3 Symmetry-reduced cluster orbits
 
@@ -277,7 +286,33 @@ The complex-material neighbor-shell regression results at fourth order and cutof
 | KAsPt | 45 | 2936 |
 | NaS | 43 | 2016 |
 
-## 8. Current limitations and likely next steps
+## 8. Optional stochastic effective-harmonic module
+
+Version 0.5 implements the phonopy-style SSCHA loop behind an optional dependency boundary:
+
+1. generate small random Cartesian displacements when no initial FC2 is available;
+2. evaluate arbitrary ASE forces and optionally energies;
+3. fit a symmetry-constrained full FC2 with symfc;
+4. sample the canonical harmonic ensemble from the current FC2 with phonopy;
+5. repeat the force evaluation and FC2 fit for the requested number of updates.
+
+Both direct serial Calculator execution and iteration-level `sow/reap` are supported. The latter
+keeps external scheduling and concurrency under user control. Each fit produces an immutable
+result containing FC2, sampling mode, energy averages, free energy, and its finite-sampling
+standard error. The active FC2 may be replaced by an average of the final iterations and written
+through phonopy's text or HDF5 writers.
+
+This module estimates a temperature-dependent effective harmonic Hamiltonian from thermal force
+samples. It is not the explicit FC3 bubble or FC4 loop implementation discussed for ALAMODE.
+Detailed usage, formulas, ordering rules, and stability guidance are in
+[`SSCHA.md`](SSCHA.md).
+
+The SSCHA tests exercise the real installed phonopy and symfc implementations with an ASE
+harmonic test calculator. They cover Cartesian initialization, canonical sampling, external
+ID-mapped reap, two successive direct fits, FC2 averaging, free-energy evaluation, and HDF5
+output. The complete v0.5 suite contains 30 serial tests.
+
+## 9. Current limitations and likely next steps
 
 - The generic combinatorial machinery supports higher orders, but cost still grows through
   cluster combinations, `order!` permutations, `3**order` tensor components, and
@@ -285,14 +320,19 @@ The complex-material neighbor-shell regression results at fourth order and cutof
 - ShengBTE export is intentionally restricted to orders 3 and 4; generic higher-order output
   should use sparse HDF5.
 - Non-analytic long-range electrostatic corrections are not implemented.
-- Phonon dispersion, temperature-renormalized FC2, SCPH, bubble self-energy, and molecular-
-  dynamics effective harmonic fitting are research directions rather than v0.3 features.
-- A practical finite-temperature extension could use ASE molecular dynamics or stochastic
-  harmonic sampling and optionally symfc to fit a temperature-dependent effective FC2, while
-  keeping ASE objects and calculators at the public boundary.
+- Explicit diagrammatic FC3 bubble and FC4 loop self-energies are not implemented. The optional
+  SSCHA module instead obtains temperature-renormalized FC2 from stochastic thermal force data.
+- Molecular-dynamics effective harmonic fitting remains a separate possible extension.
+- SSCHA convergence is deliberately controlled by the caller through repeated `step()` calls;
+  the library does not yet define a universal automatic stopping criterion.
 
-## 9. Version summary
+## 10. Version summary
 
 `v0.3.0` adds dependency-free full phonopy FC2 text export, explicit reporting and validation of
 the neighbor-shell capacity of the current supercell, and this consolidated technical record on
 top of the generic sparse reconstruction and strict ASR work introduced in `v0.2.0`.
+
+`v0.5.0` adds the independent optional `mlfcs.sscha` module, a redesigned ASE-first direct and
+external API, structured iteration history, free-energy uncertainty, final-iteration averaging,
+and phonopy-native FC2 output. The base force-constant implementation remains free of phonopy and
+symfc runtime dependencies.

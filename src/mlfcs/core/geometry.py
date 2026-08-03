@@ -103,7 +103,12 @@ def neighbor_shell_cutoff(
             candidates.append(unique[-1] * 1.1)
         else:
             candidates.append((unique[shell - 1] + unique[shell]) / 2.0)
-    return float(max(candidates))
+    selected_radius = float(max(candidates))
+    if report:
+        print(
+            f"Selected neighbor cutoff: shell = {shell}, cutoff radius = {selected_radius:.10f} Å"
+        )
+    return selected_radius
 
 
 def neighbor_shell_limit(

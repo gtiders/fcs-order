@@ -37,10 +37,12 @@ def test_negative_cutoff_reports_shell_and_maximum_radius(capsys):
     primitive = bulk("Si", "diamond", a=5.43)
     supercell, index = make_supercell(primitive, (2, 2, 2))
     maximum_shell, maximum_radius = neighbor_shell_limit(supercell, index)
-    resolve_cutoff(supercell, index, -2)
+    selected_radius = resolve_cutoff(supercell, index, -2)
     output = capsys.readouterr().out
     assert f"maximum shell = {maximum_shell}" in output
     assert f"maximum cutoff radius = {maximum_radius:.10f} Å" in output
+    assert "Selected neighbor cutoff: shell = 2" in output
+    assert f"cutoff radius = {selected_radius:.10f} Å" in output
 
 
 def test_negative_cutoff_rejects_shell_beyond_supercell_limit():

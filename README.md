@@ -1,22 +1,122 @@
-# mlfcs-new
+# MLFCS
 
-An ASE-first API for symmetry-reduced finite-difference force constants. The runtime is
-independent of phonopy, symfc, and any particular force calculator.
+English | [中文](README_ZH.md)
 
-The calculation pipeline is order-parameterized. Third- and fourth-order calculations are the
-tested production paths; higher orders use the same sparse cluster, finite-difference,
-reconstruction, and HDF5 machinery but can become combinatorially expensive.
+MLFCS is an ASE-first Python library for calculating symmetry-reduced force constants from
+atomic forces. It supports second and arbitrarily higher orders through one order-parameterized
+pipeline, with third- and fourth-order calculations as the primary production-validated paths.
+Fifth and higher orders can also be calculated and exported through the generic sparse HDF5
+format; practical size is determined by cluster count, cutoff, supercell size, and available
+memory.
+
+Numerical execution supports both CPU and GPU. CPU mode handles ordinary calculations and
+large sparse linear algebra, while a CUDA-enabled JAX installation can move high-rank Cartesian
+tensor rotations and batched transformations to a GPU. Memory is controlled through symmetry
+reduction, contiguous sparse arrays, lazy dense materialization, matrix-free tensor actions,
+small Gram null spaces, and sparse LSMR. JAX JIT, `vmap`, batched contractions, and displacement
+deduplication improve throughput. Actual gains depend on the system, order, and hardware; GPU
+execution does not replace cluster enumeration or sparse solvers that still run on the CPU.
+
+The base package does not prescribe how forces are generated. Structures can be evaluated with
+any user-owned ASE Calculator or dispatched to an external workflow. An independent optional
+module uses phonopy and symfc to calculate temperature-dependent effective second-order force
+constants with a stochastic self-consistent harmonic approximation (SSCHA).
+
+MLFCS provides a Python API only; it has no CLI.
+
+## How it works
+
+An order-`n` force constant is the `n`th derivative of potential energy with respect to atomic
+displacements, or equivalently an `(n-1)`-fold derivative of force. MLFCS computes it as follows:
+
+```text
+ASE primitive structure
+        │
+        ▼
+deterministic supercell and neighbor cutoff
+        │
+        ▼
+space-group and permutation-reduced cluster orbits
+        │
+        ▼
+recursive central-difference displacement plan
+        │
+        ▼
+user-provided forces
+        │
+        ▼
+sparse symmetry reconstruction and optional strict ASR
+        │
+        ▼
+ForceConstants → HDF5 / NumPy / ShengBTE / phonopy
+```
+
+Space-group symmetry, force-constant index permutations, and stabilizer constraints reduce each
+cluster tensor to independent components. Only those components are sampled. The reconstructed
+result remains sparse until a dense representation is explicitly requested.
+
+The acoustic sum rule (ASR) is imposed as a constrained projection in the independent orbit
+parameter space:
+
+```text
+sum over one atom index of Phi(i1, ..., in) = 0
+```
+
+Small constraint systems use a Gram-matrix null space followed by sparse LSMR refinement; large
+systems use a sparse LSMR projection directly.
+
+## Features
+
+- One API and one numerical pipeline for `order >= 2`.
+- Production-tested third- and fourth-order force constants.
+- End-to-end second- and fifth-order validation.
+- ASE `Atoms` and ASE `Calculator` at the public boundary.
+- External, checkpoint-friendly `sow()` / `reap()` workflow.
+- Stable configuration IDs, plan hashes, and explicit atom-order mappings.
+- Legacy-compatible periodic cluster cutoff geometry.
+- Recursive central-difference stencils.
+- JAX-accelerated high-rank tensor transformations with CPU/GPU selection.
+- JAX JIT, `vmap`, and batched contractions for high-rank tensor throughput.
+- Contiguous sparse arrays, matrix-free actions, and lazy materialization to reduce peak memory.
+- Displacement-key deduplication to reduce expensive calculator evaluations.
+- Strict translational ASR using Gram null spaces and sparse LSMR.
+- Generic sparse HDF5 for any order.
+- ShengBTE output for orders 3 and 4.
+- Full dense phonopy text output for order 2.
+- Optional phonopy/symfc SSCHA with arbitrary ASE calculators.
+
+## Installation
+
+MLFCS requires Python 3.12 or newer. Install and run it with uv:
+
+```bash
+uv sync
+```
+
+Install the optional SSCHA dependencies when needed:
+
+```bash
+uv sync --extra sscha
+```
+
+Calculator packages such as calorine or MACE are intentionally not base dependencies. Install
+the calculator required by your application separately.
 
 ## Units
 
-- Structures and displacements: angstrom.
-- Forces: eV/angstrom.
-- Order-`n` force constants: `eV/angstrom^n`.
-- Positive cutoff: radius in angstrom.
-- Negative integer cutoff, for example `-5`: neighbor shell.
-- JAX numerical kernels use 64-bit floating point.
+| Quantity | Unit |
+|---|---|
+| Cell, positions, and displacements | Å |
+| Forces | eV/Å |
+| Order-`n` force constants | eV/Åⁿ |
+| Positive cutoff | Å |
+| Negative integer cutoff | Neighbor shell |
 
-## Sow and reap
+JAX numerical kernels use 64-bit floating point.
+
+## Quick start
+
+### External force workflow
 
 ```python
 import numpy as np
@@ -24,73 +124,67 @@ from ase.io import read
 from mlfcs import ForceConstantCalculation
 
 calculation = ForceConstantCalculation(
-    read("structures/POSCAR-Si.vasp"),
+    read("POSCAR"),
     order=3,
     supercell=(2, 2, 2),
     cutoff=-5,
     displacement=0.01,
+    symprec=1e-5,
     jax_platform="auto",  # "auto", "cpu", or "gpu"
 )
 
 structures = calculation.sow()
+forces = np.asarray(evaluate_structures(structures))
+
+fc3 = calculation.reap(
+    forces,
+    plan_hash=calculation.plan.hash,
+    acoustic_sum_rule=True,
+)
+fc3.write("fc3.h5", format="hdf5")
 ```
 
-`sow()` returns `list[ase.Atoms]`. Its list order is the positional `reap()` contract:
-
-```python
-forces = np.asarray(load_forces_in_the_same_order())
-fc3 = calculation.reap(forces, acoustic_sum_rule=True)
-```
-
-The required shape is:
+The force array must have shape:
 
 ```text
 (len(calculation.sow()), len(calculation.supercell), 3)
 ```
 
-Every sow structure contains:
+Every displaced structure contains:
 
 ```python
-atoms.info["mlfcs_configuration_id"]  # zero-based list position
+atoms.info["mlfcs_configuration_id"]
 atoms.info["mlfcs_plan_hash"]
 atoms.info["mlfcs_atom_order"]
 atoms.arrays["mlfcs_displacement"]
 ```
 
-When force jobs return out of order, pass an ID mapping. Mapping insertion order is irrelevant:
+When jobs return out of order, pass a mapping keyed by configuration ID:
 
 ```python
-forces_by_id = {
-    configuration_id: force_array,
-    # ...
-}
-
 fc3 = calculation.reap(
-    forces_by_id,
+    forces_by_configuration_id,
     plan_hash=calculation.plan.hash,
 )
 ```
 
-Missing IDs, extra IDs, invalid shapes, NaN/Inf, and mismatched plan hashes are rejected.
-MLFCS does not parse or assume how forces were calculated.
+Missing or extra IDs, invalid shapes, non-finite values, and plan-hash mismatches are rejected.
 
-For a negative shell cutoff, construction reports the maximum neighbor shell and cutoff radius
-enumerable under the current supercell's minimum-image convention. Requests beyond that limit
-are rejected. Pass `report_cutoff=False` to silence this message.
-
-## Optional direct ASE Calculator use
-
-Users may supply any ASE Calculator directly. MLFCS adds no dependency on calculator packages:
+### Direct ASE Calculator workflow
 
 ```python
 calculator = make_my_ase_calculator()
-fc3 = calculation.run(calculator)
+
+fc3 = calculation.run(
+    calculator,
+    progress=lambda done, total: print(f"{done}/{total}"),
+)
 ```
 
-This evaluates the same sow list serially and passes the resulting force array to `reap()`.
-External scheduling, checkpointing, and parallel execution remain user responsibilities.
+Calculator evaluation is serial by design to avoid multiplying the memory used by large machine
+learning potentials. Use `sow()` / `reap()` when external parallelism or checkpointing is needed.
 
-To checkpoint calculator output before reconstruction:
+For explicit checkpointing:
 
 ```python
 forces = calculation.evaluate(calculator)
@@ -98,24 +192,51 @@ np.savez_compressed("forces.npz", forces=forces, plan_hash=calculation.plan.hash
 fc3 = calculation.reap(forces, plan_hash=calculation.plan.hash)
 ```
 
+## Orders and cutoffs
+
+The same constructor is used for all supported orders:
+
+```python
+fc2_calculation = ForceConstantCalculation(atoms, order=2, cutoff=-6)
+fc4_calculation = ForceConstantCalculation(atoms, order=4, cutoff=-3)
+fc5_calculation = ForceConstantCalculation(atoms, order=5, cutoff=-1)
+```
+
+A positive cutoff is a radius in Å. A negative integer selects a one-based neighbor shell. For
+example, `cutoff=-8` selects the eighth shell. MLFCS reports both the supercell capacity and the
+selected radius:
+
+```text
+Supercell neighbor limit: maximum shell = 33, maximum cutoff radius = 15.7504983443 Å
+Selected neighbor cutoff: shell = 8, cutoff radius = 7.5419604204 Å
+```
+
+The first line is a capacity diagnostic for the finite supercell. The second line is the cutoff
+actually used. Requests beyond the enumerable capacity are rejected. Use `report_cutoff=False`
+to suppress both lines.
+
+Higher orders grow combinatorially through cluster combinations, tensor components,
+permutations, and finite-difference signs. Use small cutoffs first and monitor configuration
+count and memory.
+
 ## Atom ordering
 
-The internal supercell order is:
+The canonical internal supercell order is:
 
 ```text
 z → y → x → primitive_atom
 ```
 
-The primitive-atom index is fastest. This is also the default order returned by `sow()`.
+The primitive-atom index changes fastest. This is the default order used by `sow()` and `reap()`.
 
-For primitive-atom-grouped structures:
+For primitive-atom-grouped data:
 
 ```python
 structures = calculation.sow(atom_order="grouped")
-fc3 = calculation.reap(grouped_forces, atom_order="grouped")
+force_constants = calculation.reap(forces, atom_order="grouped")
 ```
 
-Explicit mappings are available:
+Explicit mappings are available as:
 
 ```python
 calculation.index.grouped_permutation
@@ -123,128 +244,124 @@ calculation.index.internal_from_grouped
 calculation.index.group_atoms(atoms)
 ```
 
-## Force-constant I/O
-
-Output format is always explicit:
-
-```python
-fc3.write("fc3.h5", format="hdf5")
-fc3.write("fc3.npz", format="numpy")
-fc3.write("FORCE_CONSTANTS_3RD", format="shengbte")
-fc2.write("FORCE_CONSTANTS_2ND", format="phonopy")
-```
-
-Available formats:
-
-- `hdf5`: sparse cluster tensors, structure, metadata, and ordering arrays; any order.
-- `numpy` or `npz`: materialized compact NumPy tensors, subject to a memory budget.
-- `shengbte`: third- and fourth-order text output.
-- `phonopy`: full dense second-order phonopy text output (`N_supercell` by
-  `N_supercell`), with automatic conversion to phonopy atom ordering.
-
-The ShengBTE writer emits, for order 3 or 4:
-
-- `n - 1` lattice-translation vectors per block;
-- `n` primitive atom indices;
-- `3**n` Cartesian components;
-- scientific notation for every order.
-
-HDF5 stores the following under `ordering/`:
-
-```text
-primitive_index
-cell_translation
-primitive_scaled_position
-```
-
-Reconstruction remains sparse until dense values are requested:
-
-```python
-fc5.write("fc5.h5", format="hdf5")       # no dense N**4 allocation
-dense = fc5.materialize(5)                # warns above the default 2 GB budget
-dense = fc5.materialize(5, max_bytes=None)  # explicit opt-out
-```
-
-The memory estimate is advisory: materialization emits `RuntimeWarning` above the budget and
-continues. Sparse HDF5 is strongly recommended for high orders. Selecting `jax_platform="gpu"`
-requires a CUDA-enabled JAX installation; ordinary CPU `jaxlib` cannot execute on a GPU.
+MLFCS performs the required grouped-order conversion automatically at the phonopy output
+boundary.
 
 ## Acoustic sum rule
 
-Translational invariance is imposed independently for each force-constant order. For order `n`,
-the first `n - 1` atom indices and all Cartesian components are fixed while the final atom index
-is summed. Permutation symmetry provides the equivalent constraints on the other atom axes.
+ASR is enabled by default:
 
 ```python
 constrained = calculation.reap(forces, acoustic_sum_rule=True)
 raw = calculation.reap(forces, acoustic_sum_rule=False)
 ```
 
-The constrained path constructs a sparse matrix `A` in the independent orbit-parameter space
-and orthogonally projects the measured parameters onto `null(A)`. A small `A.T @ A` Gram matrix
-identifies the null space; LSMR refinement in the original sparse `A` removes the numerical tail.
-The third- and fourth-order tests require a final dense ASR residual below `1e-10`.
+The constrained result is the nearest solution in independent parameter space that satisfies
+translational invariance. Permutation symmetry supplies equivalent constraints on the other atom
+axes.
 
-Second order uses the same pipeline and can be requested with `order=2`. ShengBTE output remains
-restricted to orders 3 and 4; second and higher-than-fourth orders should use HDF5.
+## Output formats
 
-## Numerical reference status
+The output format is always explicit:
 
-Writer ordering, orbit planning, raw force reconstruction, and ASR projection are tested
-separately.
+```python
+fc2.write("FORCE_CONSTANTS", format="phonopy")
+fc3.write("fc3.h5", format="hdf5")
+fc3.write("fc3.npz", format="numpy")
+fc3.write("FORCE_CONSTANTS_3RD", format="shengbte")
+fc4.write("FORCE_CONSTANTS_4TH", format="shengbte")
+```
 
-When the same captured IFC values were passed to both implementations, the previous third-order
-text format and the new order-parameterized writer matched byte-for-byte. Fourth-order block,
-translation, atom, and Cartesian-component order also matched; fourth-order numeric formatting
-is now intentionally scientific notation at the user's request.
+| Format | Orders | Representation |
+|---|---|---|
+| `hdf5` | Any | Sparse cluster tensors or dense arrays |
+| `numpy` / `npz` | Any | Materialized NumPy arrays |
+| `shengbte` | 3 and 4 | Translation-based text blocks |
+| `phonopy` | 2 | Full dense supercell FC2 text |
 
-The force-constant values are intentionally not compatible with the previous ASR projection.
-ALAMODE and hiphive both define order-`n` translational invariance as a sum over one atom axis.
-The previous fourth-order implementation sums two atom axes together, while its third-order
-implementation sums one. The previous relative-weight projection can also amplify raw IFCs.
+Sparse HDF5 is recommended for high orders. Dense materialization is explicit and emits a
+warning above the default 2 GB advisory budget:
 
-For saved Si 2x2x2 fifth-shell NEP forces, the strict implementation gives:
+```python
+fc5.write("fc5.h5", format="hdf5")
+dense = fc5.materialize(5)
+dense = fc5.materialize(5, max_bytes=None)  # explicitly disable the warning budget
+```
 
-- FC3: 11 orbits, 72 configurations, maximum ASR residual `3.89e-15`.
-- FC4: 41 orbits, 1056 configurations, maximum ASR residual `2.54e-14`.
-- Strict FC4 versus previous FC4: maximum difference `1.31e-3`, RMS `5.71e-5`.
+## Optional SSCHA
 
-Strict FC3 differs substantially from the previous projected FC3 because the previous projection
-amplifies the raw maximum IFC from about `8.71` to `34.30`; the strict solution remains about
-`8.37`. This comparison is an ASR-method difference, not an atom- or file-order mismatch.
+The independent `mlfcs.sscha` module fits a temperature-dependent effective harmonic FC2 from
+thermally sampled forces:
 
-Complex multi-species fourth-order planning is also checked at a three-neighbor cutoff. The new
-and reference implementations agree on the cutoff, irreducible-cluster count, and force-job
-count:
+```python
+from mlfcs.sscha import SSCHA
 
-- K3Au3Sb2: 61 clusters and 3568 configurations.
-- KAsPt: 45 clusters and 2936 configurations.
-- NaS: 43 clusters and 2016 configurations.
+sscha = SSCHA(
+    atoms,
+    supercell=(3, 3, 3),
+    temperature=300,
+    snapshots=1000,
+    max_iterations=10,
+    random_seed=42,
+)
 
-The full NaS NEP run was also used to isolate the previous fourth-order double-axis ASR behavior.
-It is retained as a black-box research fixture rather than a compatibility target.
+sscha.run(calculator)
+sscha.use_average(last=5)
+sscha.write("fc2-300K.hdf5", format="hdf5")
+```
 
-An order-5 end-to-end smoke calculation was subsequently completed for NaS 2x2x2 with a
-first-neighbor cutoff. It contains 16 irreducible cluster orbits, 403 independent parameters,
-2432 force configurations, and 1686 reconstructed sparse cluster images. The HDF5 file is about
-789 KiB; its equivalent dense tensor would require 243 GiB. Peak resident memory during sparse
-reconstruction was about 1.06 GiB. This validates the generic high-order path but does not replace
-the production third- and fourth-order regression suite.
+Iteration zero fits an initial FC2 from small random Cartesian displacements. Each subsequent
+iteration uses phonopy to sample the canonical harmonic ensemble and symfc to refit full FC2.
+Thus `max_iterations=10` performs one initialization and ten updates.
+
+External per-iteration execution is also supported:
+
+```python
+structures = sscha.sow()
+result = sscha.reap(
+    forces_by_configuration_id,
+    energies=energies_by_configuration_id,
+    reference_energy=equilibrium_supercell_energy,
+)
+```
+
+Forces are sufficient for FC2 fitting. Energies are required only for the free-energy estimate.
+Completed iterations are stored in `sscha.history`, and `sscha.phonopy` exposes the underlying
+Phonopy object for meshes, bands, DOS, and thermal properties.
+
+This is a stochastic effective-harmonic method, not an explicit FC3 bubble or FC4 loop
+calculation. See the [SSCHA guide](docs/SSCHA.md) for details.
+
+## Current limitations
+
+- Third and fourth order are the main production-tested finite-difference paths.
+- Higher orders use the same implementation but can become prohibitively expensive.
+- ShengBTE output is limited to orders 3 and 4.
+- Explicit FC3 bubble and FC4 loop self-energies are not implemented.
+- Non-analytic electrostatic corrections are not part of the base reconstruction pipeline.
+- SSCHA stopping criteria are controlled by the caller; no universal automatic convergence
+  threshold is imposed.
+
+## Documentation
+
+- [Technical overview](docs/TECHNICAL_OVERVIEW.md)
+- [SSCHA guide](docs/SSCHA.md)
+- [Detailed old/new implementation comparison (Chinese)](docs/OLD_NEW_COMPARISON_ZH.md)
+
+Implementation comparisons, compatibility decisions, benchmark counts, and measured memory
+figures are intentionally kept in the comparison and technical documents rather than this user
+introduction.
 
 ## Development
-
-The architecture, numerical methods, acceleration techniques, memory measurements, and detailed
-comparison with the previous implementation are documented in
-[`docs/TECHNICAL_OVERVIEW.md`](docs/TECHNICAL_OVERVIEW.md).
 
 All commands use uv and tests run serially:
 
 ```bash
-uv sync
+uv sync --extra sscha
 uv run pytest
 uv run ruff check src tests tools
 uv run ruff format --check src tests tools
+uv build
 ```
 
-The black-box reference helpers under `tools/` use a separate environment. They are not runtime
-dependencies of the package.
+The current development version is `0.5.0`.

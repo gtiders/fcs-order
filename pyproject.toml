@@ -1,6 +1,6 @@
 [project]
 name = "mlfcs-new"
-version = "0.3.0"
+version = "0.5.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,19 +9,26 @@ dependencies = [
     "h5py>=3.14",
     "jax>=0.11.0",
     "numpy>=1.26.0,<2.5",
+    "pypolymlp>=0.20.4",
     "scipy>=1.16",
     "spglib>=2.6",
 ]
 
-[[tool.uv.index]]
-url = "https://mirrors.ustc.edu.cn/pypi/web/simple"
-default = true
+[project.optional-dependencies]
+sscha = [
+    "phonopy>=2.43",
+    "symfc>=1.5",
+]
 
 [dependency-groups]
 dev = [
     "pytest>=8.4",
     "ruff>=0.12",
 ]
+
+[[tool.uv.index]]
+url = "https://mirrors.ustc.edu.cn/pypi/web/simple"
+default = true
 
 [build-system]
 requires = ["hatchling"]
