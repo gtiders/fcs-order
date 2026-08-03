@@ -53,3 +53,12 @@ references are sufficient):
 - `phono3py_mlp_eval_dataset.yaml`: `db23dde2e84607562eaaebf420b6200bf7e6276acbd4e2327a82c5dfbd4f7554`
 
 The complete local source directory is ignored by Git, including `POTCAR`.
+
+I/O interoperability is checked independently from the numerical solver:
+
+- the default symmetry-closed ShengBTE export is read back through hiphive
+  and compared on every one of the 136260 sparse FC3 clusters;
+- `phonopy_hdf5` and `phono3py_hdf5` are read through the corresponding
+  official readers and compared exactly with the compact MLFCS FC2/FC3;
+- the separate Si reference invokes `compatibility="thirdorder"` to preserve
+  the legacy joint-image block selection and ordering contract.

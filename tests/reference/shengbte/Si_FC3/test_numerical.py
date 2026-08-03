@@ -20,7 +20,7 @@ DATA = Path(__file__).parent / "data" / "reference.npz"
         (True, 0.09, 0.0037, 0.0064, 0.99997),
     ],
 )
-def test_Si_FC3_shengbte_matches_thirdorder(
+def test_Si_FC3_shengbte_compatibility_mode_matches_thirdorder(
     tmp_path, acoustic_sum_rule, maximum, rms, relative, correlation
 ):
     with np.load(DATA) as data:
@@ -52,7 +52,7 @@ def test_Si_FC3_shengbte_matches_thirdorder(
         acoustic_sum_rule=acoustic_sum_rule,
     )
     output = tmp_path / "FORCE_CONSTANTS_3RD"
-    result.write(output, format="shengbte", order=3)
+    result.write(output, format="shengbte", order=3, compatibility="thirdorder")
     translations, atoms, actual = parse_fc3(output, np.asarray(unitcell.cell))
 
     np.testing.assert_array_equal(translations, expected_translations)
