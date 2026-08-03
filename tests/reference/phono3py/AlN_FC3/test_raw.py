@@ -37,20 +37,25 @@ def test_AlN_FC3_matches_phono3py_without_ASR():
         reference_fc3 = data["phono3py_fc3"]
         plan_hash = str(data["mlfcs_plan_hash"])
         cutoff = float(data["cutoff_angstrom"])
+        maximum_mic_distance = float(data["maximum_mic_distance_angstrom"])
+        cutoff_mode = str(data["cutoff_mode"])
         n_configurations = int(data["phono3py_configurations"])
 
     calculation = ForceConstantCalculation(
         unitcell,
         order=3,
-        supercell=(2, 2, 1),
-        cutoff=-2,
+        supercell=(2, 2, 2),
+        cutoff=cutoff,
         displacement=0.01,
         jax_platform="cpu",
         report_cutoff=False,
     )
     assert calculation.plan.hash == plan_hash
     assert np.isclose(calculation.cutoff, cutoff, atol=1e-12, rtol=0)
-    assert n_configurations == 488
+    assert cutoff_mode == "full_supercell"
+    assert cutoff > maximum_mic_distance
+    assert np.isclose(cutoff - maximum_mic_distance, 1e-6, atol=1e-12, rtol=0)
+    assert n_configurations == 968
 
     result = calculation.reap(
         forces,

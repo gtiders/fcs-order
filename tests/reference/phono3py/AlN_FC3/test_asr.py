@@ -41,12 +41,13 @@ def test_AlN_FC3_matches_phono3py_with_ASR():
         reference_raw = data["phono3py_fc3"]
         reference_ASR = data["phono3py_fc3_asr"]
         plan_hash = str(data["mlfcs_plan_hash"])
+        cutoff = float(data["cutoff_angstrom"])
 
     calculation = ForceConstantCalculation(
         unitcell,
         order=3,
-        supercell=(2, 2, 1),
-        cutoff=-2,
+        supercell=(2, 2, 2),
+        cutoff=cutoff,
         displacement=0.01,
         jax_platform="cpu",
         report_cutoff=False,
@@ -68,12 +69,12 @@ def test_AlN_FC3_matches_phono3py_with_ASR():
     )
     expected = hiphive_full_fc3(reference_supercell, reference_ASR)
 
-    assert _maximum_ASR_residual(reference_raw) > 1.0
+    assert _maximum_ASR_residual(reference_raw) > 1e-3
     assert _maximum_ASR_residual(actual) < 1e-8
     assert _maximum_ASR_residual(expected) < 1e-8
 
     difference = actual[support] - expected[support]
-    assert np.max(np.abs(difference)) < 3.1
-    assert np.sqrt(np.mean(difference**2)) < 0.52
-    assert np.linalg.norm(difference) / np.linalg.norm(expected[support]) < 3.6e-2
-    assert np.corrcoef(actual[support].ravel(), expected[support].ravel())[0, 1] > 0.999
+    assert np.max(np.abs(difference)) < 2e-2
+    assert np.sqrt(np.mean(difference**2)) < 1e-3
+    assert np.linalg.norm(difference) / np.linalg.norm(expected[support]) < 6e-4
+    assert np.corrcoef(actual[support].ravel(), expected[support].ravel())[0, 1] > 0.999999

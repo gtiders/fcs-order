@@ -35,11 +35,16 @@ selected ridge parameter `alpha=0.1`. Reported errors were:
 The fixture contains the four-atom wurtzite AlN unit cell, captured forces for
 the exact MLFCS sow order, the sow plan hash, and the full phono3py FC3 before
 and after explicit traditional `symmetrize_fc3(level=3)` projection for a
-2x2x1 supercell. Both calculations use 0.01 Angstrom displacements and the
-same pypolymlp potential. The potential itself is not needed by CI.
+2x2x2 supercell. Both calculations cover every MIC atom pair in that
+supercell. MLFCS uses a direct radius of `5.8760168278` Angstrom (the maximum
+MIC distance `5.8760158278` Angstrom plus a numerical margin of `1e-6`
+Angstrom), while phono3py uses its default without `cutoff_pair_distance`.
+Both use 0.01 Angstrom displacements and the same pypolymlp potential. This is
+a full-supercell comparison, not a cutoff-convergence claim for the infinite
+crystal. The potential itself is not needed by CI.
 
 Derived fixture SHA-256:
-`13476da6a52534d5799f092c0605193270aafbe212b2f00387b53f88cc32fa3f`.
+`310d6b3bd3a19f57af86ff2385870dbc28703a6b1509e2567e7eebbf8b2405ba`.
 
 Regeneration is intentionally a maintainer operation because fitting the
 upstream 200-structure dataset takes several minutes and multiple gigabytes of

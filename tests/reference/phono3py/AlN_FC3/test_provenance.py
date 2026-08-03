@@ -8,7 +8,7 @@ import pytest
 DATA = Path(__file__).parent / "data"
 
 EXPECTED_SHA256 = {
-    DATA / "reference.npz": "13476da6a52534d5799f092c0605193270aafbe212b2f00387b53f88cc32fa3f",
+    DATA / "reference.npz": "310d6b3bd3a19f57af86ff2385870dbc28703a6b1509e2567e7eebbf8b2405ba",
     DATA / "training" / "phonopy_params_mp-661.yaml.xz": (
         "de153514ace4f0828d4111228b20f67fde02dd8bcac7e6c49ad52f24f958007e"
     ),
