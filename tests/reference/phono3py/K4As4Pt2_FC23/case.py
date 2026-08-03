@@ -41,7 +41,7 @@ def assert_matches_phono3py(actual: np.ndarray, expected: np.ndarray, *, order: 
     difference = actual - expected
     limits = {
         2: {"max": 2.1e-3, "rms": 8e-5, "relative": 1.4e-4},
-        3: {"max": 1.1e-2, "rms": 9e-5, "relative": 3.3e-4},
+        3: {"max": 1.1e-2, "rms": 4.3e-5, "relative": 3.6e-4},
     }[order]
     assert np.max(np.abs(difference)) < limits["max"]
     assert np.sqrt(np.mean(difference**2)) < limits["rms"]
