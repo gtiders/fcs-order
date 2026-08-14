@@ -67,7 +67,6 @@ def sow(arguments: argparse.Namespace) -> None:
         "cutoff": arguments.cutoff,
         "displacement": arguments.displacement,
         "atom_order": "grouped",
-        "plan_hash": calculation.plan.hash,
         "configuration_count": len(configurations),
         "filenames": filenames,
     }
@@ -108,7 +107,6 @@ def collect(arguments: argparse.Namespace) -> None:
         workspace / FORCE_ARCHIVE,
         forces=values,
         configuration_ids=np.arange(expected_count, dtype=int),
-        plan_hash=np.asarray(manifest["plan_hash"]),
         atom_order=np.asarray(manifest["atom_order"]),
     )
     print(f"Collected {expected_count} force sets in sow order")
@@ -128,14 +126,9 @@ def reap(arguments: argparse.Namespace) -> None:
     expected_ids = np.arange(int(manifest["configuration_count"]), dtype=int)
     if not np.array_equal(archive["configuration_ids"], expected_ids):
         raise ValueError("force archive configuration IDs are not the exact sow order")
-    archive_hash = str(archive["plan_hash"])
-    if archive_hash != manifest["plan_hash"]:
-        raise ValueError("force archive and manifest plan hashes differ")
-
     result = calculation.reap(
         archive["forces"],
         atom_order=str(archive["atom_order"]),
-        plan_hash=archive_hash,
         acoustic_sum_rule=not arguments.no_asr,
     )
     output = arguments.output.resolve()

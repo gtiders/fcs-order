@@ -31,7 +31,6 @@ def test_Si_FC3_shengbte_compatibility_mode_matches_thirdorder(
             pbc=True,
         )
         forces = data["mlfcs_forces_grouped"]
-        plan_hash = str(data["mlfcs_plan_hash"])
         expected_translations = data["reference_translations_mod_supercell"]
         expected_atoms = data["reference_primitive_atoms"]
         expected = data["reference_fc3"]
@@ -48,7 +47,6 @@ def test_Si_FC3_shengbte_compatibility_mode_matches_thirdorder(
     result = calculation.reap(
         forces,
         atom_order="grouped",
-        plan_hash=plan_hash,
         acoustic_sum_rule=acoustic_sum_rule,
     )
     output = tmp_path / "FORCE_CONSTANTS_3RD"

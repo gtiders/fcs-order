@@ -12,7 +12,7 @@ The structures use the user-provided two-atom diamond-Si `POSCAR` with:
 - grouped VASP atom order;
 - 168 configurations in exact positional `reap()` order.
 
-`structures/sow-plan.json` records the zero-based configuration ID, plan hash,
+`structures/sow-plan.json` records the zero-based configuration ID,
 filename and SHA-256 of every structure. The corresponding force result for
 `POSCAR-001` must be supplied to `reap()` at position zero, and so on.
 
@@ -48,7 +48,7 @@ belong directly in `data/`.
 
 `data/reference.npz` is the 315 KiB CI fixture derived from the 168 current
 MLFCS `vasprun.xml` files and the original thirdorder `FORCE_CONSTANTS_3RD`.
-It contains grouped-order forces, the sow plan hash, periodic-canonical block
+It contains grouped-order forces, periodic-canonical block
 translations, primitive atom indices, FC3 values, and source hashes.
 
 Both exports contain 3858 blocks. Their raw text chooses a different but

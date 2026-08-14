@@ -40,7 +40,6 @@ def test_AlN_FC3_matches_phono3py_with_ASR():
         forces = data["mlfcs_forces"]
         reference_raw = data["phono3py_fc3"]
         reference_ASR = data["phono3py_fc3_asr"]
-        plan_hash = str(data["mlfcs_plan_hash"])
         cutoff = float(data["cutoff_angstrom"])
 
     calculation = ForceConstantCalculation(
@@ -54,7 +53,6 @@ def test_AlN_FC3_matches_phono3py_with_ASR():
     )
     result = calculation.reap(
         forces,
-        plan_hash=plan_hash,
         acoustic_sum_rule=True,
     )
     sparse = result.sparse[3]

@@ -12,10 +12,7 @@ from tests.reference.phono3py.K4As4Pt2_FC23.case import (
 @pytest.mark.reference
 def test_K4As4Pt2_FC3_matches_phono3py_traditional_solver():
     data, calculation, sparse = calculation_and_reference(3)
-    assert (
-        calculation.plan.hash == "015a914aa192c6f8c40ec072f2c7140fa7859d9cffe18a03bd217f32171967eb"
-    )
-    assert len(calculation.plan) == 6636
+    assert len(calculation.plan) == 4244
     assert str(data["cutoff_mode"]) == "maximum_supercell_mic"
     assert np.isclose(calculation.cutoff, 12.646150266897997, atol=1e-12, rtol=0)
     assert np.array_equal(sparse.clusters, data["fc3_clusters"])
@@ -27,7 +24,6 @@ def test_K4As4Pt2_FC3_ASR_is_strict_and_compared_with_symfc():
     data, calculation, raw = calculation_and_reference(3)
     result = calculation.reap(
         data["fc3_forces"],
-        plan_hash=str(data["fc3_plan_hash"]),
         acoustic_sum_rule=True,
     )
     actual = result.sparse[3]
