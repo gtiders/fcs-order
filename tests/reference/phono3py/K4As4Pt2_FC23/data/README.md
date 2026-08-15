@@ -24,8 +24,8 @@ Reference procedure:
   observations and the same 136260-cluster support;
 - phono3py 4.4.0 reconstructed full FC2 and FC3 with
   `fc_calculator="traditional"`, `symmetrize_fc=False`;
-- phono3py atom order was mapped to MLFCS cell-major order by species,
-  fractional position, and the minimum-image convention;
+- phono3py atom order was explicitly aligned to the MLFCS reference frame by
+  species, fractional position, and the minimum-image convention;
 - comparison uses the common maximum-MIC interaction support;
 - MLFCS strict ASR and the supplied symfc full-space ASR projection are both
   tested, including an explicit numerical comparison.
