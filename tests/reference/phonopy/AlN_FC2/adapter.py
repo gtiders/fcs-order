@@ -6,11 +6,11 @@ import numpy as np
 from ase import Atoms
 from scipy.optimize import linear_sum_assignment
 
-from mlfcs.core.geometry import SupercellIndex
+from mlfcs.core.geometry import PeriodicIndex
 from mlfcs.model import SparseOrderForceConstants
 
 
-def full_fc2(values: SparseOrderForceConstants, index: SupercellIndex) -> np.ndarray:
+def full_fc2(values: SparseOrderForceConstants, index: PeriodicIndex) -> np.ndarray:
     """Expand translation-reduced MLFCS FC2 to a full supercell array."""
     compact = values.to_dense(max_bytes=None)
     result = np.empty((values.n_supercell, values.n_supercell, 3, 3), dtype=compact.dtype)

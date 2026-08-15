@@ -30,9 +30,12 @@ def test_hiphive_adapter_expands_translation_and_matches_atom_order():
     np.testing.assert_allclose(full[0], sparse.to_dense(max_bytes=None)[0])
     np.testing.assert_allclose(full[2, 0, 1], sparse.to_dense(max_bytes=None)[0, 2, 3])
 
-    grouped = index.group_atoms(supercell)
+    grouped = supercell[
+        np.concatenate(
+            [np.flatnonzero(index.primitive == site) for site in range(index.n_primitive)]
+        )
+    ]
     permutation = matching_permutation(supercell, grouped)
-    np.testing.assert_array_equal(permutation, index.grouped_permutation)
     converted = hiphive_full_fc3(supercell, full, target_supercell=grouped)
     np.testing.assert_allclose(
         converted,

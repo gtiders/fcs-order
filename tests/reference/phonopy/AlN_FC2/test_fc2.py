@@ -40,7 +40,6 @@ def _calculate(data, unitcell: Atoms, reference_supercell: Atoms, *, acoustic_su
         supercell=(2, 2, 2),
         cutoff=float(data["cutoff_angstrom"]),
         displacement=float(data["displacement_angstrom"]),
-        jax_platform="cpu",
         report_cutoff=False,
     )
     result = calculation.reap(

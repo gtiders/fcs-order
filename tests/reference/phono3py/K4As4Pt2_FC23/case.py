@@ -25,7 +25,6 @@ def calculation_and_reference(order: int):
         supercell=tuple(int(value) for value in data["supercell_repeats"]),
         cutoff=float(data["cutoff_angstrom"]),
         displacement=float(data["displacement_angstrom"]),
-        jax_platform="cpu",
         report_cutoff=False,
         verbose=False,
     )

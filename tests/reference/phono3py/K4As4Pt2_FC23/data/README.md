@@ -64,6 +64,4 @@ I/O interoperability is checked independently from the numerical solver:
 - the default symmetry-closed ShengBTE export is read back through hiphive
   and compared on every one of the 136260 sparse FC3 clusters;
 - `phonopy_hdf5` and `phono3py_hdf5` are read through the corresponding
-  official readers and compared exactly with the compact MLFCS FC2/FC3;
-- the separate Si reference invokes `compatibility="thirdorder"` to preserve
-  the legacy joint-image block selection and ordering contract.
+  official readers and compared exactly with the compact MLFCS FC2/FC3.

@@ -48,7 +48,6 @@ def test_AlN_FC3_matches_phono3py_with_ASR():
         supercell=(2, 2, 2),
         cutoff=cutoff,
         displacement=0.01,
-        jax_platform="cpu",
         report_cutoff=False,
     )
     result = calculation.reap(
