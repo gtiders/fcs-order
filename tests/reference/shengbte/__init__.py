@@ -1,1 +1,0 @@
-"""Independent ShengBTE reference tests."""
