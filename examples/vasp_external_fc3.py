@@ -155,7 +155,7 @@ def parser() -> argparse.ArgumentParser:
     reap_parser.add_argument("output", type=Path)
     reap_parser.add_argument(
         "--format",
-        choices=("hdf5", "numpy", "phono3py_hdf5", "shengbte"),
+        choices=("hdf5", "phono3py_hdf5", "shengbte"),
         default="shengbte",
     )
     reap_parser.add_argument("--no-asr", action="store_true")
