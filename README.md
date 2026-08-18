@@ -52,7 +52,7 @@ user-provided forces
 sparse symmetry reconstruction and optional sum-rule projection
         │
         ▼
-ForceConstants → HDF5 / NumPy / ShengBTE / phonopy
+ForceConstants → HDF5 / ShengBTE / phonopy-compatible formats
 ```
 
 Space-group symmetry, force-constant index permutations, and stabilizer constraints reduce each
@@ -67,7 +67,7 @@ sum over one atom index of Phi(i1, ..., in) = 0
 ```
 
 All constraint systems use a sparse, matrix-free LSMR projection. Harmonic calculations may also
-enable the optional Born-Huang rotational sum rules; see [Sum rules](docs/SUM_RULES.md).
+enable the optional Born-Huang rotational sum rules; see [Sum rules](docs/en/methods/sum-rules.md).
 
 ## Features
 
@@ -199,7 +199,7 @@ so a manifest containing the filename-to-configuration-ID relation is recommende
 for out-of-order jobs, restarts, long-term archives, and accidental-dataset detection. The complete
 [`vasp_external_fc3.py`](examples/vasp_external_fc3.py) example implements this optional safety
 layer, force collection, missing-result checks, and final export; see the
-[external VASP workflow guide](docs/EXTERNAL_VASP_WORKFLOW.md).
+[external VASP workflow guide](docs/en/workflows/external-calculators.md).
 
 The force array must have shape:
 
@@ -254,7 +254,7 @@ fc4 = calculation.run(
 For a central displacement of `0.03` Å, this samples `0.02`, `0.025`, `0.03`, `0.035`, and
 `0.04` Å. The default degree `1` fits `D(h) = D0 + c2 h²`; higher degrees fit additional even
 powers. This backend is intentionally available only through `run()`, not external `sow()` /
-`reap()`. See [Zero-step extrapolation](docs/EXTRAPOLATION.md).
+`reap()`. See [Zero-step extrapolation](docs/en/workflows/extrapolation.md).
 
 For explicit checkpointing:
 
@@ -321,6 +321,12 @@ from mlfcs import build_supercell
 reference_supercell = build_supercell(primitive, [[2, 1, 0], [0, 2, 0], [0, 0, 1]])
 ```
 
+This helper defaults to phonopy old-style atom ordering while retaining MLFCS's
+supercell-matrix convention. Pass `ordering="thirdorder"` explicitly for the
+former cell-major order. `ordering="phonopy_snf"` is reserved for future
+compatibility and currently reports that it is not implemented. An explicitly
+provided `reference_supercell` is never reordered.
+
 Format writers create any required format-specific ordering only at the export boundary.
 For independently reordered snapshots, call `mlfcs.align_structures(reference, atoms)` explicitly;
 it returns the aligned structure and its maximum periodic matching residual.
@@ -338,19 +344,20 @@ The constrained result is the nearest solution in independent parameter space th
 translational invariance. Permutation symmetry supplies equivalent constraints on the other atom
 axes.
 
-For harmonic force constants, rotational sum rules are optional and disabled by default:
+Born-Huang and Huang conditions are explicit FC2-only postprocessing, shared by finite
+difference and fitting results. The strict default is `strength=1.0`; FC3 and higher orders are
+not changed:
 
 ```python
-fc2 = calculation.reap(
-    forces,
-    acoustic_sum_rule=True,
-    rotational_sum_rule=True,
+constrained = result.enforce_harmonic_constraints(
+    born_huang=True,
+    huang=True,
 )
 ```
 
-Translational and rotational constraints are projected together. The current single-order API
-accepts `rotational_sum_rule=True` only for order 2 because rigorous higher-order rotational
-conditions couple adjacent force-constant orders. See [Sum rules](docs/SUM_RULES.md).
+The projector always enforces FC2 ASR, uses all tied nearest periodic images, and reports its
+residuals and correction. `strength` in `[0, 1]` scales only the Born-Huang/Huang correction.
+See [Sum rules](docs/en/methods/sum-rules.md).
 
 ## Output formats
 
@@ -361,7 +368,6 @@ fc2.write("FORCE_CONSTANTS", format="phonopy")
 fc2.write("fc2.hdf5", format="phonopy_hdf5")
 fc3.write("fc3.h5", format="hdf5")
 fc3.write("fc3.hdf5", format="phono3py_hdf5")
-fc3.write("fc3.npz", format="numpy")
 fc3.write("FORCE_CONSTANTS_3RD", format="shengbte")
 fc4.write("FORCE_CONSTANTS_4TH", format="shengbte")
 fc234.write("force_constants.xml", format="alamode")
@@ -378,7 +384,6 @@ fc234 = read_hdf5("fc3.h5")
 | Format | Orders | Representation |
 |---|---|---|
 | `hdf5` | Any | Native v2 lattice-labelled sparse IFCs (`sites`, translation representatives, Cartesian tensors) |
-| `numpy` / `npz` | Any | Materialized NumPy arrays |
 | `shengbte` | 3 and 4 | Symmetry-closed translation-based text blocks |
 | `phonopy` | 2 | Full dense supercell FC2 text |
 | `phonopy_hdf5` | 2 | Phonopy-compatible full-supercell `force_constants` HDF5 |
@@ -388,8 +393,8 @@ fc234 = read_hdf5("fc3.h5")
 ShengBTE output writes the symmetry-closed cluster support carried by the reconstructed sparse
 result and resolves its lattice residues to jointly compatible minimum images.
 
-The phonopy and phono3py HDF5 writers use primitive-atom-grouped supercell order and stream one
-first-atom slab at a time. They therefore do not materialize the full FC3 in memory. The native
+The phonopy and phono3py HDF5 writers preserve the explicit reference-supercell order and stream
+one first-atom slab at a time. They therefore do not materialize the full FC3 in memory. The native
 `hdf5` format is native schema v2: it stores primitive and reference structures, their verified
 mapping, and lattice-labelled sparse IFCs. Older native schemas are intentionally unsupported.
 
@@ -397,7 +402,7 @@ ALAMODE XML preserves the exact atom order of `fc.supercell`. Primitive-atom ide
 translation mappings come exclusively from MLFCS's `primitive_index` and `cell_translation`
 metadata; export does not ask spglib or ALAMODE to rediscover or reorder the cell. Use `order=2`,
 `3`, or `4` to write one available order, or omit it to combine all available FC2--FC4 orders.
-See the [ALAMODE XML guide](docs/ALAMODE_XML.md) for the mapping and periodic-image contract.
+See the [ALAMODE XML guide](docs/en/formats/alamode.md) for the mapping and periodic-image contract.
 
 Sparse HDF5 is recommended for high orders. Dense materialization is explicit and emits a
 warning above the default 2 GB advisory budget:
@@ -410,11 +415,11 @@ dense = fc5.materialize(5, max_bytes=None)  # explicitly disable the warning bud
 
 ## Native SSCHA
 
-The independent `mlfcs.sscha` module fits a temperature-dependent effective harmonic FC2 from
+The independent `mlfcs.anharmonic.sscha` module fits a temperature-dependent effective harmonic FC2 from
 thermally sampled forces:
 
 ```python
-from mlfcs.sscha import SSCHA
+from mlfcs.anharmonic.sscha import SSCHA
 
 sscha = SSCHA(
     atoms,
@@ -453,7 +458,7 @@ Canonical iterations also report the relative FC2 update, while the trial sampli
 remains an internal detail.
 
 This is a stochastic effective-harmonic method, not an explicit FC3 bubble or FC4 loop
-calculation. See the [SSCHA guide](docs/SSCHA.md) for details.
+calculation. See the [SSCHA guide](docs/en/workflows/sscha.md) for details.
 
 ## Current limitations
 
@@ -467,13 +472,7 @@ calculation. See the [SSCHA guide](docs/SSCHA.md) for details.
 
 ## Documentation
 
-- [Documentation index](docs/README.md) ([中文](docs/README_ZH.md))
-- [External VASP workflow](docs/EXTERNAL_VASP_WORKFLOW.md)
-- [Technical overview](docs/TECHNICAL_OVERVIEW.md)
-- [Numerical validation and CI](docs/VALIDATION.md)
-- [Force-only fitting](docs/FITTING.md)
-- [SSCHA guide](docs/SSCHA.md)
-- [Development roadmap](docs/ROADMAP.md)
+- Full bilingual docs: [English site](https://gtiders.github.io/mlfcs/) and [中文 site](https://gtiders.github.io/mlfcs/zh/). See [runnable examples](examples/README.md) and [development validation](docs/en/development/validation.md)
 
 ## Development
 
@@ -482,17 +481,14 @@ All commands use uv and tests run serially:
 ```bash
 uv sync
 uv run pytest
-uv run pytest -m "not reference"
-uv run ruff check src tests reference_tools examples
-uv run ruff format --check src tests reference_tools examples
+uv run ruff check src tests examples
+uv run ruff format --check src tests examples
 uv build
 ```
 
-hiphive and phono3py are development-only validation dependencies. The CI reference compares
-AlN FC3 values against an independent phono3py finite-difference result after hiphive converts
-both atom orderings and tensor representations to the same full-supercell form.
-The test hierarchy and independent reference commands are documented in
-[tests/README.md](tests/README.md).
+Local tests are deterministic unit and public-API regressions. Material comparisons and third-party
+transport workflows are documented under `examples/` and are run manually. CI only builds
+the bilingual documentation sites. The test organization is documented in [tests/README.md](tests/README.md).
 
 The current development version is `4.0.0a2` (4.0 alpha 2). See [CHANGELOG.md](CHANGELOG.md) for release notes and
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
@@ -501,4 +497,4 @@ The current development version is `4.0.0a2` (4.0 alpha 2). See [CHANGELOG.md](C
 
 MLFCS is distributed under the [GNU General Public License v3.0 or later](LICENSE). Adapted
 third-party components and redistributed reference data are documented in
-[Third-party provenance](THIRD_PARTY.md).
+Third-party terms for the ALAMODE adapter are retained directly in its source module.

@@ -1,0 +1,8 @@
+{
+  "fcp": "construct_models/fcps/fcp_2body-5.4_4.35_4.35_least-squares.fcp",
+  "fcp_sha256": "b8dbd39b8b3c919a9991b2c4940a36267175d72cd9f59bb36fa02a03f952dbb2",
+  "material": "Ba8Ga16Ge30",
+  "reference": "dft_calculations/structures/POSCAR_groundstate_vdW-DF-cx",
+  "upstream": "https://gitlab.com/materials-modeling/hiphive-examples",
+  "upstream_revision": "05216055abca04ef9476bb9a5ba5b0f050993b2d"
+}

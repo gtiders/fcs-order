@@ -16,7 +16,7 @@ import numpy as np
 from ase import Atoms
 
 from mlfcs.core.geometry import StructureRelation
-from mlfcs.model import ForceConstants, SparseOrderForceConstants
+from mlfcs.ifc.model import ForceConstants, SparseOrderForceConstants
 
 if TYPE_CHECKING:
     from mlfcs.core.geometry import PeriodicIndex

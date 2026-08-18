@@ -449,3 +449,19 @@ def _null_space_from_gram(gram: np.ndarray, tolerance: float) -> tuple[np.ndarra
             basis[dependent_column, basis_column] = -matrix[row, free_column]
     basis[np.abs(basis) < tolerance] = 0.0
     return basis, independent
+
+
+__all__ = [
+    "ClusterOrbit",
+    "OrbitImage",
+    "OrbitSpace",
+    "TensorAction",
+    "_canonical_cluster",
+    "_compatible_sorted_tails",
+    "_joint_periodic_cluster_geometry",
+    "_label_symmetric_basis",
+    "build_orbit_space",
+    "cluster_invariant_dimension",
+    "permute_tensor_action",
+    "tensor_action_matrix",
+]
