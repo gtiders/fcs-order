@@ -4,7 +4,7 @@ English | [中文](README_ZH.md)
 
 These scripts demonstrate public MLFCS APIs. Run them from the repository root with `uv run`.
 They are examples, not an MLFCS command-line interface.
-New scripts and material cases follow the [tests and examples policy](../docs/TESTS_AND_EXAMPLES.md).
+New scripts and material cases follow the [tests and examples policy](../docs/en/development/tests-and-examples.md).
 
 ## Direct calculators
 
@@ -38,5 +38,5 @@ uv run python examples/vasp_external_fc3.py reap \
 ```
 
 The helper never submits VASP. Site-specific INCAR, KPOINTS, POTCAR, and scheduler setup remain
-the user's responsibility. See the [complete workflow guide](../docs/EXTERNAL_VASP_WORKFLOW.md)
+the user's responsibility. See the [complete workflow guide](../docs/en/workflows/external-calculators.md)
 before using externally calculated forces.

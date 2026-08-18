@@ -1,0 +1,11 @@
+{
+  "common_key_count": 1110,
+  "common_tensor_maximum_difference": 2.4338602523,
+  "common_tensor_relative_difference": 0.10685882331773362,
+  "hiphive_block_count": 3222,
+  "hiphive_canonical_key_count": 1110,
+  "mlfcs_block_count": 3222,
+  "mlfcs_canonical_key_count": 1110,
+  "only_hiphive_key_count": 0,
+  "only_mlfcs_key_count": 0
+}

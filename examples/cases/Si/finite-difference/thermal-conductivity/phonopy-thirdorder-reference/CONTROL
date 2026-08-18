@@ -1,0 +1,28 @@
+#CONTROL for ShengBTE
+&allocations
+        nelements=1
+        natoms=2
+        ngrid(:)=11 11 11
+&end
+&crystal
+        lfactor=0.1
+        lattvec(:,1)=     0.0000000000000000    2.7342901740229020    2.7342901740229020
+        lattvec(:,2)=     2.7342901740229020    0.0000000000000000    2.7342901740229020
+        lattvec(:,3)=     2.7342901740229020    2.7342901740229020    0.0000000000000000
+        elements= "Si"
+        types= 1 1
+        positions(:,1)=  0.2500000000000000  0.2500000000000000  0.2500000000000000
+        positions(:,2)=  0.0000000000000000  0.0000000000000000  0.0000000000000000
+        scell(:)=4 4 4
+&end
+&parameters
+      T_min=300
+      T_max=900
+      T_step=100
+      scalebroad=0.5
+&end
+&flags
+        nonanalytic=.TRUE.
+        nanowires=.FALSE.
+        convergence=.TRUE.
+&end
