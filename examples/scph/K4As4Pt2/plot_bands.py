@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seekpath
+from matplotlib import colormaps
+from matplotlib.lines import Line2D
 from phonopy import Phonopy
 from phonopy.file_IO import parse_FORCE_CONSTANTS
 from phonopy.interface.calculator import read_crystal_structure
 
 HERE = Path(__file__).resolve().parent
-REFERENCE = HERE.parent.parent / "finite-difference" / "K4As4Pt2" / "input" / "supercell.vasp"
+REFERENCE = HERE / "input" / "reference.vasp"
 
 
 def _phonon(force_constants: Path) -> Phonopy:
@@ -53,45 +54,56 @@ def _band_data(source: Path):
 
 
 def main() -> None:
-    sources = [
-        (
-            "Harmonic",
-            HERE.parent.parent
-            / "fitting"
-            / "K4As4Pt2"
-            / "results"
-            / "three-body"
-            / "FORCE_CONSTANTS_2ND",
-        )
-    ]
-    sources.extend(
-        (f"Loop-SCPH {temperature} K", HERE / "results" / f"T{temperature}" / "FORCE_CONSTANTS_2ND")
-        for temperature in (300, 600, 900)
+    harmonic_source = (
+        HERE.parent.parent
+        / "fitting"
+        / "K4As4Pt2"
+        / "results"
+        / "three-body"
+        / "FORCE_CONSTANTS_2ND"
     )
-    figure, axes = plt.subplots(2, 2, figsize=(12, 8), sharey=True, constrained_layout=True)
-    for axis, (title, source) in zip(axes.flat, sources, strict=True):
+    temperature_sources = sorted(
+        (
+            int(directory.name[1:]),
+            directory / "FORCE_CONSTANTS_2ND",
+        )
+        for directory in (HERE / "results").glob("T*")
+        if directory.name[1:].isdigit() and (directory / "FORCE_CONSTANTS_2ND").is_file()
+    )
+    if not temperature_sources:
+        raise FileNotFoundError("no results/T*/FORCE_CONSTANTS_2ND files were found")
+
+    figure, axis = plt.subplots(figsize=(9.2, 5.6), constrained_layout=True)
+    harmonic, labels = _band_data(harmonic_source)
+    ticks: dict[float, str] = {}
+    for distance, (start, end) in zip(harmonic.distances, labels, strict=True):
+        for location, label in ((float(distance[0]), start), (float(distance[-1]), end)):
+            ticks.setdefault(location, _pretty_label(label))
+    for distance, frequencies in zip(harmonic.distances, harmonic.frequencies, strict=True):
+        axis.plot(distance, np.asarray(frequencies), color="#6b7280", linewidth=1.0, alpha=0.8,
+                  linestyle="--", zorder=1)
+
+    colors = colormaps["turbo"](np.linspace(0.12, 0.88, len(temperature_sources)))
+    legend = [Line2D([0], [0], color="#6b7280", linestyle="--", linewidth=1.3, label="Harmonic")]
+    for (temperature, source), color in zip(temperature_sources, colors, strict=True):
         band, labels = _band_data(source)
-        ticks: dict[float, str] = {}
-        for distance, (start, end) in zip(band.distances, labels, strict=True):
-            for location, label in ((float(distance[0]), start), (float(distance[-1]), end)):
-                ticks.setdefault(location, _pretty_label(label))
         for distance, frequencies in zip(band.distances, band.frequencies, strict=True):
-            for branch in np.asarray(frequencies).T:
-                axis.plot(distance, branch, color="#2563eb", linewidth=0.9)
-        axis.axhline(0.0, color="#64748b", linewidth=0.6, linestyle="--")
-        if title.startswith("Loop-SCPH"):
-            temperature = int(title.split()[-2])
-            status = json.loads((HERE / "results" / f"T{temperature}" / "history.json").read_text())
-            if not status["converged"]:
-                title += " (not converged)"
-        axis.set_title(title)
-        axis.set_xticks(list(ticks), list(ticks.values()))
-        axis.grid(axis="y", color="#e2e8f0", linewidth=0.5)
-        axis.set_xlabel("SeeK-path")
-    axes[0, 0].set_ylabel("Frequency (THz)")
-    axes[1, 0].set_ylabel("Frequency (THz)")
+            axis.plot(distance, np.asarray(frequencies), color=color, linewidth=1.05, alpha=0.88,
+                      zorder=2)
+        legend.append(Line2D([0], [0], color=color, linewidth=1.8, label=f"{temperature} K"))
+
+    for location in ticks:
+        axis.axvline(location, color="#d1d5db", linewidth=0.55, zorder=0)
+    axis.axhline(0.0, color="#374151", linewidth=0.7, linestyle=":", zorder=0)
+    axis.set_xticks(list(ticks), list(ticks.values()))
+    axis.set_xlim(float(harmonic.distances[0][0]), float(harmonic.distances[-1][-1]))
+    axis.set_xlabel("High-symmetry path")
+    axis.set_ylabel("Frequency (THz)")
+    axis.set_title("K4As4Pt2 harmonic and loop-SCPH phonon bands")
+    axis.grid(axis="y", color="#e5e7eb", linewidth=0.5)
+    axis.legend(handles=legend, loc="best", frameon=False, ncol=2)
     figure.savefig(
-        HERE / "results" / "phonopy-seekpath-harmonic-vs-scph.png", dpi=180, bbox_inches="tight"
+        HERE / "results" / "phonopy-seekpath-harmonic-vs-scph.png", dpi=220, bbox_inches="tight"
     )
 
 

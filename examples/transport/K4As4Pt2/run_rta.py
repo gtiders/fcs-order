@@ -12,7 +12,7 @@ from phono3py.file_IO import read_fc2_from_hdf5, read_fc3_from_hdf5
 from phonopy.interface.calculator import read_crystal_structure
 
 CASE = Path(__file__).resolve().parent
-INPUT = CASE.parent.parent / "finite-difference" / "K4As4Pt2" / "input"
+INPUT = CASE / "input"
 SOURCE = CASE.parent.parent / "finite-difference" / "K4As4Pt2" / "results"
 OUTPUT = CASE / "results"
 

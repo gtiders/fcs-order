@@ -16,7 +16,7 @@ BOHR = 0.529177210903
 CASE = Path(__file__).resolve().parent
 
 BASELINES = {
-    "harmonic-fit": CASE / "reference/baselines/harmonic-fit.h5",
+    "harmonic-fit": CASE / "../harmonic/results/fc2.h5",
     "finite-difference": CASE / "reference/baselines/finite-difference.h5",
 }
 

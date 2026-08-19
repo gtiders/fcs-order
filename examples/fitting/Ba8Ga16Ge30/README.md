@@ -15,3 +15,7 @@
     python fit_effective_ifcs.py ../../md/Ba8Ga16Ge30/results/T300K
 
 结果写入 `results/T300K/mlfcs/`。持久化文件不包含 phono3py 专用 FC3 HDF5；需要 phono3py 时由输运脚本临时转换。
+
+绘制 T600K 拟合 FC2 的声子谱：
+
+    uv run --with phonopy --with seekpath --with matplotlib python plot.py

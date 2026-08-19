@@ -1,0 +1,3 @@
+fcp 3
+4 3
+ols_original_model_5_6x6x6_tol1e-08

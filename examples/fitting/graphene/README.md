@@ -5,3 +5,7 @@
 以及 Born-Huang/Huang 后处理对二维材料声子的影响。
 
 运行 `python run.py`。`reference/` 中保留原始 hiPhive 对比脚本和图，仅作为第三方参考。
+
+绘制 ASR 与 Born-Huang/Huang 结果的对比声子谱：
+
+    uv run --with phonopy --with seekpath --with matplotlib python plot.py

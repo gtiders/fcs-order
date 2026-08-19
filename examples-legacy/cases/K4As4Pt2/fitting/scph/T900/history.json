@@ -1,0 +1,41 @@
+{
+  "temperature": 900.0,
+  "interpolation_mesh": [
+    3,
+    3,
+    3
+  ],
+  "scph_mesh": [
+    6,
+    6,
+    6
+  ],
+  "converged": false,
+  "iterations": [
+    {
+      "index": 1,
+      "frequency_change_thz": 0.18353434232896237,
+      "force_constant_change": 5.207303487144548
+    },
+    {
+      "index": 2,
+      "frequency_change_thz": 0.09834377280497819,
+      "force_constant_change": 3.9523604012621445
+    },
+    {
+      "index": 3,
+      "frequency_change_thz": 0.06447228555426254,
+      "force_constant_change": 3.386561941204194
+    },
+    {
+      "index": 4,
+      "frequency_change_thz": 0.05807081930270086,
+      "force_constant_change": 3.1134988990517236
+    },
+    {
+      "index": 7,
+      "frequency_change_thz": 0.028277245310040444,
+      "force_constant_change": 3.0983268837903357
+    }
+  ]
+}

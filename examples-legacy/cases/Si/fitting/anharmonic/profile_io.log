@@ -1,0 +1,100 @@
+An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
+Preparing independent FC2+FC3+FC4 fitting parameterization
+Creating reference supercell with matrix [[-2, 2, 2], [2, -2, 2], [2, 2, -2]]
+- 2 primitive atoms, 64 supercell atoms
+Resolving the interaction cutoff
+Supercell neighbor limit: maximum shell = 9, maximum cutoff radius = 10.3474447295 Å
+Selected maximum cutoff radius: 10.3474447295 Å
+Analyzing crystal symmetries
+- Space group Fd-3m
+- 48 symmetry operations
+Creating reference supercell with matrix [[-2, 2, 2], [2, -2, 2], [2, 2, -2]]
+- 2 primitive atoms, 64 supercell atoms
+Resolving the interaction cutoff
+Supercell neighbor limit: maximum shell = 9, maximum cutoff radius = 10.3474447295 Å
+Selected maximum cutoff radius: 10.3474447295 Å
+Analyzing crystal symmetries
+- Space group Fd-3m
+- 48 symmetry operations
+Creating reference supercell with matrix [[-2, 2, 2], [2, -2, 2], [2, 2, -2]]
+- 2 primitive atoms, 64 supercell atoms
+Resolving the interaction cutoff
+- Cutoff radius: 5.8209493199 Å
+Analyzing crystal symmetries
+- Space group Fd-3m
+- 48 symmetry operations
+Finding symmetry-inequivalent order-2 interaction clusters
+- 10 cluster equivalence classes
+- 26 independent tensor parameters
+- Maximum body order: 2
+- FC2: 10 orbits, 26 parameters
+Finding symmetry-inequivalent order-3 interaction clusters
+- 58 cluster equivalence classes
+- 800 independent tensor parameters
+- Maximum body order: 3
+- FC3: 58 orbits, 800 parameters
+Finding symmetry-inequivalent order-4 interaction clusters
+- 25 cluster equivalence classes
+- 647 independent tensor parameters
+- Maximum body order: 3
+- FC4: 25 orbits, 647 parameters
+- Joint parameter count: 1473
+Training-data diagnostics (inputs are not recentered)
+- Maximum reference force: 0.0000000000e+00 eV/Å
+- Maximum snapshot net force: 1.4696938541e-07 eV/Å
+- Maximum center-of-mass displacement: 1.4558945268e-08 Å
+Constraint system: 391 rows after duplicate removal (96462 ASR before compression)
+- Prepared JAX feature program: 37 signatures, 412 tiles, 200.3 MiB static buffers
+Recovered completed streamed Gram system from cache (0.02 s)
+Column-norm preconditioning (exact from streamed Gram matrix)
+- FC2 inverse column scale: 2.136606e-02 to 9.592057e-02
+- FC3 inverse column scale: 2.152253e-01 to 1.284456e+00
+- FC4 inverse column scale: 2.335086e+00 to 4.219139e+01
+Solving the force-only problem with constrained scaled orbit-group LASSO
+- Equations: 19200, unknowns: 1473
+Implicit constraint null space: numerical rank=371/391, redundant rows=20
+Scaled group-LASSO iteration 1: sigma=5.670807e-01 eV/A, active_orbits=10/93, primal=1.958e+01, dual=2.379e-03, elapsed=0.08 s
+Scaled group-LASSO iteration 2: sigma=4.733231e-01 eV/A, active_orbits=16/93, primal=7.517e+00, dual=2.286e-03, elapsed=0.11 s
+Scaled group-LASSO iteration 3: sigma=3.805385e-01 eV/A, active_orbits=18/93, primal=3.832e+00, dual=1.943e-03, elapsed=0.12 s
+Scaled group-LASSO iteration 4: sigma=2.963843e-01 eV/A, active_orbits=20/93, primal=2.498e+00, dual=1.631e-03, elapsed=0.14 s
+Scaled group-LASSO iteration 5: sigma=2.253224e-01 eV/A, active_orbits=20/93, primal=2.340e+00, dual=1.378e-03, elapsed=0.16 s
+Scaled group-LASSO iteration 25: sigma=4.094079e-03 eV/A, active_orbits=20/93, primal=6.700e-01, dual=1.545e-05, elapsed=0.92 s
+Scaled group-LASSO iteration 50: sigma=4.315827e-03 eV/A, active_orbits=30/93, primal=1.900e-01, dual=8.453e-07, elapsed=1.85 s
+Scaled group-LASSO iteration 75: sigma=4.438211e-03 eV/A, active_orbits=38/93, primal=7.779e-02, dual=1.288e-06, elapsed=2.54 s
+Scaled group-LASSO iteration 100: sigma=4.486079e-03 eV/A, active_orbits=45/93, primal=3.060e-02, dual=1.232e-06, elapsed=3.29 s
+Scaled group-LASSO iteration 125: sigma=4.506384e-03 eV/A, active_orbits=55/93, primal=1.083e-02, dual=8.347e-07, elapsed=3.88 s
+Scaled group-LASSO iteration 150: sigma=4.507163e-03 eV/A, active_orbits=58/93, primal=3.491e-03, dual=4.819e-07, elapsed=4.30 s
+Scaled group-LASSO iteration 175: sigma=4.507879e-03 eV/A, active_orbits=59/93, primal=1.132e-03, dual=3.732e-07, elapsed=4.57 s
+Scaled group-LASSO iteration 200: sigma=4.508450e-03 eV/A, active_orbits=60/93, primal=3.328e-04, dual=3.164e-07, elapsed=4.74 s
+Scaled group-LASSO iteration 225: sigma=4.508659e-03 eV/A, active_orbits=60/93, primal=3.483e-05, dual=1.714e-07, elapsed=4.84 s
+- Maximum joint constraint residual: 5.773160e-15
+Force fitting summary
+- Training relative error: 0.658357 %
+- Validation relative error: 0.658357 %
+- Training force RMSE: 4.5087016727e-03 eV/Å
+- Validation force RMSE: 4.5087016727e-03 eV/Å
+- FC2 force contribution RMS: 6.8254459042e-01 eV/Å
+- FC3 force contribution RMS: 1.0939524922e-01 eV/Å
+- FC4 force contribution RMS: 2.0380714379e-02 eV/Å
+- JAX execution guard: 1 prepared program, 37 signatures, 412 tiles, Gram passes=0, prediction passes=0
+- Solver iterations=242, stop_code=0
+TIMING wick_to_taylor_build=1.133375 s
+TIMING omitted_taylor_fc1=0.596645 s
+- Omitted Taylor FC1: maximum=7.3188935296e-04 eV/Å, net=1.5611217152e-17 eV/Å
+Expanding fitted Taylor parameters into sparse physical IFCs
+TIMING wick_to_taylor_apply=0.000348 s
+TIMING taylor_sparse_expansion=0.683924 s
+- Expanded 14444 sparse tensors in 0.68 s
+TIMING fit_postprocessing_total=2.414502 s
+TIMING io_start target=mlfcs.h5 format=hdf5
+TIMING io_done target=mlfcs.h5 format=hdf5 seconds=88.730298 bytes=1410774
+TIMING io_start target=FORCE_CONSTANTS_2ND format=phonopy
+TIMING io_done target=FORCE_CONSTANTS_2ND format=phonopy seconds=87.902649 bytes=846729
+TIMING io_start target=fc2.h5 format=phonopy_hdf5
+TIMING io_done target=fc2.h5 format=phonopy_hdf5 seconds=88.164536 bytes=92232
+TIMING io_start target=FORCE_CONSTANTS_3RD format=shengbte
+TIMING io_done target=FORCE_CONSTANTS_3RD format=shengbte seconds=88.603261 bytes=7158566
+TIMING io_start target=fc3.h5 format=phono3py_hdf5
+TIMING io_done target=fc3.h5 format=phono3py_hdf5 seconds=88.168763 bytes=18603809
+TIMING io_start target=FORCE_CONSTANTS_4TH format=shengbte
+TIMING io_done target=FORCE_CONSTANTS_4TH format=shengbte seconds=89.115541 bytes=17860604

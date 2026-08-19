@@ -7,8 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.io import read, write
-from ase.lattice.hexagonal import Graphene
+from ase.io import read
 
 from mlfcs import StructureRelation
 from mlfcs.fitting import ForceConstantFitter
@@ -19,10 +18,9 @@ RESULTS = ROOT / "results"
 
 
 def load_data():
-    primitive = Graphene(symbol="C", latticeconstant={"a": 2.466340583, "c": 40.0})
+    primitive = read(INPUT / "primitive.vasp")
+    reference = read(INPUT / "reference.vasp")
     source = read(INPUT / "phonopy_snapshot.extxyz")
-    reference = source.copy()
-    reference.calc = None
     snapshot = reference.copy()
     snapshot.positions += source.arrays["displacements"]
     snapshot.calc = SinglePointCalculator(snapshot, forces=source.get_forces())
@@ -74,8 +72,6 @@ def fit_case(primitive, reference, snapshots, *, constrain, output):
 
 def main():
     primitive, reference, snapshots, relation = load_data()
-    write(INPUT / "primitive.vasp", primitive, format="vasp", direct=True, sort=False)
-    write(INPUT / "reference.vasp", reference, format="vasp", direct=True, sort=False)
     print("primitive atoms:", len(primitive))
     print("reference atoms:", len(reference))
     print("supercell matrix:\n", relation.supercell_matrix)

@@ -1,0 +1,16 @@
+potential run/ols_original_model_5_6x6x6_tol1e-08.txt 0 1 2
+velocity 100
+
+ensemble nvt_nhc 100 100 100
+time_step 1
+dump_thermo 1000
+run 1000000
+
+ensemble nvt_nhc 100 100 100
+compute_hnemd 1000 0.0001 0 0
+compute_dos 8 500 55.0 group 1 -1 num_dos_points 300
+compute_shc 8 500 0 500 100.0
+dump_netcdf 50000
+compute 0 1 1000 jp jk
+run 5000000
+

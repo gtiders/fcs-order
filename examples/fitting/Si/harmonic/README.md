@@ -5,5 +5,3 @@ input/train.extxyz 是由 ALAMODE 数据转换得到的严格 ASE 训练输入�
 
     uv run python fit.py
 
-fit.py 只执行 FC2 拟合和导出。拟合结果写入 results/；应与旧案例的拟合 FC2、有限差分 FC2 和
-生成的声子谱进行比较。

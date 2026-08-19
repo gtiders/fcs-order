@@ -1,0 +1,20 @@
+{
+  "temperature_K": 300,
+  "reference": "reference.vasp",
+  "atoms": 432,
+  "initialization": "Maxwell-Boltzmann at 1.5 * target temperature",
+  "seed": 20261117,
+  "nvt": {
+    "steps": 10000,
+    "interval": 25,
+    "thermostat": "Langevin",
+    "friction": 0.005
+  },
+  "nve": {
+    "steps": 5000,
+    "interval": 50,
+    "frames": 101
+  },
+  "force_constant_potential": "fcp_2body-5.4_4.35_4.35_least-squares.fcp",
+  "fcp_sha256": "b8dbd39b8b3c919a9991b2c4940a36267175d72cd9f59bb36fa02a03f952dbb2"
+}

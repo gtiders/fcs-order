@@ -21,8 +21,8 @@ def fit(snapshots_directory: Path) -> None:
     if not snapshots_path.is_file():
         raise FileNotFoundError(f"missing NVE fitting data: {snapshots_path}")
 
-    primitive = read(INPUT / "reference.vasp")
-    reference = primitive.repeat((2, 2, 2))
+    primitive = read(INPUT / "primitive.vasp")
+    reference = read(INPUT / "reference.vasp")
     snapshots = read(snapshots_path, index=":")
     fitter = ForceConstantFitter(
         primitive,

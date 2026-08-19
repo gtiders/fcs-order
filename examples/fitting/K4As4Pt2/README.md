@@ -6,4 +6,6 @@
 
 `reference/` 仅保存 ALAMODE 原始输入，便于核对数据来源；它不是新拟合流程的隐式输入。
 
-运行 `python compare_legacy.py` 可逐数据集核对新生成的三体拟合结果。
+绘制三体截断拟合结果的声子谱：
+
+    uv run --with phonopy --with seekpath --with matplotlib python plot.py

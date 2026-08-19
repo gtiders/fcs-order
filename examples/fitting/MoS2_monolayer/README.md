@@ -6,3 +6,7 @@
 
 运行 `python run.py`。结果写入 `results/asr/` 和 `results/born-huang-huang/`，生成的缓存
 和力常数不作为输入数据提交。
+
+绘制两种二阶约束结果的对比声子谱：
+
+    uv run --with phonopy --with seekpath --with matplotlib python plot.py

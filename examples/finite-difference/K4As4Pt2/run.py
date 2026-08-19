@@ -17,12 +17,10 @@ from phonopy.interface.calculator import read_crystal_structure
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs import ForceConstantCalculation
-from mlfcs.tools import build_supercell
 
 CASE = Path(__file__).resolve().parent
 INPUT = CASE / "input"
 RESULTS = CASE / "results"
-REPEATS = (2, 2, 3)
 CUTOFFS = {2: None, 3: 12.0 * Bohr}
 DISPLACEMENT = 0.01
 
@@ -63,7 +61,7 @@ def _evaluate_mlfcs_structures(structures: list[Atoms], archive: Path) -> np.nda
 
 def run_mlfcs() -> None:
     primitive = read(INPUT / "primitive.vasp")
-    reference = build_supercell(primitive, REPEATS)
+    reference = read(INPUT / "supercell.vasp")
     for order, name in ((2, "harmonic"), (3, "three-phonon")):
         output = RESULTS / name
         output.mkdir(exist_ok=True)
@@ -86,7 +84,7 @@ def run_mlfcs() -> None:
         manifest = {
             "method": "mlfcs-ase-polymlp",
             "order": order,
-            "supercell_matrix": np.diag(REPEATS).tolist(),
+            "reference": str((INPUT / "supercell.vasp").name),
             "cutoff_angstrom": CUTOFFS[order],
             "displacement_angstrom": DISPLACEMENT,
             "configuration_count": len(structures),
