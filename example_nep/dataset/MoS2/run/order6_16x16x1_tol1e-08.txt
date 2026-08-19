@@ -1,3 +1,0 @@
-fcp 2
-6 3
-order6_16x16x1_tol1e-08
