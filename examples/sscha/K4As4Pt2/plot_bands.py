@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -29,8 +30,12 @@ def _phonon(force_constants: np.ndarray | Path) -> Phonopy:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results", type=Path, default=RESULTS)
+    parser.add_argument("--output", type=Path, default=FIGURES / "harmonic_vs_sscha.png")
+    args = parser.parse_args()
     harmonic = _phonon(FINITE / "harmonic" / "FORCE_CONSTANTS_2ND")
-    sscha = _phonon(np.load(RESULTS / "sscha_fc2.npz")["force_constants"])
+    sscha = _phonon(np.load(args.results / "sscha_fc2.npz")["force_constants"])
     structure = (
         np.asarray(harmonic.primitive.cell),
         np.asarray(harmonic.primitive.scaled_positions),
@@ -71,9 +76,9 @@ def main() -> None:
     axis.set_title("K4As4Pt2: harmonic and 300 K SSCHA phonon bands")
     axis.grid(axis="y", color="#e5e7eb", linewidth=0.5)
     axis.legend()
-    FIGURES.mkdir(parents=True, exist_ok=True)
-    figure.savefig(FIGURES / "harmonic_vs_sscha.png", dpi=180, bbox_inches="tight")
-    print(f"wrote {FIGURES / 'harmonic_vs_sscha.png'}")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(args.output, dpi=180, bbox_inches="tight")
+    print(f"wrote {args.output}")
 
 
 if __name__ == "__main__":
