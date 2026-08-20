@@ -5,7 +5,7 @@
 当前迁移中的 Si 案例：
 
 - finite-difference/Si：有限差分 FC2、FC3 和参考数据；
-- fitting/Si：FC2、FC3/FC4 和冻结 FC2 拟合；
+- fitting/Si：FC2、FC3/FC4 联合拟合；
 - transport/Si：基于有限差分或拟合力常数的热导率计算。
 
 当前迁移中的 Ba8Ga16Ge30 案例：
