@@ -28,8 +28,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshots", type=int, default=SNAPSHOTS)
     parser.add_argument("--iterations", type=int, default=ITERATIONS)
+    parser.add_argument(
+        "--mixing",
+        type=float,
+        default=1.0,
+        help="linear FC2 update fraction in (0, 1]; 1 keeps direct replacement",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=RESULTS,
+        help="directory for generated results",
+    )
     args = parser.parse_args()
-    RESULTS.mkdir(parents=True, exist_ok=True)
+    results = args.output.resolve()
+    results.mkdir(parents=True, exist_ok=True)
     primitive = read(INPUT / "primitive.vasp")
     harmonic = read_hdf5(FINITE / "harmonic" / "mlfcs.h5")
     if harmonic.relation is None:
@@ -45,6 +58,7 @@ def main() -> None:
         random_seed=SEED,
         initial_force_constants=initial,
         imaginary_modes="absolute",
+        mixing=args.mixing,
         log_level=1,
     )
     calculator = PolymlpASECalculator(pot=INPUT / "polymlp.yaml")
@@ -57,11 +71,12 @@ def main() -> None:
     final = sscha.force_constants
     if final is None:
         raise RuntimeError("SSCHA produced no effective force constants")
-    np.savez_compressed(RESULTS / "sscha_fc2.npz", force_constants=final)
+    np.savez_compressed(results / "sscha_fc2.npz", force_constants=final)
     history = {
         "temperature_K": TEMPERATURE,
         "snapshots": args.snapshots,
         "iterations": args.iterations,
+        "mixing": args.mixing,
         "random_seed": SEED,
         "free_energy_eV_per_primitive_cell": [item.free_energy for item in sscha.history],
         "free_energy_error_eV_per_primitive_cell": [
@@ -74,7 +89,7 @@ def main() -> None:
             item.fitting_relative_force_error for item in sscha.history
         ],
     }
-    (RESULTS / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="ascii")
+    (results / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="ascii")
     from mlfcs.anharmonic.common.fc2 import compact_fc2
 
     effective = read_hdf5(FINITE / "harmonic" / "mlfcs.h5")
@@ -103,8 +118,8 @@ def main() -> None:
         source.translation_representatives.copy(),
     )
     effective.arrays = {2: compact}
-    effective.write(RESULTS / "sscha.h5", format="hdf5", order=2)
-    effective.write(RESULTS / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
+    effective.write(results / "sscha.h5", format="hdf5", order=2)
+    effective.write(results / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
     print(f"wrote fresh 300 K SSCHA result after {len(sscha.history)} iterations")
 
 
