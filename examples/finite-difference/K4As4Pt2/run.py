@@ -38,9 +38,11 @@ def _ase_atoms(cell) -> Atoms:
     )
 
 
-def _evaluate_mlfcs_structures(structures: list[Atoms], archive: Path) -> np.ndarray:
+def _evaluate_mlfcs_structures(
+    structures: list[Atoms], archive: Path, *, overwrite: bool = False
+) -> np.ndarray:
     """Evaluate in bounded calculator batches so Polymlp state is reclaimed."""
-    if archive.is_file():
+    if archive.is_file() and not overwrite:
         values = np.load(archive)["forces"]
         if len(values) == len(structures):
             return values
@@ -59,7 +61,7 @@ def _evaluate_mlfcs_structures(structures: list[Atoms], archive: Path) -> np.nda
     return np.asarray(values)
 
 
-def run_mlfcs() -> None:
+def run_mlfcs(*, overwrite: bool = False) -> None:
     primitive = read(INPUT / "primitive.vasp")
     reference = read(INPUT / "supercell.vasp")
     for order, name in ((2, "harmonic"), (3, "three-phonon")):
@@ -75,7 +77,7 @@ def run_mlfcs() -> None:
         )
         structures = calculation.sow()
         archive = output / "forces.npz"
-        forces = _evaluate_mlfcs_structures(structures, archive)
+        forces = _evaluate_mlfcs_structures(structures, archive, overwrite=overwrite)
         np.savez_compressed(
             output / "forces.npz",
             forces=np.asarray(forces),
@@ -148,9 +150,10 @@ def run_phono3py() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--route", choices=("mlfcs", "phono3py", "both"), default="both")
+    parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     if args.route in ("mlfcs", "both"):
-        run_mlfcs()
+        run_mlfcs(overwrite=args.overwrite)
     if args.route in ("phono3py", "both"):
         run_phono3py()
 

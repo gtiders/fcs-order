@@ -1,248 +1,328 @@
 {
   "temperature": 300.0,
-  "interpolation_mesh": [
-    3,
-    3,
-    3
-  ],
-  "scph_mesh": [
-    6,
-    6,
-    6
-  ],
-  "converged": true,
+  "interpolation_multiplier": 1,
+  "scph_multiplier": 2,
+  "converged": false,
   "iterations": [
     {
       "index": 1,
-      "frequency_change_thz": 0.09888456502590015
+      "frequency_change_thz": 0.11137760733676756
     },
     {
       "index": 2,
-      "frequency_change_thz": 0.0061215042861969705
+      "frequency_change_thz": 0.002863227615033821
     },
     {
       "index": 3,
-      "frequency_change_thz": 0.003994703029425278
+      "frequency_change_thz": 0.002531961826166855
     },
     {
       "index": 4,
-      "frequency_change_thz": 0.0026141053732019128
+      "frequency_change_thz": 0.0022381349459165514
     },
     {
       "index": 5,
-      "frequency_change_thz": 0.0016886311909150473
+      "frequency_change_thz": 0.002033745261059297
     },
     {
       "index": 6,
-      "frequency_change_thz": 0.001119309965599461
+      "frequency_change_thz": 0.0017355458711118491
     },
     {
       "index": 7,
-      "frequency_change_thz": 0.0007293149168536389
+      "frequency_change_thz": 0.0015500809144421393
     },
     {
       "index": 8,
-      "frequency_change_thz": 0.0004769159669904131
+      "frequency_change_thz": 0.0014118678622648728
     },
     {
       "index": 9,
-      "frequency_change_thz": 0.0003226780907604441
+      "frequency_change_thz": 0.0012134767052363715
     },
     {
       "index": 10,
-      "frequency_change_thz": 0.00024161204666699028
+      "frequency_change_thz": 0.0010624068168637246
     },
     {
       "index": 11,
-      "frequency_change_thz": 0.00016335517818778054
+      "frequency_change_thz": 0.0009485679805105694
     },
     {
       "index": 12,
-      "frequency_change_thz": 0.000213957635291341
+      "frequency_change_thz": 0.0008648685292294397
     },
     {
       "index": 13,
-      "frequency_change_thz": 9.364031843059274e-05
+      "frequency_change_thz": 0.0007393857106419532
     },
     {
       "index": 14,
-      "frequency_change_thz": 9.763815480544243e-05
+      "frequency_change_thz": 0.0006860187392632137
     },
     {
       "index": 15,
-      "frequency_change_thz": 8.047588305091278e-05
+      "frequency_change_thz": 0.0005656778121263797
     },
     {
       "index": 16,
-      "frequency_change_thz": 7.141001200816097e-05
+      "frequency_change_thz": 0.0005244127751718751
     },
     {
       "index": 17,
-      "frequency_change_thz": 0.0001519345870219685
+      "frequency_change_thz": 0.00045850975152696074
     },
     {
       "index": 18,
-      "frequency_change_thz": 5.348179796658998e-05
+      "frequency_change_thz": 0.00039662313012051796
     },
     {
       "index": 19,
-      "frequency_change_thz": 4.189159422780738e-05
+      "frequency_change_thz": 0.00038674557772101737
     },
     {
       "index": 20,
-      "frequency_change_thz": 3.249742435761949e-05
+      "frequency_change_thz": 0.0003357706203375613
     },
     {
       "index": 21,
-      "frequency_change_thz": 2.3833196164258926e-05
+      "frequency_change_thz": 0.0002877980984442255
     },
     {
       "index": 22,
-      "frequency_change_thz": 1.6355454308470907e-05
+      "frequency_change_thz": 0.00026431400140958624
     },
     {
       "index": 23,
-      "frequency_change_thz": 1.1425835177568772e-05
+      "frequency_change_thz": 0.00022903016870126338
     },
     {
       "index": 24,
-      "frequency_change_thz": 8.13071225145532e-06
+      "frequency_change_thz": 0.00021292565846582867
     },
     {
       "index": 25,
-      "frequency_change_thz": 5.391861042911282e-06
+      "frequency_change_thz": 0.00019595442388816277
     },
     {
       "index": 26,
-      "frequency_change_thz": 3.788727503738588e-06
+      "frequency_change_thz": 0.0001631310060182184
     },
     {
       "index": 27,
-      "frequency_change_thz": 2.6779285845534566e-06
+      "frequency_change_thz": 0.00015149253095747675
     },
     {
       "index": 28,
-      "frequency_change_thz": 1.8560856819159674e-06
+      "frequency_change_thz": 0.00014754774576543743
     },
     {
       "index": 29,
-      "frequency_change_thz": 1.2571130355381384e-06
+      "frequency_change_thz": 0.0001166204784455707
     },
     {
       "index": 30,
-      "frequency_change_thz": 8.854018937294077e-07
+      "frequency_change_thz": 0.00017141009010479587
     },
     {
       "index": 31,
-      "frequency_change_thz": 6.024597763582443e-07
+      "frequency_change_thz": 0.00011540895020048063
     },
     {
       "index": 32,
-      "frequency_change_thz": 4.180775504356945e-07
+      "frequency_change_thz": 9.570554916945558e-05
     },
     {
       "index": 33,
-      "frequency_change_thz": 3.0802202207883114e-07
+      "frequency_change_thz": 9.046254026954091e-05
     },
     {
       "index": 34,
-      "frequency_change_thz": 2.172642842024161e-07
+      "frequency_change_thz": 9.27370851681078e-05
     },
     {
       "index": 35,
-      "frequency_change_thz": 1.552451256491708e-07
+      "frequency_change_thz": 0.00010895094794877158
     },
     {
       "index": 36,
-      "frequency_change_thz": 1.0940042912595346e-07
+      "frequency_change_thz": 0.00013470831755146528
     },
     {
       "index": 37,
-      "frequency_change_thz": 8.132131344382271e-08
+      "frequency_change_thz": 8.6893578289049e-05
     },
     {
       "index": 38,
-      "frequency_change_thz": 5.752566112002075e-08
+      "frequency_change_thz": 0.00010522877312701666
     },
     {
       "index": 39,
-      "frequency_change_thz": 4.118583678196308e-08
+      "frequency_change_thz": 0.00024456231805928305
     },
     {
       "index": 40,
-      "frequency_change_thz": 2.997383788925871e-08
+      "frequency_change_thz": 0.0004940808808029366
     },
     {
       "index": 41,
-      "frequency_change_thz": 2.1636632052649595e-08
+      "frequency_change_thz": 6.695404059294197e-05
     },
     {
       "index": 42,
-      "frequency_change_thz": 1.5820597613841e-08
+      "frequency_change_thz": 8.977632639455631e-05
     },
     {
       "index": 43,
-      "frequency_change_thz": 1.1374095764380558e-08
+      "frequency_change_thz": 7.087004333731241e-05
     },
     {
       "index": 44,
-      "frequency_change_thz": 8.170169087513491e-09
+      "frequency_change_thz": 7.61091354414943e-05
     },
     {
       "index": 45,
-      "frequency_change_thz": 5.99286895321918e-09
+      "frequency_change_thz": 8.065115355826994e-05
     },
     {
       "index": 46,
-      "frequency_change_thz": 4.36202349998409e-09
+      "frequency_change_thz": 7.42270046290717e-05
     },
     {
       "index": 47,
-      "frequency_change_thz": 3.1427659530250105e-09
+      "frequency_change_thz": 7.197011564757061e-05
     },
     {
       "index": 48,
-      "frequency_change_thz": 2.2675239255262937e-09
+      "frequency_change_thz": 5.710141841873797e-05
     },
     {
       "index": 49,
-      "frequency_change_thz": 1.6391013996282647e-09
+      "frequency_change_thz": 6.776852350549429e-05
     },
     {
       "index": 50,
-      "frequency_change_thz": 1.1913821670356564e-09
+      "frequency_change_thz": 5.4114572229744055e-05
     },
     {
       "index": 51,
-      "frequency_change_thz": 8.606399891790318e-10
+      "frequency_change_thz": 3.898945520199149e-05
     },
     {
       "index": 52,
-      "frequency_change_thz": 6.22984016270073e-10
+      "frequency_change_thz": 5.672453339219038e-05
     },
     {
       "index": 53,
-      "frequency_change_thz": 4.51092112414683e-10
+      "frequency_change_thz": 3.2487390596001204e-05
     },
     {
       "index": 54,
-      "frequency_change_thz": 3.2652380961673945e-10
+      "frequency_change_thz": 4.524431417556495e-05
     },
     {
       "index": 55,
-      "frequency_change_thz": 2.3542451277034805e-10
+      "frequency_change_thz": 5.1249509599923264e-05
     },
     {
       "index": 56,
-      "frequency_change_thz": 1.70271004219218e-10
+      "frequency_change_thz": 0.0001438920098613126
     },
     {
       "index": 57,
-      "frequency_change_thz": 1.221372985398015e-10
+      "frequency_change_thz": 5.5916072845954195e-05
     },
     {
       "index": 58,
-      "frequency_change_thz": 8.835992162321573e-11
+      "frequency_change_thz": 2.54958635942033e-05
+    },
+    {
+      "index": 59,
+      "frequency_change_thz": 2.290403953538129e-05
+    },
+    {
+      "index": 60,
+      "frequency_change_thz": 2.025602204615207e-05
+    },
+    {
+      "index": 61,
+      "frequency_change_thz": 2.180774190316286e-05
+    },
+    {
+      "index": 62,
+      "frequency_change_thz": 2.1595001697534443e-05
+    },
+    {
+      "index": 63,
+      "frequency_change_thz": 1.7220227310420078e-05
+    },
+    {
+      "index": 64,
+      "frequency_change_thz": 1.910585966510592e-05
+    },
+    {
+      "index": 65,
+      "frequency_change_thz": 1.6688904504985396e-05
+    },
+    {
+      "index": 66,
+      "frequency_change_thz": 1.5254442072059279e-05
+    },
+    {
+      "index": 67,
+      "frequency_change_thz": 1.3817402779160847e-05
+    },
+    {
+      "index": 68,
+      "frequency_change_thz": 1.2265353158531853e-05
+    },
+    {
+      "index": 69,
+      "frequency_change_thz": 1.1150199563167196e-05
+    },
+    {
+      "index": 70,
+      "frequency_change_thz": 1.0607127865857386e-05
+    },
+    {
+      "index": 71,
+      "frequency_change_thz": 8.640359407864962e-06
+    },
+    {
+      "index": 72,
+      "frequency_change_thz": 9.112490079891052e-06
+    },
+    {
+      "index": 73,
+      "frequency_change_thz": 6.832000982014228e-06
+    },
+    {
+      "index": 74,
+      "frequency_change_thz": 8.171021620180672e-06
+    },
+    {
+      "index": 75,
+      "frequency_change_thz": 6.077739890021523e-06
+    },
+    {
+      "index": 76,
+      "frequency_change_thz": 5.713043806189439e-06
+    },
+    {
+      "index": 77,
+      "frequency_change_thz": 5.750046167230412e-06
+    },
+    {
+      "index": 78,
+      "frequency_change_thz": 3.890329626969889e-06
+    },
+    {
+      "index": 79,
+      "frequency_change_thz": 3.97929090906137e-06
+    },
+    {
+      "index": 80,
+      "frequency_change_thz": 3.974303581100956e-06
     }
   ]
 }

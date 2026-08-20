@@ -11,6 +11,7 @@ from ase.io import read
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs import read_hdf5
+from mlfcs.ifc.model import SparseOrderForceConstants
 from mlfcs.anharmonic.sscha import SSCHA
 
 CASE = Path(__file__).resolve().parent
@@ -47,9 +48,15 @@ def main() -> None:
         log_level=1,
     )
     calculator = PolymlpASECalculator(pot=INPUT / "polymlp.yaml")
+    # The case parameter ``iterations`` means the number of updates after the
+    # initial harmonic state.  ``SSCHA.run`` intentionally includes iteration
+    # zero and therefore performs max_iterations + 1 updates; keep the case's
+    # historical five-update trajectory explicit here.
     for _ in range(args.iterations):
         sscha.step(calculator, calculate_free_energy=True)
-    final = sscha.history[-1].force_constants
+    final = sscha.force_constants
+    if final is None:
+        raise RuntimeError("SSCHA produced no effective force constants")
     np.savez_compressed(RESULTS / "sscha_fc2.npz", force_constants=final)
     history = {
         "temperature_K": TEMPERATURE,
@@ -71,7 +78,31 @@ def main() -> None:
     from mlfcs.anharmonic.common.fc2 import compact_fc2
 
     effective = read_hdf5(FINITE / "harmonic" / "mlfcs.h5")
-    effective.arrays = {2: compact_fc2(final, reference)}
+    compact = compact_fc2(final, reference)
+    # Replace the sparse tensors as well as the dense view.  Writers build an
+    # export view from ``sparse`` when a structure relation is present; merely
+    # assigning ``arrays`` would therefore silently export the old harmonic
+    # tensors.
+    source = effective.sparse[2]
+    assert source.sites is not None
+    assert source.translation_representatives is not None
+    index = effective.relation.index
+    tensors = np.empty_like(source.tensors)
+    for row, sites in enumerate(source.sites):
+        second = index.atom(
+            int(sites[1]), source.translation_representatives[row, 0]
+        )
+        tensors[row] = compact[int(sites[0]), second]
+    effective.sparse[2] = SparseOrderForceConstants(
+        2,
+        source.n_primitive,
+        source.n_supercell,
+        source.clusters.copy(),
+        tensors,
+        source.sites.copy(),
+        source.translation_representatives.copy(),
+    )
+    effective.arrays = {2: compact}
     effective.write(RESULTS / "sscha.h5", format="hdf5", order=2)
     effective.write(RESULTS / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
     print(f"wrote fresh 300 K SSCHA result after {len(sscha.history)} iterations")

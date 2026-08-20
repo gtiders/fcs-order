@@ -19,8 +19,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--temperatures", nargs="+", type=float, default=[300, 600, 900])
     parser.add_argument("--temperature-step", type=float, default=None)
-    parser.add_argument("--interpolation-mesh", nargs=3, type=int, default=(3, 3, 3))
-    parser.add_argument("--scph-mesh", nargs=3, type=int, default=(6, 6, 6))
+    parser.add_argument("--interpolation-multiplier", type=int, default=1)
+    parser.add_argument("--scph-multiplier", type=int, default=2)
     parser.add_argument("--mixing", type=float, default=0.1)
     parser.add_argument("--tolerance", type=float, default=1e-10)
     parser.add_argument("--max-iterations", type=int, default=80)
@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
-    harmonic_q, harmonic = harmonic_frequencies(read_hdf5(SOURCE), tuple(args.interpolation_mesh))
+    harmonic_q, harmonic = harmonic_frequencies(read_hdf5(SOURCE), args.interpolation_multiplier)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(OUTPUT / "harmonic.npz", qpoints=harmonic_q, frequencies=harmonic)
 
@@ -40,15 +40,20 @@ def main() -> None:
     calculation = LoopSCPH(
         fc2=read_hdf5(SOURCE),
         fc4=read_hdf5(SOURCE),
-        temperature=temperatures[0],
-        interpolation_mesh=tuple(args.interpolation_mesh),
-        scph_mesh=tuple(args.scph_mesh),
+        temperature=temperatures,
+        interpolation_multiplier=args.interpolation_multiplier,
+        scph_multiplier=args.scph_multiplier,
         mixing=args.mixing,
         tolerance=args.tolerance,
         max_iterations=args.max_iterations,
         qpoint_workers=args.qpoint_workers,
     )
-    results = calculation.run_temperature_series(temperatures)
+    schedule_result = calculation.run()
+    results = (
+        schedule_result.results
+        if hasattr(schedule_result, "results")
+        else (schedule_result,)
+    )
     for result in results:
         temperature = result.temperature
         label = f"T{int(temperature)}"
@@ -70,8 +75,8 @@ def main() -> None:
             json.dumps(
                 {
                     "temperature": temperature,
-                    "interpolation_mesh": list(args.interpolation_mesh),
-                    "scph_mesh": list(args.scph_mesh),
+                    "interpolation_multiplier": args.interpolation_multiplier,
+                    "scph_multiplier": args.scph_multiplier,
                     "converged": result.converged,
                     "iterations": [
                         {

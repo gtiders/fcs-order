@@ -3,12 +3,12 @@ from pathlib import Path
 import numpy as np
 from ase.io import read, write
 
-from mlfcs.tools import build_supercell
+from mlfcs import build_supercell
 
 
 def main() -> None:
     directory = Path(__file__).parent
-    supercell = build_supercell(read(directory / "primitive.vasp"), np.diag([2, 2, 3]), ordering="phonopy")
+    supercell = build_supercell(read(directory / "primitive.vasp"), np.diag([2, 2, 3]))
     write(directory / "supercell.vasp", supercell, format="vasp", direct=True, sort=False, vasp5=True)
 
 
