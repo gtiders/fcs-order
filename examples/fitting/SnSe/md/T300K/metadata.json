@@ -1,0 +1,21 @@
+{
+  "temperature_K": 300,
+  "reference": "input/reference.vasp",
+  "primitive": "input/primitive.vasp",
+  "atoms": 256,
+  "supercell": "2x4x4 force-constant reference",
+  "initialization": "Maxwell-Boltzmann at 1.5 * target temperature",
+  "seed": 20260819,
+  "nvt": {
+    "steps": 10000,
+    "interval": 25,
+    "thermostat": "Langevin"
+  },
+  "nve": {
+    "steps": 5000,
+    "interval": 50,
+    "frames": 101
+  },
+  "force_constant_potential": "fcp_cm16_rfe-ridge_nf-3000_alpha-1.0.pickle",
+  "fcp_sha256": "b2940e54e754035ada925a5386a526b47f5ef150e12670e13740c042ca3f455d"
+}
