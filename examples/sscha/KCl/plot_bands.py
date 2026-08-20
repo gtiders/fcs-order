@@ -21,21 +21,20 @@ def plot(band_data: dict[str, tuple], output: Path) -> None:
     colors = {
         "phonopy harmonic": "#5b8f8a",
         "phonopy SSCHA": "#5b8f8a",
-        "MLFCS Cartesian": "#c27b70",
-        "MLFCS canonical": "#c27b70",
+        "MLFCS SSCHA": "#c27b70",
     }
     panels = (
         ("phonopy: harmonic vs SSCHA", ("phonopy harmonic", "phonopy SSCHA")),
-        ("MLFCS: harmonic vs SSCHA", ("MLFCS Cartesian", "MLFCS canonical")),
-        ("Harmonic: phonopy vs MLFCS", ("phonopy harmonic", "MLFCS Cartesian")),
-        ("SSCHA: phonopy vs MLFCS", ("phonopy SSCHA", "MLFCS canonical")),
+        ("Harmonic vs MLFCS SSCHA", ("phonopy harmonic", "MLFCS SSCHA")),
+        ("SSCHA: phonopy vs MLFCS", ("phonopy SSCHA", "MLFCS SSCHA")),
+        ("All effective-harmonic results", ("phonopy harmonic", "phonopy SSCHA", "MLFCS SSCHA")),
     )
     figure, axes = plt.subplots(2, 2, figsize=(13.0, 9.0), sharey=True, constrained_layout=True)
     for axis, (title, selected) in zip(axes.flat, panels, strict=True):
         ticks = {}
         for name in selected:
             distances, frequencies, labels = band_data[name]
-            linestyle = "--" if "SSCHA" in name or "canonical" in name else "-"
+            linestyle = "--" if "SSCHA" in name else "-"
             for distance, values in zip(distances, frequencies, strict=True):
                 for branch in np.asarray(values).T:
                     axis.plot(
@@ -61,7 +60,7 @@ def plot(band_data: dict[str, tuple], output: Path) -> None:
                 [0],
                 color=colors[name],
                 linewidth=1.6,
-                linestyle="--" if "SSCHA" in name or "canonical" in name else "-",
+                linestyle="--" if "SSCHA" in name else "-",
                 label=name,
             )
             for name in selected
@@ -87,8 +86,9 @@ def main() -> None:
     band_data = {
         "phonopy harmonic": bands(phonon, phonon.force_constants),
         "phonopy SSCHA": bands(phonon, phonopy_final),
-        "MLFCS Cartesian": bands(phonon, map_reference_to_phonopy(stored["cartesian"], phonon)),
-        "MLFCS canonical": bands(phonon, map_reference_to_phonopy(stored["canonical"], phonon)),
+        "MLFCS SSCHA": bands(
+            phonon, map_reference_to_phonopy(stored["force_constants"], phonon)
+        ),
     }
     plot(band_data, args.output)
     print(f"wrote {args.output}")

@@ -9,8 +9,6 @@ import numpy as np
 from ase import Atoms
 from phonopy import load
 
-from mlfcs.core.geometry import StructureRelation
-from mlfcs.ifc.model import ForceConstants, SparseOrderForceConstants
 
 CASE = Path(__file__).resolve().parent
 INPUT = CASE / "input"
@@ -81,40 +79,6 @@ def bands(phonon, force_constants):
     q_paths, labels, connections = paths(working)
     working.run_band_structure(q_paths, path_connections=connections)
     return working.band_structure.distances, working.band_structure.frequencies, labels
-
-
-def mlfcs_result(values: np.ndarray, reference: Atoms, primitive: Atoms) -> ForceConstants:
-    relation = StructureRelation.from_atoms(primitive, reference)
-    index = relation.index
-    clusters = []
-    sites = []
-    translations = []
-    tensors = []
-    for site in range(index.n_primitive):
-        anchor = index.representative(site)
-        for atom in range(len(reference)):
-            sites.append((site, int(index.primitive[atom])))
-            clusters.append((anchor, atom))
-            translations.append(
-                index.canonical_translation(index.translations[atom] - index.translations[anchor])
-            )
-            tensors.append(values[anchor, atom])
-    sparse = SparseOrderForceConstants(
-        2,
-        index.n_primitive,
-        len(reference),
-        np.asarray(clusters),
-        np.asarray(tensors),
-        np.asarray(sites),
-        np.asarray(translations)[:, None, :],
-    )
-    return ForceConstants(
-        {},
-        reference,
-        metadata={"method": "sscha", "temperature": TEMPERATURE},
-        sparse={2: sparse},
-        relation=relation,
-    )
 
 
 def mlfcs_working_cells():

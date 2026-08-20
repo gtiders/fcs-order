@@ -61,15 +61,14 @@ def main() -> None:
         if target.exists() and not args.overwrite:
             raise FileExistsError(f"{target} exists; pass --overwrite")
         target.mkdir(parents=True, exist_ok=True)
-        result.effective_force_constants.write(target / "mlfcs.h5", format="hdf5")
-        result.effective_force_constants.write(
+        result.force_constants.write(target / "mlfcs.h5", format="hdf5")
+        result.force_constants.write(
             target / "FORCE_CONSTANTS_2ND", format="phonopy", order=2
         )
         np.savez_compressed(
             target / "frequencies.npz",
             qpoints=result.qpoints,
             frequencies=result.frequencies,
-            loop_correction=result.loop_correction.materialize(2),
         )
         (target / "history.json").write_text(
             json.dumps(
@@ -82,6 +81,7 @@ def main() -> None:
                         {
                             "index": item.index,
                             "frequency_change_thz": item.frequency_change_thz,
+                            "correction_norm": item.correction_norm,
                         }
                         for item in result.history
                     ],

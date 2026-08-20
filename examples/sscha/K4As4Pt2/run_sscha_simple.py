@@ -16,9 +16,7 @@ from ase.io import read
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs import read_hdf5
-from mlfcs.anharmonic.common.fc2 import compact_fc2
 from mlfcs.anharmonic.sscha import SSCHA
-from mlfcs.ifc.model import SparseOrderForceConstants
 
 # Edit these values directly when testing.
 TEMPERATURE_K = 300.0
@@ -58,10 +56,12 @@ def main() -> None:
     for _ in range(ITERATIONS):
         sscha.step(calculator, calculate_free_energy=True)
 
-    final = sscha.force_constants
-    if final is None:
+    effective = sscha.force_constants
+    if effective is None:
         raise RuntimeError("SSCHA produced no effective force constants")
-    np.savez_compressed(OUTPUT / "sscha_fc2.npz", force_constants=final)
+    np.savez_compressed(
+        OUTPUT / "sscha_fc2.npz", force_constants=effective.materialize(2, max_bytes=None)
+    )
     history = {
         "temperature_K": TEMPERATURE_K,
         "snapshots": SNAPSHOTS,
@@ -79,9 +79,9 @@ def main() -> None:
         ],
     }
     (OUTPUT / "history.json").write_text(json.dumps(history, indent=2) + "\n")
-    result = _with_sparse_fc2(read_hdf5(FINITE_RESULTS / "harmonic" / "mlfcs.h5"), final)
-    result.write(OUTPUT / "sscha.h5", format="hdf5", order=2)
-    result.write(OUTPUT / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
+    effective.write(OUTPUT / "sscha.h5", format="hdf5", order=2)
+    effective.write(OUTPUT / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
+    effective.write(OUTPUT / "force_constants.xml", format="alamode", order=2)
     print(f"wrote SSCHA results to {OUTPUT}")
 
 
