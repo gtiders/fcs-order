@@ -47,15 +47,15 @@ def main() -> None:
     if harmonic.relation is None:
         raise ValueError("harmonic result has no structure relation")
     reference = harmonic.relation.reference.copy()
-    initial = harmonic.materialize(2, max_bytes=None)
     sscha = SSCHA(
         primitive,
         reference=reference,
+        cutoff=-1,
         temperature=TEMPERATURE,
         snapshots=args.snapshots,
         max_iterations=args.iterations,
         random_seed=SEED,
-        initial_force_constants=initial,
+        initial_force_constants=harmonic,
         imaginary_modes="absolute",
         mixing=args.mixing,
         log_level=1,

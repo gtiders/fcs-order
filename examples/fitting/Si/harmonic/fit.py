@@ -12,7 +12,7 @@ def main() -> None:
         read(CASE / "input/primitive.vasp"),
         read(CASE / "input/supercell.vasp"),
         orders=(2,),
-        cutoffs={2: None},
+        cutoffs={2: 5.4},
         max_body_orders={2: 2},
     )
     result = fitter.fit(

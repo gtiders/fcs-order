@@ -29,6 +29,7 @@ def main() -> None:
     sscha = SSCHA(
         primitive,
         reference=reference,
+        cutoff=-1,
         temperature=TEMPERATURE,
         snapshots=args.snapshots,
         max_iterations=args.iterations,

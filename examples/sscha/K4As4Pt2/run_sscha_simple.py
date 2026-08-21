@@ -37,13 +37,14 @@ def main() -> None:
     primitive = read(INPUT / "primitive.vasp")
     harmonic = read_hdf5(FINITE_RESULTS / "harmonic" / "mlfcs.h5")
     reference = harmonic.relation.reference.copy()
-    initial = harmonic.materialize(2, max_bytes=None) if USE_INITIAL_FORCE_CONSTANTS else None
+    initial = harmonic if USE_INITIAL_FORCE_CONSTANTS else None
     options = {}
     if initial is not None:
         options["initial_force_constants"] = initial
     sscha = SSCHA(
         primitive,
         reference=reference,
+        cutoff=-1,
         temperature=TEMPERATURE_K,
         snapshots=SNAPSHOTS,
         max_iterations=ITERATIONS,

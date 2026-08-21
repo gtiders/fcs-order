@@ -25,7 +25,7 @@ def main() -> None:
         read(CASE / "input/primitive.vasp"),
         read(CASE / "input/supercell.vasp"),
         orders=(2, 3, 4),
-        cutoffs={2: None, 3: None, 4: 11.0 * BOHR},
+        cutoffs={2: 5.4, 3: 5.4, 4: 11.0 * BOHR},
         max_body_orders={2: 2, 3: 3, 4: 3},
     )
     result = fitter.fit(

@@ -40,7 +40,7 @@ def main() -> None:
         primitive,
         reference,
         orders=(2, 3, 4),
-        cutoffs={2: None, 3: 6.5, 4: 4.5},
+        cutoffs={2: 8.0, 3: 6.5, 4: 4.5},
         max_body_orders={2: 2, 3: 3, 4: 3},
         symprec=1e-4,
         verbose=True,
