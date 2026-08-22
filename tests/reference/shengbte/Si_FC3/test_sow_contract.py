@@ -26,6 +26,7 @@ def test_Si_FC3_external_sow_order_is_frozen():
     )
 
     assert manifest["atom_order"] == "grouped"
+    assert manifest["plan_hash"] == calculation.plan.hash
     assert len(manifest["configurations"]) == len(calculation.plan) == 168
     for expected_id, record in enumerate(manifest["configurations"]):
         path = STRUCTURES / f"POSCAR-{expected_id + 1:03d}"

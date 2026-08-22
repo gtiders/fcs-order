@@ -31,6 +31,7 @@ def calculation_and_reference(order: int):
     )
     result = calculation.reap(
         data[f"fc{order}_forces"],
+        plan_hash=str(data[f"fc{order}_plan_hash"]),
         acoustic_sum_rule=False,
     )
     return data, calculation, result.sparse[order]

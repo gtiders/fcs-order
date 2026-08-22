@@ -9,6 +9,7 @@
   "cutoff_angstrom": 6.9007549955639735,
   "displacement_angstrom": 0.01,
   "atom_order": "grouped",
+  "plan_hash": "5df41821ee9db73b0f008535f9a6c681eb2cb5581c91b6fe8d10c6d9be8e0676",
   "configurations": [
     {
       "configuration_id": 0,

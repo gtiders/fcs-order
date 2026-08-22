@@ -35,7 +35,7 @@ selected ridge parameter `alpha=0.1`. Reported errors were:
 | Test | 0.00038 | 0.00029 |
 
 The fixture contains the four-atom wurtzite AlN unit cell, captured forces for
-the exact MLFCS sow order and the full phono3py FC3 before
+the exact MLFCS sow order, the sow plan hash, and the full phono3py FC3 before
 and after explicit traditional `symmetrize_fc3(level=3)` projection for a
 2x2x2 supercell. Both calculations cover every MIC atom pair in that
 supercell. MLFCS uses a direct radius of `5.8760168278` Angstrom (the maximum

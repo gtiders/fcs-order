@@ -45,6 +45,7 @@ def _calculate(data, unitcell: Atoms, reference_supercell: Atoms, *, acoustic_su
     )
     result = calculation.reap(
         data["mlfcs_forces"],
+        plan_hash=str(data["mlfcs_plan_hash"]),
         acoustic_sum_rule=acoustic_sum_rule,
     )
     actual = full_fc2(result.sparse[2], calculation.index)
