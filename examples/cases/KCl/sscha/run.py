@@ -20,7 +20,7 @@ from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs.structure.geometry import StructureRelation
 from mlfcs.ifc.model import ForceConstants, SparseOrderForceConstants
-from mlfcs.anharmonic.sscha import SSCHA
+from mlfcs.sscha import SSCHA
 
 CASE = Path(__file__).resolve().parent
 DATA = CASE / "data"
