@@ -11,13 +11,13 @@ from ase import Atoms
 from hiphive import ForceConstants as HiphiveForceConstants
 from scipy.optimize import linear_sum_assignment
 
-from mlfcs.core.geometry import PeriodicIndex
+from mlfcs.core.geometry import SupercellIndex
 from mlfcs.model import SparseOrderForceConstants
 
 
 def full_array_from_sparse(
     values: SparseOrderForceConstants,
-    index: PeriodicIndex,
+    index: SupercellIndex,
 ) -> np.ndarray:
     """Expand translation-reduced MLFCS data to hiphive's full representation."""
     compact = values.to_dense(max_bytes=None)
@@ -40,7 +40,7 @@ def full_array_from_sparse(
     return full
 
 
-def full_cluster_mask(values: SparseOrderForceConstants, index: PeriodicIndex) -> np.ndarray:
+def full_cluster_mask(values: SparseOrderForceConstants, index: SupercellIndex) -> np.ndarray:
     """Return the full translation-expanded atomic-cluster support."""
     block_shape = (3,) * values.order
     support = SparseOrderForceConstants(

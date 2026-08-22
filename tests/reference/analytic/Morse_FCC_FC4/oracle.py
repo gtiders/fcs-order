@@ -57,6 +57,7 @@ def calculation(displacement: float) -> ForceConstantCalculation:
         supercell=SUPERCELL,
         cutoff=CUTOFF,
         displacement=displacement,
+        jax_platform="cpu",
         report_cutoff=False,
         verbose=False,
     )

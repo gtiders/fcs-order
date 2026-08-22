@@ -35,7 +35,7 @@ selected ridge parameter `alpha=0.1`. Reported errors were:
 | Test | 0.00038 | 0.00029 |
 
 The fixture contains the four-atom wurtzite AlN unit cell, captured forces for
-the current exact MLFCS sow order (508 configurations) and the full phono3py FC3 before
+the exact MLFCS sow order and the full phono3py FC3 before
 and after explicit traditional `symmetrize_fc3(level=3)` projection for a
 2x2x2 supercell. Both calculations cover every MIC atom pair in that
 supercell. MLFCS uses a direct radius of `5.8760168278` Angstrom (the maximum
@@ -46,7 +46,7 @@ a full-supercell comparison, not a cutoff-convergence claim for the infinite
 crystal. The potential itself is not needed by CI.
 
 Derived fixture SHA-256:
-`72eca945495dfd8fa147a82016a30eb50881cb279df2e80a8cbe5b97120e62f2`.
+`310d6b3bd3a19f57af86ff2385870dbc28703a6b1509e2567e7eebbf8b2405ba`.
 
 Regeneration is intentionally a maintainer operation because fitting the
 upstream 200-structure dataset takes several minutes and multiple gigabytes of

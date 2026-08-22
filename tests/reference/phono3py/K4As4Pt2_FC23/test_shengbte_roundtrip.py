@@ -9,12 +9,6 @@ from mlfcs.model import ForceConstants
 from tests.reference.phono3py.K4As4Pt2_FC23.case import calculation_and_reference
 
 
-def _phonopy_grouped_permutation(index):
-    return np.concatenate(
-        [np.flatnonzero(index.primitive == site) for site in range(index.n_primitive)]
-    )
-
-
 @pytest.mark.reference
 def test_K4As4Pt2_raw_FC3_shengbte_roundtrip_is_faithful(tmp_path):
     data, calculation, sparse = calculation_and_reference(3)
@@ -27,8 +21,7 @@ def test_K4As4Pt2_raw_FC3_shengbte_roundtrip_is_faithful(tmp_path):
     target = tmp_path / "FORCE_CONSTANTS_3RD"
     result.write(target, format="shengbte")
 
-    permutation = _phonopy_grouped_permutation(calculation.index)
-    grouped_supercell = calculation.supercell[permutation]
+    grouped_supercell = calculation.index.group_atoms(calculation.supercell)
     primitive = Atoms(
         numbers=data["unitcell_numbers"],
         cell=data["unitcell_cell"],
@@ -41,6 +34,7 @@ def test_K4As4Pt2_raw_FC3_shengbte_roundtrip_is_faithful(tmp_path):
         primitive,
     ).get_fc_array(3)
 
+    permutation = calculation.index.grouped_permutation
     inverse = np.empty_like(permutation)
     inverse[permutation] = np.arange(len(permutation))
     expected = sparse.to_dense(max_bytes=None)[tuple(sparse.clusters.T)]

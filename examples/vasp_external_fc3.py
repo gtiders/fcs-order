@@ -33,6 +33,7 @@ def calculation_from_values(
         supercell=supercell,
         cutoff=cutoff,
         displacement=displacement,
+        jax_platform="cpu",
         verbose=verbose,
     )
 
@@ -51,7 +52,7 @@ def sow(arguments: argparse.Namespace) -> None:
         cutoff=arguments.cutoff,
         displacement=arguments.displacement,
     )
-    configurations = calculation.sow()
+    configurations = calculation.sow(atom_order="grouped")
     width = max(3, len(str(len(configurations))))
     filenames = []
     for configuration_id, atoms in enumerate(configurations):
@@ -65,7 +66,7 @@ def sow(arguments: argparse.Namespace) -> None:
         "supercell": list(arguments.supercell),
         "cutoff": arguments.cutoff,
         "displacement": arguments.displacement,
-        "atom_order": "reference",
+        "atom_order": "grouped",
         "configuration_count": len(configurations),
         "filenames": filenames,
     }
@@ -125,11 +126,18 @@ def reap(arguments: argparse.Namespace) -> None:
     expected_ids = np.arange(int(manifest["configuration_count"]), dtype=int)
     if not np.array_equal(archive["configuration_ids"], expected_ids):
         raise ValueError("force archive configuration IDs are not the exact sow order")
-    if str(archive["atom_order"]) != "reference":
-        raise ValueError("force archive atom order is not the reference-order contract")
-    result = calculation.reap(archive["forces"], acoustic_sum_rule=not arguments.no_asr)
+    result = calculation.reap(
+        archive["forces"],
+        atom_order=str(archive["atom_order"]),
+        acoustic_sum_rule=not arguments.no_asr,
+    )
     output = arguments.output.resolve()
-    result.write(output, format=arguments.format, order=3)
+    result.write(
+        output,
+        format=arguments.format,
+        order=3,
+        compatibility=arguments.compatibility,
+    )
     print(f"Wrote order-3 force constants to {output}")
 
 
@@ -158,6 +166,7 @@ def parser() -> argparse.ArgumentParser:
         choices=("hdf5", "numpy", "phono3py_hdf5", "shengbte"),
         default="shengbte",
     )
+    reap_parser.add_argument("--compatibility", choices=("thirdorder",))
     reap_parser.add_argument("--no-asr", action="store_true")
     reap_parser.set_defaults(handler=reap)
     return root

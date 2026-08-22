@@ -9,12 +9,6 @@ from mlfcs.model import ForceConstants
 from tests.reference.phono3py.K4As4Pt2_FC23.case import calculation_and_reference
 
 
-def _phonopy_grouped_permutation(index):
-    return np.concatenate(
-        [np.flatnonzero(index.primitive == site) for site in range(index.n_primitive)]
-    )
-
-
 @pytest.mark.reference
 @pytest.mark.parametrize(
     ("order", "format_name"),
@@ -28,7 +22,7 @@ def test_K4As4Pt2_external_hdf5_roundtrip(tmp_path, order, format_name):
     result.write(target, format=format_name)
     full = read_force_constants_hdf5(target) if order == 2 else read_fc3_from_hdf5(target)
 
-    permutation = _phonopy_grouped_permutation(calculation.index)
+    permutation = calculation.index.grouped_permutation
     inverse = np.empty_like(permutation)
     inverse[permutation] = np.arange(len(permutation))
     expected = sparse.to_dense(max_bytes=None)[tuple(sparse.clusters.T)]

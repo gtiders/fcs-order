@@ -46,6 +46,7 @@ def test_AlN_FC3_matches_phono3py_without_ASR():
         supercell=(2, 2, 2),
         cutoff=cutoff,
         displacement=0.01,
+        jax_platform="cpu",
         report_cutoff=False,
     )
     assert np.isclose(calculation.cutoff, cutoff, atol=1e-12, rtol=0)
