@@ -1,0 +1,854 @@
+{
+  "order": 3,
+  "supercell": [
+    3,
+    3,
+    3
+  ],
+  "cutoff": -6,
+  "cutoff_angstrom": 6.9007549955639735,
+  "displacement_angstrom": 0.01,
+  "atom_order": "grouped",
+  "configurations": [
+    {
+      "configuration_id": 0,
+      "filename": "POSCAR-001",
+      "sha256": "cb312bbfc850d7ba3de0b8ee7c7273f980e3ee3f1d9852432b6531a637a7261e"
+    },
+    {
+      "configuration_id": 1,
+      "filename": "POSCAR-002",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 2,
+      "filename": "POSCAR-003",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 3,
+      "filename": "POSCAR-004",
+      "sha256": "027bdd0c0e75e400b4c7e2eaea5e8cb5e6831b08d364025437142e31624fbbd2"
+    },
+    {
+      "configuration_id": 4,
+      "filename": "POSCAR-005",
+      "sha256": "a6a6dc9e6daf6c169ba5152790a92cc7e9ab3390c4e09b300ece0dce5021ed73"
+    },
+    {
+      "configuration_id": 5,
+      "filename": "POSCAR-006",
+      "sha256": "0d0cf9abbdefa88c629339142b22403fca3b07b9bcc831384e7c90cec71892a4"
+    },
+    {
+      "configuration_id": 6,
+      "filename": "POSCAR-007",
+      "sha256": "fb66b37f127f838522ce7e01c450c5418fe89082a013a0aa3df40402248c51c0"
+    },
+    {
+      "configuration_id": 7,
+      "filename": "POSCAR-008",
+      "sha256": "66ee9edf211a4062d36eb42cda85a351d177a1fb3a16b0529b140d15f43315ce"
+    },
+    {
+      "configuration_id": 8,
+      "filename": "POSCAR-009",
+      "sha256": "e68782a5ad9e05b3a35d8a5f4f93cc4583891d01b76de0bc7727dd121904933e"
+    },
+    {
+      "configuration_id": 9,
+      "filename": "POSCAR-010",
+      "sha256": "23a4b5fc8b8a663e856c3f633bad2e83a1e9eca77ae786dbe6d12e094a4ccc7e"
+    },
+    {
+      "configuration_id": 10,
+      "filename": "POSCAR-011",
+      "sha256": "345d70549683400477484dfd6d40d1fa50168b314224e12101fa6043c5b3c983"
+    },
+    {
+      "configuration_id": 11,
+      "filename": "POSCAR-012",
+      "sha256": "9cd1a99981eeea0c8227644b985a83d30e47c277a2e06ddc1ec3f0505b2bbd8f"
+    },
+    {
+      "configuration_id": 12,
+      "filename": "POSCAR-013",
+      "sha256": "31702c88cc28cc95657f87e99e0034d578ed65ad009a33389b3192982af6f29e"
+    },
+    {
+      "configuration_id": 13,
+      "filename": "POSCAR-014",
+      "sha256": "ef79f6eef0a470f17b324f9ef1de75d14842433b80dc444df6c30c139da17ffa"
+    },
+    {
+      "configuration_id": 14,
+      "filename": "POSCAR-015",
+      "sha256": "0ee242c39e2102c15e5d4b90be4faa044d9a82117d72e95649f462e994ad1c46"
+    },
+    {
+      "configuration_id": 15,
+      "filename": "POSCAR-016",
+      "sha256": "bd559499331b5aa932e9126122b5e844ae368cd24b70da739dd99ea03e7773bb"
+    },
+    {
+      "configuration_id": 16,
+      "filename": "POSCAR-017",
+      "sha256": "af25eeb267f257b05fde41f0615dcc0df284ea646fc654411900abd6ce29d8e1"
+    },
+    {
+      "configuration_id": 17,
+      "filename": "POSCAR-018",
+      "sha256": "7cea54a3706a0ad9562274d692f0106d93aef9cab8ca7db7f445b4efce4981b2"
+    },
+    {
+      "configuration_id": 18,
+      "filename": "POSCAR-019",
+      "sha256": "fd26c1caf1d460184fe4c94070f3e91e1b890a7b3c4be4c4c687d25faa234a3a"
+    },
+    {
+      "configuration_id": 19,
+      "filename": "POSCAR-020",
+      "sha256": "5b5ee5793996513920ae1ad796e3272251c11a2d9ced5766219b86eeca6a870e"
+    },
+    {
+      "configuration_id": 20,
+      "filename": "POSCAR-021",
+      "sha256": "1d81b49b29b5d99c2d83f8bd8eeed12531fed7111d24f3f069105466d876e207"
+    },
+    {
+      "configuration_id": 21,
+      "filename": "POSCAR-022",
+      "sha256": "27c79fb8d75760ec5b8c62eb90371c7605a93b6fe6950316c8f0c7f1949e3957"
+    },
+    {
+      "configuration_id": 22,
+      "filename": "POSCAR-023",
+      "sha256": "f63a42e01a2368fdcc372c2e084f95caf0a8397e93389152c5013efe78521bf6"
+    },
+    {
+      "configuration_id": 23,
+      "filename": "POSCAR-024",
+      "sha256": "22b33a62d5c89e380ed3b5db64f72cbf3c38e51e2195fb4ca72d17a0a9ecbb8c"
+    },
+    {
+      "configuration_id": 24,
+      "filename": "POSCAR-025",
+      "sha256": "d9132015745d50df20bfbd56b11f71a3a3f2dbccfaf7356436c1feb7cc24a33c"
+    },
+    {
+      "configuration_id": 25,
+      "filename": "POSCAR-026",
+      "sha256": "33607382aac46c645565fb563fbed47513b32b97b7ea2a0074ea5777eb3d782c"
+    },
+    {
+      "configuration_id": 26,
+      "filename": "POSCAR-027",
+      "sha256": "50d8680610ef98e69c4d25e58265b88c48f51311c31986596778ef8cf7864552"
+    },
+    {
+      "configuration_id": 27,
+      "filename": "POSCAR-028",
+      "sha256": "4d949323ed39c627500174f83130d7d3d85bbb1392340ebd9358491dda9e56a9"
+    },
+    {
+      "configuration_id": 28,
+      "filename": "POSCAR-029",
+      "sha256": "eefb78fa74c91d1f15ed208d51ab19f4cf72456b30493d57a6cfd73d2c74edc6"
+    },
+    {
+      "configuration_id": 29,
+      "filename": "POSCAR-030",
+      "sha256": "87e2ac1c0d2a41b6601c1a76dc6cac37ef816eaa230136279b83dd4833e96e00"
+    },
+    {
+      "configuration_id": 30,
+      "filename": "POSCAR-031",
+      "sha256": "77f8a69f00db7ae1e6d51b6559843c49847b5ad422ec6ebacee1da4bb1b79b13"
+    },
+    {
+      "configuration_id": 31,
+      "filename": "POSCAR-032",
+      "sha256": "ce302da855ca4bec58ad18d32d04e0e8578d45f6626ffbd5d69fea4605c2cc34"
+    },
+    {
+      "configuration_id": 32,
+      "filename": "POSCAR-033",
+      "sha256": "058bcaed763fbc635318c3777aaaee9f918f40bd8cb990efabc85bae99673bdd"
+    },
+    {
+      "configuration_id": 33,
+      "filename": "POSCAR-034",
+      "sha256": "aa620d090d27d2bfb5c92221195e364e8e65ba22d7e34bff6ef9c71ca95a3d1d"
+    },
+    {
+      "configuration_id": 34,
+      "filename": "POSCAR-035",
+      "sha256": "28f68b82d278630ae2d95b4ecb7097b5cca3ff129ff62de83fc7ce483cca2ef1"
+    },
+    {
+      "configuration_id": 35,
+      "filename": "POSCAR-036",
+      "sha256": "726ead70344d8571c983d7d9f924f91c3c0f63dbfa33e93c3922d9bc16a4f848"
+    },
+    {
+      "configuration_id": 36,
+      "filename": "POSCAR-037",
+      "sha256": "5b72f570d46d850fa5c0d19eec2d5668a8fba7bde5bb93649c098525cbe2e30d"
+    },
+    {
+      "configuration_id": 37,
+      "filename": "POSCAR-038",
+      "sha256": "5f55418291d4ae33f1c1c9a779b9eb754c7574d2c98aa23e00e380f73aeb1b70"
+    },
+    {
+      "configuration_id": 38,
+      "filename": "POSCAR-039",
+      "sha256": "6ff1aee3459ef1214be60e9db45204a3f85bbd9e5c82e7a86d596c2bd6198c21"
+    },
+    {
+      "configuration_id": 39,
+      "filename": "POSCAR-040",
+      "sha256": "a5ccf394a7812a7109281af9edfb26d00536c38c98ce4c6f3d5e25fee84afa22"
+    },
+    {
+      "configuration_id": 40,
+      "filename": "POSCAR-041",
+      "sha256": "feaf75a2255d063a67a5629abf5365a4481fd62069226b0eef5f0e7c4e115afc"
+    },
+    {
+      "configuration_id": 41,
+      "filename": "POSCAR-042",
+      "sha256": "c37abd3e3afca1c1f1a52738a72d67c8ab18e4a0c3de2bfdea16ffdd1f74ed98"
+    },
+    {
+      "configuration_id": 42,
+      "filename": "POSCAR-043",
+      "sha256": "3357ab567d8713c8d307b98a52bd917e80d8940e5c0cf865f7be64cd8b0b367f"
+    },
+    {
+      "configuration_id": 43,
+      "filename": "POSCAR-044",
+      "sha256": "daa7ecb99cab6cb787e085887ab31b186be9b887a361a30f64429aade9417c6e"
+    },
+    {
+      "configuration_id": 44,
+      "filename": "POSCAR-045",
+      "sha256": "cca380770dac452216a27c5ae98a3415c225c16028664ac0b06f417696d28a2f"
+    },
+    {
+      "configuration_id": 45,
+      "filename": "POSCAR-046",
+      "sha256": "a8ee3010dac735d0fbae90c7f8f0b19b43ee62999b1ecf448c751bc1b55c32e4"
+    },
+    {
+      "configuration_id": 46,
+      "filename": "POSCAR-047",
+      "sha256": "9c41bd232ef08c5f8777a39245542c0f716d9b6377bd0e23b48f0cda700a0d10"
+    },
+    {
+      "configuration_id": 47,
+      "filename": "POSCAR-048",
+      "sha256": "20d8a12a579798b2e535e350d27efc75e24e4f2fdc064e6342934e18a7341acc"
+    },
+    {
+      "configuration_id": 48,
+      "filename": "POSCAR-049",
+      "sha256": "422aa23acde3f14389ac123071cae2ad7c53d898db1075bb8ba93b4ce1c7d154"
+    },
+    {
+      "configuration_id": 49,
+      "filename": "POSCAR-050",
+      "sha256": "70b910b9c2d6b1c4bf00f254b64c492ea30f3be51b6614bcbfa0cf96b753061e"
+    },
+    {
+      "configuration_id": 50,
+      "filename": "POSCAR-051",
+      "sha256": "b13d638b0e6880b68f631e5e74895eacebf947cc3d61d08c7ee07ec99e440e87"
+    },
+    {
+      "configuration_id": 51,
+      "filename": "POSCAR-052",
+      "sha256": "f70cff2fc9b8fd5a455ab7087d4f72a6163c2936001c8b2151e402932243f715"
+    },
+    {
+      "configuration_id": 52,
+      "filename": "POSCAR-053",
+      "sha256": "ff322d488f9f0df2c931c9330e5f9a7075825fe71f2ee67d096f57db7888d295"
+    },
+    {
+      "configuration_id": 53,
+      "filename": "POSCAR-054",
+      "sha256": "987b919e36dc437f1a305833a527224bf0782e0dfbdffcf8341a4c7c1b9bcfee"
+    },
+    {
+      "configuration_id": 54,
+      "filename": "POSCAR-055",
+      "sha256": "09f30d17902d1987d0a1a6f4c4f5a9d8e39d58e18d9e86db2005b9ba5e8a9200"
+    },
+    {
+      "configuration_id": 55,
+      "filename": "POSCAR-056",
+      "sha256": "6102a0284e9568a5e9a97d7caeedf7ae377a93d03dd7b4c99b26b0a5d3d6e0f4"
+    },
+    {
+      "configuration_id": 56,
+      "filename": "POSCAR-057",
+      "sha256": "27a23562882cc85d9ab53cd758125f64030ba38a28c5fe045367f1e7b5afedd7"
+    },
+    {
+      "configuration_id": 57,
+      "filename": "POSCAR-058",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 58,
+      "filename": "POSCAR-059",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 59,
+      "filename": "POSCAR-060",
+      "sha256": "38c849d494f37713aad46406aaf928118df85bc192d6ebd85d7552b2f499fca3"
+    },
+    {
+      "configuration_id": 60,
+      "filename": "POSCAR-061",
+      "sha256": "839262a74af24d55e689392c1cc3a8df95c6b046f09ed467eb5175079c90a6af"
+    },
+    {
+      "configuration_id": 61,
+      "filename": "POSCAR-062",
+      "sha256": "d1fea62d4d8a496ab30a4a4db8c17f891ec21d5a467a5d57cf33f0b2c9e14ed5"
+    },
+    {
+      "configuration_id": 62,
+      "filename": "POSCAR-063",
+      "sha256": "d0d4c72d061aa126d372aa34ea8872321ad63e01d39523b042499bda7687dd05"
+    },
+    {
+      "configuration_id": 63,
+      "filename": "POSCAR-064",
+      "sha256": "df04d878d32f85d3be1f627dac32d5d010f30eb28c5d0b6daae0fe566f1d7f6e"
+    },
+    {
+      "configuration_id": 64,
+      "filename": "POSCAR-065",
+      "sha256": "b37d63e5a6308b8d4a1fd6100f3ded86c27dc431200380773b7bca9757762b1c"
+    },
+    {
+      "configuration_id": 65,
+      "filename": "POSCAR-066",
+      "sha256": "91df63d270ac0f39dd3266c9d0bbaa2b76ef01a8c1d479ba05b73deeee8cdd26"
+    },
+    {
+      "configuration_id": 66,
+      "filename": "POSCAR-067",
+      "sha256": "f9721692d6637a735ac3ebc34b442af588a43a74a9a34889fa2caf1400558fc7"
+    },
+    {
+      "configuration_id": 67,
+      "filename": "POSCAR-068",
+      "sha256": "6cab45cceb49da71f7709158773ce94561c4217e4c0992bf67ceb49fe8a95990"
+    },
+    {
+      "configuration_id": 68,
+      "filename": "POSCAR-069",
+      "sha256": "d75483701eac37b31f223984297a9903689c5f6b1a22f5cf931282e66eee77a0"
+    },
+    {
+      "configuration_id": 69,
+      "filename": "POSCAR-070",
+      "sha256": "4e470f1628f2dbe34151e3850384443a6c94e3dfa15d2972dfae1e077685999f"
+    },
+    {
+      "configuration_id": 70,
+      "filename": "POSCAR-071",
+      "sha256": "3538d601725a211986432306d15638d0d006817738a20e603e89025403dfde12"
+    },
+    {
+      "configuration_id": 71,
+      "filename": "POSCAR-072",
+      "sha256": "ff15db8026089a09cab1ca7a3d83ae57728f1738c04e8f104344168208e395cf"
+    },
+    {
+      "configuration_id": 72,
+      "filename": "POSCAR-073",
+      "sha256": "3a61d3e9f7515ccd61b65693fb6fe342becc9387dd91b9ea6603d9016c032e79"
+    },
+    {
+      "configuration_id": 73,
+      "filename": "POSCAR-074",
+      "sha256": "b84e09f497abf499751f4eaf53aaa16104af329755a60c5292442cd49c927e95"
+    },
+    {
+      "configuration_id": 74,
+      "filename": "POSCAR-075",
+      "sha256": "2d1f986c1a736c45073d686b92191a28fd97aaba1dc62ae59d17921a616a05a8"
+    },
+    {
+      "configuration_id": 75,
+      "filename": "POSCAR-076",
+      "sha256": "33b6174cf372e6343baab573342980f4cb1e1edc5d7c853a6d1a96f988570725"
+    },
+    {
+      "configuration_id": 76,
+      "filename": "POSCAR-077",
+      "sha256": "a20a1f67a99f931e247b36c2408ccaab32faf8bb82308b3b7c5b98032607915d"
+    },
+    {
+      "configuration_id": 77,
+      "filename": "POSCAR-078",
+      "sha256": "8eb48285f313ffe986bacbbf3efa2509c5da77f6303b399add76e1cf22637502"
+    },
+    {
+      "configuration_id": 78,
+      "filename": "POSCAR-079",
+      "sha256": "adc80027d16a45d1f1eec41c68c51854432ff8132983a3f1a77e1c5f49737f21"
+    },
+    {
+      "configuration_id": 79,
+      "filename": "POSCAR-080",
+      "sha256": "db54a2ec3293480a05755d50ff70b52bb6b8b81948d47f7a3eb5339027748b20"
+    },
+    {
+      "configuration_id": 80,
+      "filename": "POSCAR-081",
+      "sha256": "0726bb8d6870cd8b0c04eacdc703d46796623b2c93b025999a5c51b1007d74ff"
+    },
+    {
+      "configuration_id": 81,
+      "filename": "POSCAR-082",
+      "sha256": "1f19011172e537f8f870ba7ae4190bb580b05dda97d329df8731321535602088"
+    },
+    {
+      "configuration_id": 82,
+      "filename": "POSCAR-083",
+      "sha256": "5cbda489e6caf2dd26989867da671fd3c998fc4bfa764e6452b106b3b608358e"
+    },
+    {
+      "configuration_id": 83,
+      "filename": "POSCAR-084",
+      "sha256": "ffdb671d185a703e90077b5362902ef04c1280dbddf89e9c241cf5e3c4a8f97b"
+    },
+    {
+      "configuration_id": 84,
+      "filename": "POSCAR-085",
+      "sha256": "0f60fb491037e7e12f2c9044b731369940d89957470501ffe691ff00616f93d9"
+    },
+    {
+      "configuration_id": 85,
+      "filename": "POSCAR-086",
+      "sha256": "66ba93e6ccc192996bc9f2bb58ec86a052f251b42b8f246adf9d5f554d3c9c46"
+    },
+    {
+      "configuration_id": 86,
+      "filename": "POSCAR-087",
+      "sha256": "6ee3bc50e949fd38064e5b4239395f419f68075ee7c87a054051047aef5c50df"
+    },
+    {
+      "configuration_id": 87,
+      "filename": "POSCAR-088",
+      "sha256": "91545e451236ef940790d8600b42e0ef267cb62908ac8344d53ed8a13e32468d"
+    },
+    {
+      "configuration_id": 88,
+      "filename": "POSCAR-089",
+      "sha256": "55ecf7f7e2932ce1e2bcca2b9ceee5fbce2de972b2a80133498507906e6aa303"
+    },
+    {
+      "configuration_id": 89,
+      "filename": "POSCAR-090",
+      "sha256": "585a638df5796bba26f1a973904eed505f2e3d886b963ea678fd437a8dd4ce75"
+    },
+    {
+      "configuration_id": 90,
+      "filename": "POSCAR-091",
+      "sha256": "a4034f0e08a6bcb6b963f43159d6eb26e3d5ce904fce76ef756e6b6f85b9932c"
+    },
+    {
+      "configuration_id": 91,
+      "filename": "POSCAR-092",
+      "sha256": "be66294c1142aed5c67d8b5dda3119f8c0dad1858a448e0e9ff454505dbda221"
+    },
+    {
+      "configuration_id": 92,
+      "filename": "POSCAR-093",
+      "sha256": "b9dfce2e203d8c71a1ea8a329367a2c608442e6a3598a613b5e0f39514cc7e52"
+    },
+    {
+      "configuration_id": 93,
+      "filename": "POSCAR-094",
+      "sha256": "efcd8f8fe667c21eab72f2a0749c6e77f4ca6ae2dbc521952b77a0f499d12b13"
+    },
+    {
+      "configuration_id": 94,
+      "filename": "POSCAR-095",
+      "sha256": "5b8d8a2a2bad5a697016094e0d210a482fb4732b44119a0de28f29f00325d3ee"
+    },
+    {
+      "configuration_id": 95,
+      "filename": "POSCAR-096",
+      "sha256": "bc3ef135a413fa27740ea25abb69cc4422efe4a717c7f7caf0804cafaac7abbc"
+    },
+    {
+      "configuration_id": 96,
+      "filename": "POSCAR-097",
+      "sha256": "1917c236c9f76746fd43cf57d19e58068cdbd3395569b0e901d60e9cb7b4d779"
+    },
+    {
+      "configuration_id": 97,
+      "filename": "POSCAR-098",
+      "sha256": "d652918c0de5aff2d5baa38bae82494c2818ba1586021088691e7a590b2be284"
+    },
+    {
+      "configuration_id": 98,
+      "filename": "POSCAR-099",
+      "sha256": "d8355d53ae2dd48a56bff948e7a1c50bdb12f8d88b12ac57b1dbef1fb0f2cc4a"
+    },
+    {
+      "configuration_id": 99,
+      "filename": "POSCAR-100",
+      "sha256": "41e95c8479dbfe3421e84535b494358b0419e0b8bd8ba885d727b578da307a2c"
+    },
+    {
+      "configuration_id": 100,
+      "filename": "POSCAR-101",
+      "sha256": "5e5e239a7ca982080f5b34ddde07aa2fce96adc20ed1b8d83f863d1e996ad978"
+    },
+    {
+      "configuration_id": 101,
+      "filename": "POSCAR-102",
+      "sha256": "5c263032fd8acd881095ae1d82ae5e383916e8dace8137dbad67985e7421e094"
+    },
+    {
+      "configuration_id": 102,
+      "filename": "POSCAR-103",
+      "sha256": "8f817c557f8915210149f8dedc942d8eb6ab4eecdae70e5260b97a70a2a9c3b5"
+    },
+    {
+      "configuration_id": 103,
+      "filename": "POSCAR-104",
+      "sha256": "b3b6e2281bfbca15d8e68e21e6187d73761eca16b91905e1d4de884b2a34fc7a"
+    },
+    {
+      "configuration_id": 104,
+      "filename": "POSCAR-105",
+      "sha256": "a35a747ff8e6d04c1f3f5b14650a943ebd8a0751020c648a7fb92c4d69f91158"
+    },
+    {
+      "configuration_id": 105,
+      "filename": "POSCAR-106",
+      "sha256": "2e36ee8b36b1a3306eb461178d25f819ce8a9a71d70c20aaa3e3d3b7c0919b5a"
+    },
+    {
+      "configuration_id": 106,
+      "filename": "POSCAR-107",
+      "sha256": "1bccba1478f7c5d877860a08d8495d299263b7415d0c5d4b79572d874bfbd6b6"
+    },
+    {
+      "configuration_id": 107,
+      "filename": "POSCAR-108",
+      "sha256": "3d3bf405647a7b1ad4dfc2f9d02e096d721452a6c075aa7fd0b1da888d2ec6ed"
+    },
+    {
+      "configuration_id": 108,
+      "filename": "POSCAR-109",
+      "sha256": "8cb7babf8e78ef8f514eb360547bbb62ef275295c1aa19e116473bbadd3087c1"
+    },
+    {
+      "configuration_id": 109,
+      "filename": "POSCAR-110",
+      "sha256": "b801879cd29b0d2a2d71f821759f1cfde36024b20b0bfee1c78747f772b1ecc6"
+    },
+    {
+      "configuration_id": 110,
+      "filename": "POSCAR-111",
+      "sha256": "834c3325f29131272052b95eef32aa8ec44e9f6d30b61220892adba5f685d7f3"
+    },
+    {
+      "configuration_id": 111,
+      "filename": "POSCAR-112",
+      "sha256": "d490106c1d1019c4fafc9093f8acf2856defff8a9c4423245d9fab0421268684"
+    },
+    {
+      "configuration_id": 112,
+      "filename": "POSCAR-113",
+      "sha256": "628dc1470245ecae4fbd58567eb6e018432c656d09b827db280bd609de8f33d9"
+    },
+    {
+      "configuration_id": 113,
+      "filename": "POSCAR-114",
+      "sha256": "2c276f8f17d8bf915229ab6f020c96425024eb8de8d5568fddad2fe62023bfdd"
+    },
+    {
+      "configuration_id": 114,
+      "filename": "POSCAR-115",
+      "sha256": "e209854a5ce265d9610dbef1a003b913bf41cfeed038103d1b1bf85c4378d1cf"
+    },
+    {
+      "configuration_id": 115,
+      "filename": "POSCAR-116",
+      "sha256": "03fefef623c50cd0c8c12e6412b69e75844bcdc535af3c0775cd2c2456b5d750"
+    },
+    {
+      "configuration_id": 116,
+      "filename": "POSCAR-117",
+      "sha256": "b50296970fc0a6dc0d28beb94c729b9b4247c76e852d03920ecbbe6a9331440d"
+    },
+    {
+      "configuration_id": 117,
+      "filename": "POSCAR-118",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 118,
+      "filename": "POSCAR-119",
+      "sha256": "142396b7c8cbee3096110fb60a86dc14bd28eb77eaf6dc38f00486601a844960"
+    },
+    {
+      "configuration_id": 119,
+      "filename": "POSCAR-120",
+      "sha256": "4745d8885950faa71a4c27680f288944964a1ef71849d6868009b494cd122a00"
+    },
+    {
+      "configuration_id": 120,
+      "filename": "POSCAR-121",
+      "sha256": "a86cbd6d631033b19140105176c0bdc737a92f5742c9b21301f26708fa138233"
+    },
+    {
+      "configuration_id": 121,
+      "filename": "POSCAR-122",
+      "sha256": "c2248d556a2d7cdfa3d3e3f39ef761fbb4d69bd55a3d2fe5b8e0f5f39fbe98b2"
+    },
+    {
+      "configuration_id": 122,
+      "filename": "POSCAR-123",
+      "sha256": "10e80f97566729ddc1c52ae896e2530a427283c8806644eb258249720eea66f1"
+    },
+    {
+      "configuration_id": 123,
+      "filename": "POSCAR-124",
+      "sha256": "3a072bbe369616ac6231e7b9d4073955645497d604874196c76f7b634566beb1"
+    },
+    {
+      "configuration_id": 124,
+      "filename": "POSCAR-125",
+      "sha256": "f083bbc8424a2ab18a7ed8ece1cc92fdd3533bddcfe3f77a920a5e4e498ec13a"
+    },
+    {
+      "configuration_id": 125,
+      "filename": "POSCAR-126",
+      "sha256": "c20b142b94156c7953dd26c5c4974b79b3f9c0796ec68b266ffd087d0277f15b"
+    },
+    {
+      "configuration_id": 126,
+      "filename": "POSCAR-127",
+      "sha256": "7cab9e87f2ada3c866ea59d2a77e6be34538ea47eda16e895d8e67375846bc31"
+    },
+    {
+      "configuration_id": 127,
+      "filename": "POSCAR-128",
+      "sha256": "0c5ba4e0672052b6a17dab1ea61c56be868c555f8d236a8a95e9713adb76a5d8"
+    },
+    {
+      "configuration_id": 128,
+      "filename": "POSCAR-129",
+      "sha256": "db48cc6787ca39d9b9daa7375070fcdf9d3af5ed4a191576051aa256e0da8069"
+    },
+    {
+      "configuration_id": 129,
+      "filename": "POSCAR-130",
+      "sha256": "d9cf47766a173c7bec0da5c241f7659e9ce8d3b20c41fa03072e7489acccb963"
+    },
+    {
+      "configuration_id": 130,
+      "filename": "POSCAR-131",
+      "sha256": "471ad7aa8c8846e6f43a2f91b57b4f58185bbfdbeec7872b6a18e40ac76cbc32"
+    },
+    {
+      "configuration_id": 131,
+      "filename": "POSCAR-132",
+      "sha256": "93bd8b70ec16313f2c432d8f5e0e0494701bad82c92c225f5ba43d272ed50f4a"
+    },
+    {
+      "configuration_id": 132,
+      "filename": "POSCAR-133",
+      "sha256": "ab6f22b85d0c6b07d151bd63a9501791f3a58eb13ee1008591c385d80fa990bd"
+    },
+    {
+      "configuration_id": 133,
+      "filename": "POSCAR-134",
+      "sha256": "3e7d3c3ea4b48cd86d4886a5e2ea2c061a41a2a13bb98293cfea841cdf7f5f07"
+    },
+    {
+      "configuration_id": 134,
+      "filename": "POSCAR-135",
+      "sha256": "7f7d066d6aa270f4c0eb0901279d88b07386005ebb85e23805a7c3acf68f1b72"
+    },
+    {
+      "configuration_id": 135,
+      "filename": "POSCAR-136",
+      "sha256": "2f818116d23ae9bf6bd12e9666aefa4018226c2834d2e1eabbafdbd50fea9ef4"
+    },
+    {
+      "configuration_id": 136,
+      "filename": "POSCAR-137",
+      "sha256": "3cdd0b10954098f6d4f1952aa0e082b6690a24dcdf30030a72a7b543cb3ec9ac"
+    },
+    {
+      "configuration_id": 137,
+      "filename": "POSCAR-138",
+      "sha256": "bfe7dda7fe021eaa6c856658dafe25f85147a0308d32773123ed192e40764ffb"
+    },
+    {
+      "configuration_id": 138,
+      "filename": "POSCAR-139",
+      "sha256": "698cfd1cf7aea7df542155efd36e1598ea2a8a7dcec96eaacb924f5be37562e0"
+    },
+    {
+      "configuration_id": 139,
+      "filename": "POSCAR-140",
+      "sha256": "45cf313479db452d13cc9f1d225ddb843b432dadfa87884d0ba519f4faa9f7e0"
+    },
+    {
+      "configuration_id": 140,
+      "filename": "POSCAR-141",
+      "sha256": "f895d30277511a2747e00ffcc07953cc45ccd29746f48164c3511b7f0e05d810"
+    },
+    {
+      "configuration_id": 141,
+      "filename": "POSCAR-142",
+      "sha256": "5a97c4b1f6c3186fcbae86ce4878f598f47bacbed9a994da95a99d155c0be77e"
+    },
+    {
+      "configuration_id": 142,
+      "filename": "POSCAR-143",
+      "sha256": "fe026c37c23ca601a711d64eb3afeff7c428297b9436fcaf6660039feb313023"
+    },
+    {
+      "configuration_id": 143,
+      "filename": "POSCAR-144",
+      "sha256": "6f85f98f27742ae3742845b0ea7f33aa792b59acf8c57b45634a918cb1c5a5fd"
+    },
+    {
+      "configuration_id": 144,
+      "filename": "POSCAR-145",
+      "sha256": "f0febda601275dcccafa5ee0f67baf0d0ac84b4410531158f3138fe4060685f5"
+    },
+    {
+      "configuration_id": 145,
+      "filename": "POSCAR-146",
+      "sha256": "09e9c7ae53304e5fa8233ece328acd009ced951d4e8b2df2dec52b523aa30091"
+    },
+    {
+      "configuration_id": 146,
+      "filename": "POSCAR-147",
+      "sha256": "10b1f6160d6fa9e098cb8f927dbd8f9e1c2f150bad85e5386aaef760ff7c12d8"
+    },
+    {
+      "configuration_id": 147,
+      "filename": "POSCAR-148",
+      "sha256": "63f1a620acc462ff97881b2adf5642af3f9d05a409bd131c46dcabb51f48557b"
+    },
+    {
+      "configuration_id": 148,
+      "filename": "POSCAR-149",
+      "sha256": "71a9c2e402ab2f8880066c2c53d7dc7eb13cab6d985d5635b09a20ae54f588ad"
+    },
+    {
+      "configuration_id": 149,
+      "filename": "POSCAR-150",
+      "sha256": "6afdda6cfc55a62f891b91c18b9ffe61c53e78a9d70b7ee1c8092881105028c8"
+    },
+    {
+      "configuration_id": 150,
+      "filename": "POSCAR-151",
+      "sha256": "7863ee13047059b7d12d0ea9f5ea1b546da5cfcef102d3fafe6f37d9938a87ce"
+    },
+    {
+      "configuration_id": 151,
+      "filename": "POSCAR-152",
+      "sha256": "f5516e741004e1601225faca94887cb87b6dbd563ccc7fa40ffdff46be51b3a6"
+    },
+    {
+      "configuration_id": 152,
+      "filename": "POSCAR-153",
+      "sha256": "94bfcc12a57f50dc34aa6e31bb052fc9b30c70a7a14c7c82b3e2684995697e6b"
+    },
+    {
+      "configuration_id": 153,
+      "filename": "POSCAR-154",
+      "sha256": "de64619e27f7f07ca20762e16762b7b50083a7b4e486e6ad1ecfb50aa72e9060"
+    },
+    {
+      "configuration_id": 154,
+      "filename": "POSCAR-155",
+      "sha256": "192728253be84a79746d24f610da8b7ca6d55bf189c12c1605392f995d4398b2"
+    },
+    {
+      "configuration_id": 155,
+      "filename": "POSCAR-156",
+      "sha256": "990ba596162eaedad1d3dec82c834fceb0d369b063176bbb78ee4bf7d3f077a2"
+    },
+    {
+      "configuration_id": 156,
+      "filename": "POSCAR-157",
+      "sha256": "9600b39e8e19fe00317759bc87f50ce7dbc6c49362b8a77fc477b20bdaf73a2c"
+    },
+    {
+      "configuration_id": 157,
+      "filename": "POSCAR-158",
+      "sha256": "d4f3036e39f2866c64ccbeb7fb9022b03a0315c7e7f5cf7b6affda68d9de000d"
+    },
+    {
+      "configuration_id": 158,
+      "filename": "POSCAR-159",
+      "sha256": "9312c066b21d41d8947fd7a7e9d7222b290230ed6b6a306fd0ac2e6d78f54009"
+    },
+    {
+      "configuration_id": 159,
+      "filename": "POSCAR-160",
+      "sha256": "cc3c8fc44df9014e5a5406213872363d975f173bf442640e0edff7ea5ed4a4b1"
+    },
+    {
+      "configuration_id": 160,
+      "filename": "POSCAR-161",
+      "sha256": "9e10b0c82af1ea4895da230fa00b62ebacec204f691c7e1e342f035edfa51eec"
+    },
+    {
+      "configuration_id": 161,
+      "filename": "POSCAR-162",
+      "sha256": "300cc6959d5dd273a6547e22ca60509e53dd342ba4f8dcbd73787679536e35aa"
+    },
+    {
+      "configuration_id": 162,
+      "filename": "POSCAR-163",
+      "sha256": "1d74116879f0ec99bfa29b4601eb840f0897d97ca3c71bba888b454418e16a88"
+    },
+    {
+      "configuration_id": 163,
+      "filename": "POSCAR-164",
+      "sha256": "a9f48000dfd74434ae0a7592131475b0e64443547c4990bfad4903f96d73141b"
+    },
+    {
+      "configuration_id": 164,
+      "filename": "POSCAR-165",
+      "sha256": "2e760ac3dc3f5879a0fadf01c10af92cb0dba9881e2b8599406a79a74ee64383"
+    },
+    {
+      "configuration_id": 165,
+      "filename": "POSCAR-166",
+      "sha256": "5bbf51c8bfe30bb1a0ff2849ab877d7de39885901c1bc74502a2e6af3a49e301"
+    },
+    {
+      "configuration_id": 166,
+      "filename": "POSCAR-167",
+      "sha256": "7841712c34f2e45741ed6fdbe48e3cc6d5c93b75206454aaedecf48f08d081ea"
+    },
+    {
+      "configuration_id": 167,
+      "filename": "POSCAR-168",
+      "sha256": "de7529e23ff59e2b4515254ef34c2b061b21fadc395f030c1f8973bf0e91dc32"
+    }
+  ]
+}
