@@ -50,7 +50,7 @@ def fit_case(
         acoustic_sum_rule=True,
     )
     constrained = (
-        result.force_constants.enforce_harmonic_constraints(born_huang=True, huang=True)
+        result.force_constants.enforce_rotational_sum_rules(born_huang=True, huang=True)
         if constrain
         else None
     )

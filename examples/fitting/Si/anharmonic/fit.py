@@ -5,7 +5,6 @@ from ase.io import read
 
 from mlfcs.fitting import ForceConstantFitter
 
-BOHR = 0.529177210903
 CASE = Path(__file__).resolve().parent
 
 
@@ -25,7 +24,9 @@ def main() -> None:
         read(CASE / "input/primitive.vasp"),
         read(CASE / "input/supercell.vasp"),
         orders=(2, 3, 4),
-        cutoffs={2: 5.4, 3: 5.4, 4: 11.0 * BOHR},
+        # FC4 is restricted to the third Si neighbour shell (4.503 Å);
+        # 4.6 Å lies safely between the third and fourth shells.
+        cutoffs={2: 5.4, 3: 5.4, 4: 4.6},
         max_body_orders={2: 2, 3: 3, 4: 3},
     )
     result = fitter.fit(

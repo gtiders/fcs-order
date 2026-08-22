@@ -10,7 +10,6 @@ from pathlib import Path
 import numpy as np
 from ase import Atoms
 from ase.io import read
-from ase.units import Bohr
 from phono3py import Phono3py
 from phono3py.file_IO import write_fc2_to_hdf5, write_fc3_to_hdf5
 from phonopy.interface.calculator import read_crystal_structure
@@ -21,7 +20,8 @@ from mlfcs import ForceConstantCalculation
 CASE = Path(__file__).resolve().parent
 INPUT = CASE / "input"
 RESULTS = CASE / "results"
-CUTOFFS = {2: None, 3: 12.0 * Bohr}
+# Use a common 6 Å interaction cutoff for the finite-difference reference.
+CUTOFFS = {2: 6.0, 3: 6.0}
 DISPLACEMENT = 0.01
 
 

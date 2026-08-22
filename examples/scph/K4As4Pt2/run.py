@@ -21,10 +21,10 @@ def main() -> None:
     parser.add_argument("--temperature-step", type=float, default=None)
     parser.add_argument("--interpolation-multiplier", type=int, default=1)
     parser.add_argument("--scph-multiplier", type=int, default=2)
-    parser.add_argument("--mixing", type=float, default=0.1)
+    parser.add_argument("--mixing", type=float, default=0.5)
     parser.add_argument("--tolerance", type=float, default=1e-10)
-    parser.add_argument("--max-iterations", type=int, default=80)
-    parser.add_argument("--qpoint-workers", type=int, default=1)
+    parser.add_argument("--max-iterations", type=int, default=200)
+    parser.add_argument("--qpoint-workers", type=int, default=4)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 

@@ -31,6 +31,10 @@ def plot(band_data: dict[str, tuple], output: Path) -> None:
     )
     figure, axes = plt.subplots(2, 2, figsize=(13.0, 9.0), sharey=True, constrained_layout=True)
     for axis, (title, selected) in zip(axes.flat, panels, strict=True):
+        selected = tuple(name for name in selected if name in band_data)
+        if not selected:
+            axis.set_visible(False)
+            continue
         ticks = {}
         for name in selected:
             distances, frequencies, labels = band_data[name]
@@ -86,10 +90,17 @@ def main() -> None:
     band_data = {
         "phonopy harmonic": bands(phonon, phonon.force_constants),
         "phonopy SSCHA": bands(phonon, phonopy_final),
-        "MLFCS SSCHA": bands(
-            phonon, map_reference_to_phonopy(stored["force_constants"], phonon)
-        ),
     }
+    try:
+        mapped = map_reference_to_phonopy(stored["force_constants"], phonon)
+    except ValueError as exc:
+        # The MLFCS KCl fit uses the eight-atom conventional reference while
+        # this historical phonopy YAML reduces it to a two-atom primitive.
+        # Do not fabricate a permutation between those distinct cells; keep
+        # the valid phonopy comparison and report the skipped overlay.
+        print(f"warning: skipping MLFCS overlay: {exc}")
+    else:
+        band_data["MLFCS SSCHA"] = bands(phonon, mapped)
     plot(band_data, args.output)
     print(f"wrote {args.output}")
 

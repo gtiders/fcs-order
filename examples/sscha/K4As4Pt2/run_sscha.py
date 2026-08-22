@@ -46,11 +46,13 @@ def main() -> None:
     harmonic = read_hdf5(FINITE / "harmonic" / "mlfcs.h5")
     if harmonic.relation is None:
         raise ValueError("harmonic result has no structure relation")
-    reference = harmonic.relation.reference.copy()
+    # SSCHA must sample the explicit finite-difference reference supercell,
+    # not the compact primitive-only relation stored in the FC2 result.
+    reference = read(INPUT / "supercell.vasp")
     sscha = SSCHA(
         primitive,
         reference=reference,
-        cutoff=-1,
+        cutoff=6.0,
         temperature=TEMPERATURE,
         snapshots=args.snapshots,
         max_iterations=args.iterations,

@@ -29,13 +29,18 @@ def _bands(force_constants: Path):
 
 def main() -> None:
     path, asr = _bands(ROOT / "results/asr/FORCE_CONSTANTS_2ND")
-    _, constrained = _bands(ROOT / "results/born-huang-huang/FORCE_CONSTANTS_2ND")
+    constrained_path = ROOT / "results/born-huang-huang/FORCE_CONSTANTS_2ND"
+    constrained = _bands(constrained_path)[1] if constrained_path.is_file() else None
     ticks, labels = [], []
     for (a, b), distance in zip(path["path"], asr.distances, strict=True):
         ticks.extend((float(distance[0]), float(distance[-1])))
         labels.extend((a, b))
-    figure, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True, constrained_layout=True)
-    for axis, band, title, color in zip(axes, (asr, constrained), ("ASR", "Born-Huang + Huang"), ("#176b87", "#a34e25"), strict=True):
+    panels = [(asr, "ASR", "#176b87")]
+    if constrained is not None:
+        panels.append((constrained, "Born-Huang + Huang", "#a34e25"))
+    figure, axes = plt.subplots(1, len(panels), figsize=(6.2 * len(panels), 4.6), sharey=True, squeeze=False, constrained_layout=True)
+    axes = axes[0]
+    for axis, (band, title, color) in zip(axes, panels, strict=True):
         for distance, values in zip(band.distances, band.frequencies, strict=True):
             axis.plot(distance, np.asarray(values), color=color, linewidth=0.8)
         axis.set_title(title)

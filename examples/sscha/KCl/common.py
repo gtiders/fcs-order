@@ -9,7 +9,6 @@ import numpy as np
 from ase import Atoms
 from phonopy import load
 
-
 CASE = Path(__file__).resolve().parent
 INPUT = CASE / "input"
 REFERENCE = CASE / "reference"
@@ -50,7 +49,12 @@ def map_reference_to_phonopy(full: np.ndarray, phonon) -> np.ndarray:
             raise ValueError("cannot map MLFCS KCl supercell onto phonopy order")
         permutation.append(index)
     permutation = np.asarray(permutation, dtype=int)
-    return np.asarray(full)[np.ix_(permutation, permutation)]
+    full = np.asarray(full)
+    if full.shape[0] == len(phonon.primitive):
+        return full[:, permutation]
+    if full.shape[0] == len(target):
+        return full[np.ix_(permutation, permutation)]
+    raise ValueError(f"unsupported FC2 shape {full.shape} for KCl supercell")
 
 
 def paths(phonon):
