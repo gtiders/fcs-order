@@ -1,18 +1,42 @@
-# MLFCS 示例
+# Examples
 
-本目录按 MLFCS 的工作流功能组织。每个材料案例都有自己的输入、脚本、参考数据和说明，脚本不跨案例复用。
+English | [中文](README_ZH.md)
 
-当前迁移中的 Si 案例：
+These scripts demonstrate public MLFCS APIs. Run them from the repository root with `uv run`.
+They are examples, not an MLFCS command-line interface.
+New scripts and material cases follow the [tests and examples policy](../docs/en/development/tests-and-examples.md).
 
-- finite-difference/Si：有限差分 FC2、FC3 和参考数据；
-- fitting/Si：FC2、FC3/FC4 和冻结 FC2 拟合；
-- transport/Si：基于有限差分或拟合力常数的热导率计算。
+## Direct calculators
 
-当前迁移中的 Ba8Ga16Ge30 案例：
+- [`basic_fc2.py`](basic_fc2.py) relaxes and evaluates a small system with ASE EMT, then writes
+  FC2.
+- [`nep89_orders.py`](nep89_orders.py) loads a user-supplied NEP89 model through calorine and
+  computes one or more orders. The model remains an external user dependency.
 
-- finite-difference/Ba8Ga16Ge30：使用公开 hiPhive FCP 的 ASE 有限差分 FC2、FC3；
-- fitting/Ba8Ga16Ge30：静态训练集和温度相关 MD 快照的有效 IFC 拟合；
-- md/Ba8Ga16Ge30：生成温度相关 NVT/NVE 快照；
-- transport/Ba8Ga16Ge30：将 MLFCS IFC 临时转换为 phono3py 输入并运行 RTA。
+For example:
 
-生成的力常数、缓存、日志和中间数组默认写入案例的 results/，不作为输入提交。声子谱等用于审查的图片保存在 figures/。
+```bash
+uv run python examples/nep89_orders.py POSCAR nep89.txt \
+  --orders 2 3 --supercell 2 2 2 --cutoff -3 --output-directory results
+```
+
+## External VASP calculations
+
+[`vasp_external_fc3.py`](vasp_external_fc3.py) is a complete three-stage reference:
+
+```bash
+uv run python examples/vasp_external_fc3.py sow POSCAR fc3-work \
+  --supercell 3 3 3 --cutoff -6
+
+# Create calculations/POSCAR-001, calculations/POSCAR-002, ...;
+# copy each matching POSCAR, run VASP, and retain vasprun.xml.
+
+uv run python examples/vasp_external_fc3.py collect \
+  fc3-work fc3-work/calculations
+uv run python examples/vasp_external_fc3.py reap \
+  fc3-work FORCE_CONSTANTS_3RD --format shengbte
+```
+
+The helper never submits VASP. Site-specific INCAR, KPOINTS, POTCAR, and scheduler setup remain
+the user's responsibility. See the [complete workflow guide](../docs/en/workflows/external-calculators.md)
+before using externally calculated forces.

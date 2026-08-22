@@ -1,0 +1,25 @@
+{
+  "method": "mlfcs-ase-polymlp",
+  "order": 3,
+  "supercell_matrix": [
+    [
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0
+    ],
+    [
+      0,
+      0,
+      3
+    ]
+  ],
+  "cutoff_angstrom": 6.350126526766093,
+  "displacement_angstrom": 0.01,
+  "configuration_count": 1268,
+  "atom_order": "MLFCS sow order"
+}
