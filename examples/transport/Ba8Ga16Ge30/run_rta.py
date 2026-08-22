@@ -9,18 +9,20 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+from ase.io import read, write
 from phono3py import Phono3py
 from phono3py.file_IO import read_fc2_from_hdf5, read_fc3_from_hdf5
 from phonopy.interface.calculator import read_crystal_structure
 
 from mlfcs import read_hdf5
+from mlfcs.tools import build_supercell
 
 ROOT = Path(__file__).resolve().parent
 INPUT = ROOT / "input"
 MD_ROOT = ROOT.parent.parent / "md" / "Ba8Ga16Ge30" / "results"
 FIT_ROOT = ROOT.parent.parent / "fitting" / "Ba8Ga16Ge30" / "results"
-PRIMITIVE = INPUT / "primitive.vasp"
-MLFCS_SUPERCELL = INPUT / "reference.vasp"
+PRIMITIVE = INPUT / "reference.vasp"
+MLFCS_SUPERCELL = INPUT / "reference_supercell.vasp"
 DEFAULT_TEMPERATURES = (300, 400, 500, 600)
 MESH = np.array((3, 3, 3), dtype=int)
 
@@ -38,6 +40,11 @@ def run_temperature(temperature: int) -> None:
             + "\n".join(missing)
         )
 
+    if not MLFCS_SUPERCELL.is_file():
+        primitive = read(PRIMITIVE)
+        reference = build_supercell(primitive, (2, 2, 2))
+        write(MLFCS_SUPERCELL, reference, format="vasp", direct=True, sort=False, vasp5=True)
+        print(f"Wrote MLFCS supercell for phono3py: {MLFCS_SUPERCELL}")
     cell, _ = read_crystal_structure(filename=str(MLFCS_SUPERCELL), interface_mode="vasp")
     phonon = Phono3py(
         cell,

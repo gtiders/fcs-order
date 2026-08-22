@@ -10,7 +10,7 @@
 
 &interaction
  NORDER = 3
- NBODY  = 2 3 3
+ NBODY  = 2 3 4
  # Notes for higher-order runs when you later prepare optimize input:
  #   NORDER = 1 means 2nd-order force constants.
  #   NORDER = 2 means 3rd-order force constants.
