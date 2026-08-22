@@ -1,0 +1,72 @@
+Preparing order-2 force-constant calculation
+Creating reference supercell with matrix [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+- 8 primitive atoms, 64 supercell atoms
+Resolving the interaction cutoff
+- Cutoff radius: 6.2820000000 Å
+Analyzing crystal symmetries
+- Space group Fm-3m
+- 192 symmetry operations
+Finding symmetry-inequivalent order-2 interaction clusters
+- 6 cluster equivalence classes
+- 12 independent tensor parameters
+Building the central-difference displacement plan
+- 4 displacement keys
+- 8 force calculations required
+Evaluating 8 configurations with PolymlpASECalculator
+- Forces: 1/8 (12%)
+- Forces: 2/8 (25%)
+- Forces: 3/8 (38%)
+- Forces: 4/8 (50%)
+- Forces: 5/8 (62%)
+- Forces: 6/8 (75%)
+- Forces: 7/8 (88%)
+- Forces: 8/8 (100%)
+Reaping forces for order-2 force constants
+- Validated 8 force configurations
+- Contracted 4 finite-difference derivatives
+Reconstructing symmetry-expanded force constants (ASR enabled)
+- Max drift of fc2: 3.9269270658e-02 -> 1.1102230246e-15 eV/angstrom^2
+- ASR parameter correction: maximum=2.5746136755e-03 eV/angstrom^2, relative L2=1.3036345034e-03
+- Reconstructed 216 sparse cluster tensors
+Preparing order-2 force-constant calculation
+Creating reference supercell with matrix [[4, 0, 0], [0, 4, 0], [0, 0, 4]]
+- 8 primitive atoms, 512 supercell atoms
+Resolving the interaction cutoff
+- Cutoff radius: 12.5740000000 Å
+Analyzing crystal symmetries
+- Space group Fm-3m
+- 192 symmetry operations
+Finding symmetry-inequivalent order-2 interaction clusters
+- 23 cluster equivalence classes
+- 76 independent tensor parameters
+Building the central-difference displacement plan
+- 6 displacement keys
+- 12 force calculations required
+Evaluating 12 configurations with PolymlpASECalculator
+- Forces: 1/12 (8%)
+- Forces: 2/12 (17%)
+- Forces: 4/12 (33%)
+- Forces: 6/12 (50%)
+- Forces: 8/12 (67%)
+- Forces: 10/12 (83%)
+- Forces: 12/12 (100%)
+Reaping forces for order-2 force constants
+- Validated 12 force configurations
+- Contracted 6 finite-difference derivatives
+Reconstructing symmetry-expanded force constants (ASR enabled)
+- Max drift of fc2: 2.0056021258e-02 -> 1.3322676296e-15 eV/angstrom^2
+- ASR parameter correction: maximum=1.9936532758e-04 eV/angstrom^2, relative L2=2.3795403203e-04
+- Reconstructed 2008 sparse cluster tensors
+MLFCS export view: cache miss; constructing new view
+MLFCS export view: constructed in 0.015936 s
+{
+  "displacement_A": 0.01,
+  "mlfcs_force_evaluations": 8,
+  "phonopy_force_evaluations": 4,
+  "fc2_max_abs_eV_per_A2": 0.19872907934158368,
+  "fc2_relative_frobenius": 0.128598788144251,
+  "large_reference_atoms": 512,
+  "large_reference_cutoff_A": 12.574,
+  "large_fc2_max_abs_eV_per_A2": 0.06800369496912095,
+  "large_fc2_relative_frobenius": 0.0273171558336778
+}

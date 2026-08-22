@@ -1,0 +1,54 @@
+An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
+FREE_ENERGY software=MLFCS iteration=1 eV_per_atom=-1.983309560765e-01 error_eV_per_atom=5.462852538849e-04
+FREE_ENERGY software=MLFCS iteration=2 eV_per_atom=-2.010783028454e-01 error_eV_per_atom=2.724768517833e-04
+FREE_ENERGY software=MLFCS iteration=3 eV_per_atom=-2.015347652743e-01 error_eV_per_atom=3.298040362444e-04
+FREE_ENERGY software=MLFCS iteration=4 eV_per_atom=-2.013834251948e-01 error_eV_per_atom=2.884751931271e-04
+FREE_ENERGY software=MLFCS iteration=5 eV_per_atom=-2.012231824970e-01 error_eV_per_atom=3.442874989836e-04
+FREE_ENERGY software=MLFCS iteration=6 eV_per_atom=-2.012982798387e-01 error_eV_per_atom=3.457088266128e-04
+FREE_ENERGY software=MLFCS iteration=7 eV_per_atom=-2.016537648285e-01 error_eV_per_atom=2.999893474850e-04
+FREE_ENERGY software=MLFCS iteration=8 eV_per_atom=-2.013690006174e-01 error_eV_per_atom=3.380542416170e-04
+FREE_ENERGY software=MLFCS iteration=9 eV_per_atom=-2.015576447127e-01 error_eV_per_atom=2.830446329062e-04
+FREE_ENERGY software=MLFCS iteration=10 eV_per_atom=-2.012966418421e-01 error_eV_per_atom=3.220753751704e-04
+FREE_ENERGY software=MLFCS iteration=11 eV_per_atom=-2.018691712477e-01 error_eV_per_atom=2.798415468257e-04
+FREE_ENERGY software=MLFCS iteration=12 eV_per_atom=-2.004757336574e-01 error_eV_per_atom=3.898865759005e-04
+FREE_ENERGY software=MLFCS iteration=13 eV_per_atom=-2.008964712071e-01 error_eV_per_atom=2.956573575222e-04
+FREE_ENERGY software=MLFCS iteration=14 eV_per_atom=-2.008996012805e-01 error_eV_per_atom=3.601715467847e-04
+FREE_ENERGY software=MLFCS iteration=15 eV_per_atom=-2.010813756362e-01 error_eV_per_atom=3.352679493908e-04
+FREE_ENERGY software=MLFCS iteration=16 eV_per_atom=-2.013434900543e-01 error_eV_per_atom=3.385386913948e-04
+FREE_ENERGY software=MLFCS iteration=17 eV_per_atom=-2.013364138602e-01 error_eV_per_atom=3.153408485959e-04
+FREE_ENERGY software=MLFCS iteration=18 eV_per_atom=-2.010510471545e-01 error_eV_per_atom=3.215516284211e-04
+FREE_ENERGY software=MLFCS iteration=19 eV_per_atom=-2.013092177289e-01 error_eV_per_atom=3.403706172628e-04
+FREE_ENERGY software=MLFCS iteration=20 eV_per_atom=-2.011218051992e-01 error_eV_per_atom=2.907807598149e-04
+FREE_ENERGY software=MLFCS iteration=21 eV_per_atom=-2.012865340503e-01 error_eV_per_atom=3.270002802627e-04
+FREE_ENERGY software=MLFCS iteration=22 eV_per_atom=-2.017553267638e-01 error_eV_per_atom=2.982518770963e-04
+FREE_ENERGY software=MLFCS iteration=23 eV_per_atom=-2.009254669862e-01 error_eV_per_atom=3.665376059686e-04
+FREE_ENERGY software=MLFCS iteration=24 eV_per_atom=-2.010187621102e-01 error_eV_per_atom=2.711147854774e-04
+FREE_ENERGY software=MLFCS iteration=25 eV_per_atom=-2.012082707204e-01 error_eV_per_atom=3.474700537900e-04
+FREE_ENERGY software=MLFCS iteration=26 eV_per_atom=-2.014533344562e-01 error_eV_per_atom=2.630085860652e-04
+FREE_ENERGY software=MLFCS iteration=27 eV_per_atom=-2.014005303146e-01 error_eV_per_atom=3.142571611041e-04
+FREE_ENERGY software=MLFCS iteration=28 eV_per_atom=-2.014182888326e-01 error_eV_per_atom=3.828672001070e-04
+FREE_ENERGY software=MLFCS iteration=29 eV_per_atom=-2.009585603523e-01 error_eV_per_atom=3.286068749000e-04
+FREE_ENERGY software=MLFCS iteration=30 eV_per_atom=-2.011729374737e-01 error_eV_per_atom=2.707382505407e-04
+FREE_ENERGY software=MLFCS iteration=31 eV_per_atom=-2.011513357286e-01 error_eV_per_atom=3.222226995373e-04
+FREE_ENERGY software=MLFCS iteration=32 eV_per_atom=-2.009459087867e-01 error_eV_per_atom=3.361525260979e-04
+FREE_ENERGY software=MLFCS iteration=33 eV_per_atom=-2.012990560375e-01 error_eV_per_atom=3.170603780964e-04
+FREE_ENERGY software=MLFCS iteration=34 eV_per_atom=-2.009601782291e-01 error_eV_per_atom=3.168087114456e-04
+FREE_ENERGY software=MLFCS iteration=35 eV_per_atom=-2.008677075396e-01 error_eV_per_atom=3.104199718639e-04
+FREE_ENERGY software=MLFCS iteration=36 eV_per_atom=-2.014535145065e-01 error_eV_per_atom=3.125906564063e-04
+FREE_ENERGY software=MLFCS iteration=37 eV_per_atom=-2.006876933762e-01 error_eV_per_atom=3.854169717046e-04
+FREE_ENERGY software=MLFCS iteration=38 eV_per_atom=-2.007850866989e-01 error_eV_per_atom=3.700292349786e-04
+FREE_ENERGY software=MLFCS iteration=39 eV_per_atom=-2.017154470628e-01 error_eV_per_atom=3.141644037283e-04
+FREE_ENERGY software=MLFCS iteration=40 eV_per_atom=-2.009285036484e-01 error_eV_per_atom=3.192489296841e-04
+FREE_ENERGY software=MLFCS iteration=41 eV_per_atom=-2.008787476335e-01 error_eV_per_atom=3.421593957879e-04
+FREE_ENERGY software=MLFCS iteration=42 eV_per_atom=-2.015543842670e-01 error_eV_per_atom=3.077488543722e-04
+FREE_ENERGY software=MLFCS iteration=43 eV_per_atom=-2.010591124568e-01 error_eV_per_atom=3.019753785318e-04
+FREE_ENERGY software=MLFCS iteration=44 eV_per_atom=-2.019089521200e-01 error_eV_per_atom=3.067690035166e-04
+FREE_ENERGY software=MLFCS iteration=45 eV_per_atom=-2.012515607138e-01 error_eV_per_atom=3.102336705909e-04
+FREE_ENERGY software=MLFCS iteration=46 eV_per_atom=-2.008142727061e-01 error_eV_per_atom=3.491825229622e-04
+FREE_ENERGY software=MLFCS iteration=47 eV_per_atom=-2.014477868707e-01 error_eV_per_atom=3.051970899437e-04
+FREE_ENERGY software=MLFCS iteration=48 eV_per_atom=-2.011023826312e-01 error_eV_per_atom=3.076360830356e-04
+FREE_ENERGY software=MLFCS iteration=49 eV_per_atom=-2.014515023007e-01 error_eV_per_atom=3.058784177970e-04
+MLFCS export view: cache miss; constructing new view
+MLFCS export view: constructed in 0.017786 s
+MLFCS export view: cache hit; reusing existing view
+wrote MLFCS SSCHA outputs under /home/gwins/codespace/mlfcs-new/examples/sscha/KCl/results

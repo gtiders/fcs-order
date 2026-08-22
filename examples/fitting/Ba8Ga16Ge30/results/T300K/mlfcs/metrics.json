@@ -1,0 +1,30 @@
+{
+  "active_orbits": 597,
+  "admm_dual_residual": 0.0,
+  "admm_primal_residual": 0.0,
+  "design_kernel_signatures": 9,
+  "design_tiles": 9,
+  "effective_noise_scale": 0.0,
+  "gram_feature_passes": 1,
+  "iterations": 2300,
+  "maximum_center_of_mass_displacement": 0.19029585169968502,
+  "maximum_constraint_residual": 4.931471897506867e-14,
+  "maximum_reference_force": 0.0,
+  "maximum_snapshot_net_force": 2.416609161471735e-07,
+  "normal_equation_residual": 5.412353852270956e-07,
+  "omitted_taylor_fc1_maximum": 0.028560220878554886,
+  "omitted_taylor_fc1_net": 1.068113016361864e-15,
+  "order_force_rms": {
+    "2": 0.4322384403833288,
+    "3": 0.08756646528662677
+  },
+  "prediction_feature_passes": 0,
+  "regularization": "none",
+  "residual_norm": 9.552842614817822,
+  "static_device_bytes": 29232459,
+  "stop_code": 0,
+  "training_force_rmse": 0.026403982427688075,
+  "training_relative_force_error": 0.062296850335943975,
+  "validation_force_rmse": 0.026403982427688075,
+  "validation_relative_force_error": 0.062296850335943975
+}

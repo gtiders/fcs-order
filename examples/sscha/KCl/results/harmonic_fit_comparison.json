@@ -1,0 +1,11 @@
+{
+  "cutoff_A": 6.282,
+  "snapshots": 100,
+  "displacement_A": 0.01,
+  "mlfcs_force_rmse_eV_per_A": 0.0028291452101168344,
+  "hiphive_force_rmse_eV_per_A": 0.0028291452101168297,
+  "fc2_max_abs_eV_per_A2": 3.9599508394605465e-09,
+  "fc2_relative_frobenius": 7.524988780253425e-09,
+  "mlfcs_fit_rmse_eV_per_A": 0.00282914521011678,
+  "hiphive_fit_rmse_eV_per_A": 0.0028291452101168297
+}
