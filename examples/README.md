@@ -4,7 +4,6 @@ English | [中文](README_ZH.md)
 
 These scripts demonstrate public MLFCS APIs. Run them from the repository root with `uv run`.
 They are examples, not an MLFCS command-line interface.
-New scripts and material cases follow the [tests and examples policy](../docs/TESTS_AND_EXAMPLES.md).
 
 ## Direct calculators
 

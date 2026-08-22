@@ -4,7 +4,6 @@
 
 本目录脚本演示 MLFCS 公共 API，请在仓库根目录通过 `uv run` 执行。它们只是示例，
 不表示 MLFCS 恢复了命令行接口。
-新增脚本和材料案例应遵循[测试与案例设计原则](../docs/TESTS_AND_EXAMPLES_ZH.md)。
 
 ## 直接使用 calculator
 
