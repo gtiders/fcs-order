@@ -26,9 +26,7 @@ from phonopy.interface.calculator import read_crystal_structure
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--supercell", required=True, type=Path, help="reference supercell structure"
-    )
+    parser.add_argument("--supercell", required=True, type=Path, help="reference supercell structure")
     parser.add_argument("--force-constants", required=True, type=Path, help="phonopy FC2 text file")
     parser.add_argument("--output", type=Path, default=Path("phonon-band.png"))
     parser.add_argument("--format", default="vasp", help="phonopy structure format (default: vasp)")
@@ -107,7 +105,8 @@ def main() -> None:
     axis.grid(axis="y", color="#e2e8f0", linewidth=0.5)
     figure.savefig(args.output, dpi=args.dpi, bbox_inches="tight")
     print(
-        f"wrote {args.output} ({len(primitive)} primitive atoms, {sum(map(len, paths))} q-points)"
+        f"wrote {args.output} "
+        f"({len(primitive)} primitive atoms, {sum(map(len, paths))} q-points)"
     )
 
 
