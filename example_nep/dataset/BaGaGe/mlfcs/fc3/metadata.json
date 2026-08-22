@@ -1,0 +1,28 @@
+{
+  "method": "mlfcs-finite-difference-ase-hiphive-fcp",
+  "order": 3,
+  "source_fcp": "fcp_ols_original_model_5.fcp",
+  "source_fcp_sha256": "e224ebb431406098f2469ea184f227da9653f8445223fa4df01a3d386b76c8fe",
+  "cutoff_angstrom": 4.7,
+  "max_body_order": 2,
+  "displacement_angstrom": 0.01,
+  "supercell_matrix": [
+    [
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0
+    ],
+    [
+      0,
+      0,
+      2
+    ]
+  ],
+  "configuration_count": 7008,
+  "acoustic_sum_rule": false
+}

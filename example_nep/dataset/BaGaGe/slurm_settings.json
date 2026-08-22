@@ -1,0 +1,1 @@
+{"after": ["deactivate"], "sbatch": {"-N": 1, "-A": "C3SE2021-1-5", "--exclusive": "", "-n": 20, "-t": "168:00:00", "-p": "hebbe"}, "module": ["intel/2019a", "Python/3.7.2"], "before": ["source /cephyr/NOBACKUP/groups/cmmt-semiconductors/joabro/virtu_envs/hy3int/bin/activate"]}

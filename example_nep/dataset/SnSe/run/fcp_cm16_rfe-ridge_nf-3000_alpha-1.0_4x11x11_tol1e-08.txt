@@ -1,0 +1,3 @@
+fcp 2
+6 3
+fcp_cm16_rfe-ridge_nf-3000_alpha-1.0_4x11x11_tol1e-08

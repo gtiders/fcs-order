@@ -1,0 +1,23 @@
+{
+  "source_fcp": "fcp_order6.fcp",
+  "source_fcp_sha256": "80cb3e473826a35292525af8efebbfe83090ceb9e63d821122af3943db65ccf0",
+  "supercell_matrix": [
+    [
+      16,
+      0,
+      0
+    ],
+    [
+      0,
+      16,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "primitive_atoms": 3,
+  "supercell_atoms": 768
+}
