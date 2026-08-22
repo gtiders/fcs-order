@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 from pathlib import Path
 
@@ -44,11 +45,11 @@ def main() -> None:
         cache_directory=cache,
     )
     output.mkdir(parents=True, exist_ok=True)
-    result.force_constants.write(output / "mlfcs.h5", format="hdf5")
-    result.force_constants.write(output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
-    result.force_constants.write(output / "fc2.h5", format="phonopy_hdf5", order=2)
-    result.force_constants.write(output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
-    result.force_constants.write(output / "FORCE_CONSTANTS_4TH", format="shengbte", order=4)
+    write_force_constants(result.force_constants, output / "mlfcs.h5", format="hdf5")
+    write_force_constants(result.force_constants, output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
+    write_force_constants(result.force_constants, output / "fc2.h5", format="phonopy_hdf5", order=2)
+    write_force_constants(result.force_constants, output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
+    write_force_constants(result.force_constants, output / "FORCE_CONSTANTS_4TH", format="shengbte", order=4)
 
 
 if __name__ == "__main__":

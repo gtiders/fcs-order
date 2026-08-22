@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import json
 from pathlib import Path
 
@@ -25,9 +26,9 @@ def main() -> None:
     forces = np.load(CASE / "results/forces.npz")["forces"]
     result = calculation.reap(forces, acoustic_sum_rule=True)
     output = CASE / "results"
-    result.write(output / "mlfcs.h5", format="hdf5")
-    result.write(output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
-    result.write(output / "fc2.h5", format="phonopy_hdf5", order=2)
+    write_force_constants(result, output / "mlfcs.h5", format="hdf5")
+    write_force_constants(result, output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
+    write_force_constants(result, output / "fc2.h5", format="phonopy_hdf5", order=2)
     print(f"Fitted FC2 from {len(forces)} ordered force calculations")
 
 

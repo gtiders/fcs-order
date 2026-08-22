@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import enforce_rotational_sum_rules, write_force_constants
 import argparse
 import json
 from dataclasses import asdict
@@ -50,7 +51,7 @@ def fit_case(
         acoustic_sum_rule=True,
     )
     constrained = (
-        result.force_constants.enforce_rotational_sum_rules(born_huang=True, huang=True)
+        enforce_rotational_sum_rules(result.force_constants, born_huang=True, huang=True)
         if constrain
         else None
     )
@@ -58,8 +59,8 @@ def fit_case(
         constrained.force_constants if constrained is not None else result.force_constants
     )
     output.mkdir(parents=True, exist_ok=True)
-    force_constants.write(output / "mlfcs.h5", format="hdf5")
-    force_constants.write(output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
+    write_force_constants(force_constants, output / "mlfcs.h5", format="hdf5")
+    write_force_constants(force_constants, output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
     metrics = asdict(result.diagnostics)
     metrics["harmonic_constraints"] = (
         asdict(constrained.diagnostics) if constrained is not None else None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import json
 from pathlib import Path
@@ -61,8 +62,8 @@ def main() -> None:
         if target.exists() and not args.overwrite:
             raise FileExistsError(f"{target} exists; pass --overwrite")
         target.mkdir(parents=True, exist_ok=True)
-        result.force_constants.write(target / "mlfcs.h5", format="hdf5")
-        result.force_constants.write(
+        write_force_constants(result.force_constants, target / "mlfcs.h5", format="hdf5")
+        write_force_constants(result.force_constants, 
             target / "FORCE_CONSTANTS_2ND", format="phonopy", order=2
         )
         np.savez_compressed(

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import json
 import tempfile
@@ -50,8 +51,8 @@ def run_temperature(temperature: int) -> None:
         fc2 = temporary_path / "fc2.h5"
         fc3 = temporary_path / "fc3.h5"
         force_constants = read_hdf5(native)
-        force_constants.write(fc2, format="phonopy_hdf5", order=2)
-        force_constants.write(fc3, format="phono3py_hdf5", order=3)
+        write_force_constants(force_constants, fc2, format="phonopy_hdf5", order=2)
+        write_force_constants(force_constants, fc3, format="phono3py_hdf5", order=3)
         phonon.fc2 = read_fc2_from_hdf5(fc2, p2s_map=phonon.primitive.p2s_map)
         phonon.fc3 = read_fc3_from_hdf5(fc3, p2s_map=phonon.primitive.p2s_map)
         phonon.mesh_numbers = MESH

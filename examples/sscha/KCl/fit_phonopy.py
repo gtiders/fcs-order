@@ -27,6 +27,10 @@ def main() -> None:
     args = parser.parse_args()
     RESULTS.mkdir(parents=True, exist_ok=True)
     phonon = harmonic_phonopy()
+    # Start from phonopy's random Cartesian bootstrap, not the reference FC2
+    # bundled in the input YAML.  The reference FC2 remains available only
+    # for the separate harmonic plot.
+    phonon.force_constants = None
     phonopy_mlp = PhonopyMLP().load(POTENTIAL_PATH)
     sscha = MLPSSCHA(
         phonon,
@@ -37,7 +41,9 @@ def main() -> None:
         random_seed=SEED,
     )
     history = {"iteration": [], "free_energy_eV_per_atom": [], "error_eV_per_atom": []}
-    for iteration in sscha:
+    iterator = iter(sscha)
+    for _ in range(args.iterations):
+        iteration = next(iterator)
         sscha.calculate_free_energy()
         free_energy = float(sscha.free_energy) / 2.0
         error = float(getattr(sscha, "free_energy_error", float("nan"))) / 2.0

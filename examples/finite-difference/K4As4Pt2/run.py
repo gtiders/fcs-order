@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import gc
 import json
@@ -94,12 +95,12 @@ def run_mlfcs(*, overwrite: bool = False) -> None:
         }
         (output / "plan.json").write_text(json.dumps(manifest, indent=2) + "\n")
         result = calculation.reap(forces, acoustic_sum_rule=(order == 2))
-        result.write(output / "mlfcs.h5", format="hdf5")
+        write_force_constants(result, output / "mlfcs.h5", format="hdf5")
         if order == 2:
-            result.write(output / "fc2.h5", format="phonopy_hdf5", order=2)
-            result.write(output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
+            write_force_constants(result, output / "fc2.h5", format="phonopy_hdf5", order=2)
+            write_force_constants(result, output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
         else:
-            result.write(output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
+            write_force_constants(result, output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
         print(f"MLFCS order-{order}: {len(forces)} ASE force evaluations")
 
 

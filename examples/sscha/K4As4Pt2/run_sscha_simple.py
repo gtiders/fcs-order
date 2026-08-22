@@ -8,6 +8,7 @@ never overwritten.
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import json
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from ase.io import read
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs import read_hdf5
-from mlfcs.anharmonic.sscha import SSCHA
+from mlfcs.physics.sscha.solver import SSCHA
 
 # Edit these values directly when testing.
 TEMPERATURE_K = 300.0
@@ -80,9 +81,9 @@ def main() -> None:
         ],
     }
     (OUTPUT / "history.json").write_text(json.dumps(history, indent=2) + "\n")
-    effective.write(OUTPUT / "sscha.h5", format="hdf5", order=2)
-    effective.write(OUTPUT / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
-    effective.write(OUTPUT / "force_constants.xml", format="alamode", order=2)
+    write_force_constants(effective, OUTPUT / "sscha.h5", format="hdf5", order=2)
+    write_force_constants(effective, OUTPUT / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
+    write_force_constants(effective, OUTPUT / "force_constants.xml", format="alamode", order=2)
     print(f"wrote SSCHA results to {OUTPUT}")
 
 

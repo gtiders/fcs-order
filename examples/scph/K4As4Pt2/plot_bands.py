@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import realize_force_constants
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -27,7 +28,7 @@ def _phonon(force_constants: Path) -> Phonopy:
     hdf5 = force_constants.with_name("mlfcs.h5")
     if hdf5.is_file():
         target = ase_read(REFERENCE)
-        model = read_hdf5(hdf5).realize(reference=target)
+        model = realize_force_constants(read_hdf5(hdf5), reference=target)
         phonon.force_constants = model.materialize(2)
     else:
         phonon.force_constants = parse_FORCE_CONSTANTS(filename=str(force_constants))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import json
 from pathlib import Path
@@ -11,7 +12,7 @@ from ase.io import read
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
 from mlfcs import read_hdf5
-from mlfcs.anharmonic.sscha import SSCHA
+from mlfcs.physics.sscha.solver import SSCHA
 
 CASE = Path(__file__).resolve().parent
 INPUT = CASE.parent.parent / "finite-difference" / "K4As4Pt2" / "input"
@@ -96,9 +97,9 @@ def main() -> None:
         ],
     }
     (results / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="ascii")
-    effective.write(results / "sscha.h5", format="hdf5", order=2)
-    effective.write(results / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
-    effective.write(results / "force_constants.xml", format="alamode", order=2)
+    write_force_constants(effective, results / "sscha.h5", format="hdf5", order=2)
+    write_force_constants(effective, results / "FORCE_CONSTANTS_SSCHA", format="phonopy", order=2)
+    write_force_constants(effective, results / "force_constants.xml", format="alamode", order=2)
     print(f"wrote fresh 300 K SSCHA result after {len(sscha.history)} iterations")
 
 

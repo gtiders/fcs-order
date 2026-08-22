@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import json
 import shutil
@@ -55,10 +56,10 @@ def main() -> None:
         cache_directory=cache,
     )
     args.output.mkdir(parents=True, exist_ok=True)
-    result.force_constants.write(args.output / "mlfcs.h5", format="hdf5")
-    result.force_constants.write(args.output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
-    result.force_constants.write(args.output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
-    result.force_constants.write(args.output / "FORCE_CONSTANTS_4TH", format="shengbte", order=4)
+    write_force_constants(result.force_constants, args.output / "mlfcs.h5", format="hdf5")
+    write_force_constants(result.force_constants, args.output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
+    write_force_constants(result.force_constants, args.output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
+    write_force_constants(result.force_constants, args.output / "FORCE_CONSTANTS_4TH", format="shengbte", order=4)
     (args.output / "metrics.json").write_text(
         json.dumps(asdict(result.diagnostics), indent=2, sort_keys=True) + "\n",
         encoding="ascii",

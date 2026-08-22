@@ -20,6 +20,7 @@ TEMPERATURE = 600.0
 SNAPSHOTS = 100
 ITERATIONS = 50
 SEED = 42
+MLFCS_CUTOFF = None
 
 
 def harmonic_phonopy():

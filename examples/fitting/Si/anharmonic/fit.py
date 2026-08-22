@@ -1,3 +1,4 @@
+from mlfcs import write_force_constants
 from pathlib import Path
 from time import perf_counter
 
@@ -11,7 +12,7 @@ CASE = Path(__file__).resolve().parent
 def timed_write(force_constants, target: Path, **kwargs) -> None:
     started = perf_counter()
     print(f"TIMING io_start target={target.name} format={kwargs['format']}", flush=True)
-    force_constants.write(target, **kwargs)
+    write_force_constants(force_constants, target, **kwargs)
     print(
         f"TIMING io_done target={target.name} format={kwargs['format']} "
         f"seconds={perf_counter() - started:.6f} bytes={target.stat().st_size}",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import tempfile
 from pathlib import Path
@@ -42,8 +43,8 @@ def main() -> None:
         temporary_path = Path(temporary.name)
         fc2_path = temporary_path / "fc2.h5"
         fc3_path = temporary_path / "fc3.h5"
-        read_hdf5(SOURCE / "harmonic" / "mlfcs.h5").write(fc2_path, format="phonopy_hdf5", order=2)
-        read_hdf5(directory / "mlfcs.h5").write(fc3_path, format="phono3py_hdf5", order=3)
+        write_force_constants(read_hdf5(SOURCE / "harmonic" / "mlfcs.h5"), fc2_path, format="phonopy_hdf5", order=2)
+        write_force_constants(read_hdf5(directory / "mlfcs.h5"), fc3_path, format="phono3py_hdf5", order=3)
     phonon.fc2 = read_fc2_from_hdf5(filename=str(fc2_path), p2s_map=p2s_map)
     phonon.fc3 = read_fc3_from_hdf5(filename=str(fc3_path), p2s_map=p2s_map)
     phonon.mesh_numbers = np.array([11, 11, 11], dtype=int)

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from mlfcs import write_force_constants
 import argparse
 import json
 
 import numpy as np
 from common import (
     ITERATIONS,
+    MLFCS_CUTOFF,
     RESULTS,
     SEED,
     SNAPSHOTS,
@@ -16,7 +18,7 @@ from common import (
     mlfcs_working_cells,
 )
 
-from mlfcs.anharmonic.sscha import SSCHA
+from mlfcs.physics.sscha.solver import SSCHA
 
 
 def main() -> None:
@@ -26,17 +28,19 @@ def main() -> None:
     args = parser.parse_args()
     RESULTS.mkdir(parents=True, exist_ok=True)
     _, primitive, reference = mlfcs_working_cells()
+    calculator = mlfcs_calculator()
     sscha = SSCHA(
         primitive,
         reference=reference,
-        cutoff=-1,
+        cutoff=MLFCS_CUTOFF,
         temperature=TEMPERATURE,
         snapshots=args.snapshots,
         max_iterations=args.iterations,
         random_seed=SEED,
         imaginary_modes="absolute",
     )
-    calculation_result = sscha.run(mlfcs_calculator(), calculate_free_energy=True)
+    for _ in range(args.iterations):
+        sscha.step(calculator, calculate_free_energy=True)
     history = {"iteration": [], "free_energy_eV_per_atom": [], "error_eV_per_atom": []}
     for iteration in sscha.history:
         if iteration.free_energy is None:
@@ -51,15 +55,15 @@ def main() -> None:
             f"eV_per_atom={free_energy:.12e} error_eV_per_atom={error:.12e}",
             flush=True,
         )
-    if not hasattr(calculation_result, "force_constants"):
-        raise RuntimeError("KCl example expects a single-temperature SSCHA result")
-    final = calculation_result.force_constants
+    final = sscha.force_constants
+    if final is None:
+        raise RuntimeError("MLFCS SSCHA produced no effective FC2")
     np.savez_compressed(
         RESULTS / "mlfcs_sscha_fc2.npz",
         force_constants=final.materialize(2, max_bytes=None),
     )
-    final.write(RESULTS / "mlfcs_sscha.h5", format="hdf5")
-    final.write(RESULTS / "FORCE_CONSTANTS_MLFCS_SSCHA", format="phonopy", order=2)
+    write_force_constants(final, RESULTS / "mlfcs_sscha.h5", format="hdf5")
+    write_force_constants(final, RESULTS / "FORCE_CONSTANTS_MLFCS_SSCHA", format="phonopy", order=2)
     (RESULTS / "free_energy_mlfcs.json").write_text(
         json.dumps(history, indent=2) + "\n", encoding="ascii"
     )

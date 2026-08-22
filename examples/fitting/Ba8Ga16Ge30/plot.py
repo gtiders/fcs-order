@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parent
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--supercell", type=Path, default=ROOT / "input/reference.vasp")
-    parser.add_argument("--force-constants", type=Path, default=ROOT / "results/T600K/mlfcs/FORCE_CONSTANTS_2ND")
-    parser.add_argument("--output", type=Path, default=ROOT / "results/T600K/mlfcs/phonon-band.png")
+    parser.add_argument("--force-constants", type=Path, default=ROOT / "results/T300K/mlfcs/FORCE_CONSTANTS_2ND")
+    parser.add_argument("--output", type=Path, default=ROOT / "results/T300K/mlfcs/phonon-band.png")
     parser.add_argument("--npoints", type=int, default=101)
     args = parser.parse_args()
     cell, _ = read_crystal_structure(filename=str(args.supercell), interface_mode="vasp")

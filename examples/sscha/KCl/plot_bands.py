@@ -12,22 +12,23 @@ from common import (
     RESULTS,
     bands,
     harmonic_phonopy,
-    map_reference_to_phonopy,
 )
 from matplotlib.lines import Line2D
+from phonopy.file_IO import parse_FORCE_CONSTANTS
 
 
 def plot(band_data: dict[str, tuple], output: Path) -> None:
     colors = {
         "phonopy harmonic": "#5b8f8a",
-        "phonopy SSCHA": "#5b8f8a",
+        "phonopy SSCHA": "#326b68",
+        "MLFCS harmonic": "#d69a73",
         "MLFCS SSCHA": "#c27b70",
     }
     panels = (
         ("phonopy: harmonic vs SSCHA", ("phonopy harmonic", "phonopy SSCHA")),
-        ("Harmonic vs MLFCS SSCHA", ("phonopy harmonic", "MLFCS SSCHA")),
-        ("SSCHA: phonopy vs MLFCS", ("phonopy SSCHA", "MLFCS SSCHA")),
-        ("All effective-harmonic results", ("phonopy harmonic", "phonopy SSCHA", "MLFCS SSCHA")),
+        ("MLFCS: harmonic vs SSCHA", ("MLFCS harmonic", "MLFCS SSCHA")),
+        ("Harmonic: MLFCS vs phonopy", ("MLFCS harmonic", "phonopy harmonic")),
+        ("SSCHA: MLFCS vs phonopy", ("MLFCS SSCHA", "phonopy SSCHA")),
     )
     figure, axes = plt.subplots(2, 2, figsize=(13.0, 9.0), sharey=True, constrained_layout=True)
     for axis, (title, selected) in zip(axes.flat, panels, strict=True):
@@ -86,21 +87,14 @@ def main() -> None:
     args = parser.parse_args()
     phonon = harmonic_phonopy()
     phonopy_final = np.load(RESULTS / "phonopy_sscha_final_fc2.npy")
-    stored = np.load(RESULTS / "mlfcs_sscha_fc2.npz")
+    mlfcs_final = parse_FORCE_CONSTANTS(filename=RESULTS / "FORCE_CONSTANTS_MLFCS_SSCHA")
+    mlfcs_harmonic = parse_FORCE_CONSTANTS(filename=RESULTS / "FORCE_CONSTANTS_MLFCS_HARMONIC")
     band_data = {
         "phonopy harmonic": bands(phonon, phonon.force_constants),
         "phonopy SSCHA": bands(phonon, phonopy_final),
+        "MLFCS harmonic": bands(phonon, mlfcs_harmonic),
+        "MLFCS SSCHA": bands(phonon, mlfcs_final),
     }
-    try:
-        mapped = map_reference_to_phonopy(stored["force_constants"], phonon)
-    except ValueError as exc:
-        # The MLFCS KCl fit uses the eight-atom conventional reference while
-        # this historical phonopy YAML reduces it to a two-atom primitive.
-        # Do not fabricate a permutation between those distinct cells; keep
-        # the valid phonopy comparison and report the skipped overlay.
-        print(f"warning: skipping MLFCS overlay: {exc}")
-    else:
-        band_data["MLFCS SSCHA"] = bands(phonon, mapped)
     plot(band_data, args.output)
     print(f"wrote {args.output}")
 
