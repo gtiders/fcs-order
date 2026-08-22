@@ -14,8 +14,7 @@ from phono3py import Phono3py
 from phono3py.file_IO import read_fc2_from_hdf5, read_fc3_from_hdf5
 from phonopy.interface.calculator import read_crystal_structure
 
-from mlfcs import read_hdf5
-from mlfcs.tools import build_supercell
+from mlfcs import build_supercell, read_hdf5
 
 ROOT = Path(__file__).resolve().parent
 INPUT = ROOT / "input"

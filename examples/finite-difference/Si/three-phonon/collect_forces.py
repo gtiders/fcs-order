@@ -27,6 +27,7 @@ def main() -> None:
         read(CASE / "input/primitive.vasp"),
         reference=read(CASE / "input/supercell.vasp"),
         order=manifest["order"],
+        supercell_matrix=manifest["supercell_matrix"],
         cutoff=manifest["cutoff"],
         displacement=manifest["displacement"],
     )
