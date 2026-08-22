@@ -18,8 +18,8 @@ from phonopy.interface.mlp import PhonopyMLP
 from phonopy.sscha.core import MLPSSCHA
 from pypolymlp.calculator.utils.ase_calculator import PolymlpASECalculator
 
-from mlfcs.structure.geometry import StructureRelation
-from mlfcs.ifc.model import ForceConstants, SparseOrderForceConstants
+from mlfcs.core.geometry import StructureRelation
+from mlfcs.model import ForceConstants, SparseOrderForceConstants
 from mlfcs.sscha import SSCHA
 
 CASE = Path(__file__).resolve().parent
