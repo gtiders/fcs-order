@@ -25,6 +25,7 @@ def main() -> None:
         read(CASE / "input/primitive.vasp"),
         read(CASE / "input/supercell.vasp"),
         orders=(2, 3, 4),
+        fitting_basis="wick",
         # FC4 is restricted to the third Si neighbour shell (4.503 Å);
         # 4.6 Å lies safely between the third and fourth shells.
         cutoffs={2: 5.4, 3: 5.4, 4: 4.6},

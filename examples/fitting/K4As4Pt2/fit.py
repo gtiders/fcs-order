@@ -31,6 +31,7 @@ def main() -> None:
         read(INPUT / "primitive.vasp"),
         read(INPUT / "reference.vasp"),
         orders=(2, 3, 4),
+        fitting_basis="wick",
         cutoffs={2: 6.5, 3: 12 * Bohr, 4: 8 * Bohr},
         max_body_orders={2: 2, 3: 3, 4: args.body_order_4},
     )

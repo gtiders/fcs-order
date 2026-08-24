@@ -29,6 +29,7 @@ def fit(snapshots_directory: Path) -> None:
         primitive,
         reference,
         orders=(2, 3),
+        fitting_basis="wick",
         cutoffs={2: 5.4, 3: 4.35},
         max_body_orders={2: 2, 3: 2},
         symprec=1e-4,

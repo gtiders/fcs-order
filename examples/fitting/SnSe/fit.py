@@ -41,6 +41,7 @@ def main() -> None:
         primitive,
         reference,
         orders=(2, 3, 4),
+        fitting_basis="wick",
         cutoffs={2: 8.0, 3: 6.5, 4: 4.5},
         max_body_orders={2: 2, 3: 3, 4: 3},
         symprec=1e-4,
