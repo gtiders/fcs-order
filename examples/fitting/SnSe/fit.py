@@ -45,7 +45,6 @@ def main() -> None:
         cutoffs={2: 8.0, 3: 6.5, 4: 4.5},
         max_body_orders={2: 2, 3: 3, 4: 3},
         symprec=1e-4,
-        verbose=True,
     )
     result = fitter.fit(
         snapshots,
@@ -62,7 +61,7 @@ def main() -> None:
     write_force_constants(result.force_constants, args.output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
     write_force_constants(result.force_constants, args.output / "FORCE_CONSTANTS_4TH", format="shengbte", order=4)
     (args.output / "metrics.json").write_text(
-        json.dumps(asdict(result.diagnostics), indent=2, sort_keys=True) + "\n",
+        json.dumps(asdict(result), indent=2, sort_keys=True) + "\n",
         encoding="ascii",
     )
     print(f"wrote FC2/FC3/FC4 fit to {args.output}")

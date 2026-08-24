@@ -74,7 +74,6 @@ def run_mlfcs(*, overwrite: bool = False) -> None:
             reference=reference,
             cutoff=CUTOFFS[order],
             displacement=DISPLACEMENT,
-            verbose=False,
         )
         structures = calculation.sow()
         archive = output / "forces.npz"

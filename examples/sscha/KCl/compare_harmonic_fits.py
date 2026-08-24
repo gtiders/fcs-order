@@ -59,7 +59,6 @@ def _fit_mlfcs(primitive, reference, structures):
         reference,
         orders=(2,),
         cutoffs={2: None},
-        verbose=True,
     )
     result = fitter.fit(structures, validation_split=0.0, acoustic_sum_rule=True)
     compact = result.force_constants.materialize(2, max_bytes=None)
@@ -117,7 +116,7 @@ def main() -> None:
         "fc2_max_abs_eV_per_A2": float(np.max(np.abs(difference))),
         "fc2_relative_frobenius": float(np.linalg.norm(difference) / scale),
         "mlfcs_fit_rmse_eV_per_A": float(
-            mlfcs_result.diagnostics.training_force_rmse
+            mlfcs_result.training_force_rmse
         ),
         "hiphive_fit_rmse_eV_per_A": float(hiphive_optimizer.rmse_train),
     }

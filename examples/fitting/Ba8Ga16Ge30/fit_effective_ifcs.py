@@ -33,7 +33,6 @@ def fit(snapshots_directory: Path) -> None:
         cutoffs={2: 5.4, 3: 4.35},
         max_body_orders={2: 2, 3: 2},
         symprec=1e-4,
-        verbose=True,
     )
     output = RESULTS / snapshots_directory.name / "mlfcs"
     result = fitter.fit(
@@ -50,7 +49,7 @@ def fit(snapshots_directory: Path) -> None:
     write_force_constants(result.force_constants, output / "fc2.h5", format="phonopy_hdf5", order=2)
     write_force_constants(result.force_constants, output / "FORCE_CONSTANTS_3RD", format="shengbte", order=3)
     (output / "metrics.json").write_text(
-        json.dumps(asdict(result.diagnostics), indent=2, sort_keys=True) + "\n",
+        json.dumps(asdict(result), indent=2, sort_keys=True) + "\n",
         encoding="ascii",
     )
 

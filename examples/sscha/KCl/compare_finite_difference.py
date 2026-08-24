@@ -36,7 +36,6 @@ def _mlfcs_fc2(primitive, reference, calculator, *, target=None):
         reference=reference,
         cutoff=None,
         displacement=DISPLACEMENT,
-        verbose=True,
     ).run(calculator)
     realized = result if target is None else realize_force_constants(result, target, primitive=primitive)
     compact = realized.materialize(2, max_bytes=None)

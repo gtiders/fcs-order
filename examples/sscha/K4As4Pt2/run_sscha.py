@@ -61,8 +61,7 @@ def main() -> None:
         initial_force_constants=harmonic,
         imaginary_modes="absolute",
         mixing=args.mixing,
-        log_level=1,
-    )
+        )
     calculator = PolymlpASECalculator(pot=INPUT / "polymlp.yaml")
     # The case parameter ``iterations`` means the number of updates after the
     # initial harmonic state.  ``SSCHA.run`` intentionally includes iteration

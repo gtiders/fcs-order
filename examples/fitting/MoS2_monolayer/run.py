@@ -42,7 +42,6 @@ def fit_case(
         orders=(2,),
         cutoffs={2: 8.0},
         max_body_orders={2: 2},
-        verbose=True,
     )
     result = fitter.fit(
         snapshots,
@@ -61,9 +60,9 @@ def fit_case(
     output.mkdir(parents=True, exist_ok=True)
     write_force_constants(force_constants, output / "mlfcs.h5", format="hdf5")
     write_force_constants(force_constants, output / "FORCE_CONSTANTS_2ND", format="phonopy", order=2)
-    metrics = asdict(result.diagnostics)
+    metrics = asdict(result)
     metrics["harmonic_constraints"] = (
-        asdict(constrained.diagnostics) if constrained is not None else None
+        asdict(constrained) if constrained is not None else None
     )
     (output / "metrics.json").write_text(
         json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="ascii"

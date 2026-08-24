@@ -36,7 +36,6 @@ def fit_case(primitive, reference, snapshots, *, constrain, output):
         orders=(2,),
         cutoffs={2: 8.0},
         max_body_orders={2: 2},
-        verbose=True,
     )
     result = fitter.fit(
         snapshots,
@@ -59,9 +58,9 @@ def fit_case(primitive, reference, snapshots, *, constrain, output):
             {
                 "single_snapshot": True,
                 "harmonic_constraints": (
-                    asdict(constrained.diagnostics) if constrained is not None else None
+                    asdict(constrained) if constrained is not None else None
                 ),
-                **asdict(result.diagnostics),
+                **asdict(result),
             },
             default=str,
             indent=2,

@@ -51,8 +51,7 @@ def main() -> None:
         max_iterations=ITERATIONS,
         random_seed=RANDOM_SEED,
         imaginary_modes="absolute",
-        log_level=1,
-        **options,
+            **options,
     )
     calculator = PolymlpASECalculator(pot=INPUT / "polymlp.yaml")
     for _ in range(ITERATIONS):
